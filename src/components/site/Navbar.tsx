@@ -6,7 +6,7 @@ const links = [
   { label: "Upcoming Treks", href: "#treks" },
   { label: "About Us", href: "#about" },
   { label: "Gallery", href: "#gallery" },
-  { label: "Testimonials", href: "#testimonials" },
+  { label: "Book", href: "#booking" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -50,7 +50,7 @@ export default function Navbar() {
         </nav>
 
         <a
-          href="#contact"
+          href="#booking"
           className="hidden lg:inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-orange text-accent-foreground font-semibold text-sm shadow-glow hover:scale-105 transition-transform"
         >
           Book a Trek
@@ -90,7 +90,7 @@ export default function Navbar() {
                 </a>
               ))}
               <a
-                href="#contact"
+                href="#booking"
                 onClick={() => setOpen(false)}
                 className="mt-4 inline-flex justify-center px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold"
               >

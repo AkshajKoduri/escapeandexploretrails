@@ -8,12 +8,12 @@ import medak from "@/assets/trek-medak.jpg";
 type Difficulty = "Easy" | "Moderate" | "Hard";
 
 const treks = [
-  { name: "Ahobilam Trek", img: ahobilam, diff: "Hard" as Difficulty, dur: "2 Days", dist: "350 km", price: 3499 },
-  { name: "Bhongir Fort Sunrise", img: bhongir, diff: "Easy" as Difficulty, dur: "1 Day", dist: "50 km", price: 899 },
-  { name: "Ananthagiri Night Camp", img: ananthagiri, diff: "Moderate" as Difficulty, dur: "1 Night", dist: "85 km", price: 1799 },
-  { name: "Koilkonda Fort Trail", img: koilkonda, diff: "Moderate" as Difficulty, dur: "1 Day", dist: "120 km", price: 1299 },
-  { name: "Ethipothala Falls Hike", img: ethipothala, diff: "Easy" as Difficulty, dur: "1 Day", dist: "180 km", price: 1499 },
-  { name: "Medak Fort Weekend", img: medak, diff: "Easy" as Difficulty, dur: "1 Day", dist: "100 km", price: 1099 },
+  { name: "Ahobilam Trek", img: ahobilam, diff: "Hard" as Difficulty, dur: "2 Days", dist: "350 km" },
+  { name: "Bhongir Fort Sunrise", img: bhongir, diff: "Easy" as Difficulty, dur: "1 Day", dist: "50 km" },
+  { name: "Ananthagiri Night Camp", img: ananthagiri, diff: "Moderate" as Difficulty, dur: "1 Night", dist: "85 km" },
+  { name: "Koilkonda Fort Trail", img: koilkonda, diff: "Moderate" as Difficulty, dur: "1 Day", dist: "120 km" },
+  { name: "Ethipothala Falls Hike", img: ethipothala, diff: "Easy" as Difficulty, dur: "1 Day", dist: "180 km" },
+  { name: "Medak Fort Weekend", img: medak, diff: "Easy" as Difficulty, dur: "1 Day", dist: "100 km" },
 ];
 
 const diffStyle: Record<Difficulty, { dot: string; bg: string; label: string }> = {
@@ -60,22 +60,16 @@ export default function Treks() {
 
               <div className="absolute inset-x-0 bottom-0 p-6 text-charcoal-foreground">
                 <h3 className="font-heading font-bold text-2xl mb-2">{t.name}</h3>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-4">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-5">
                   <span>⏱ {t.dur}</span>
                   <span>📍 {t.dist} from Hyd</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-charcoal-foreground/70">Starting from</span>
-                    <div className="font-heading font-bold text-2xl text-accent">₹{t.price}</div>
-                  </div>
-                  <a
-                    href="#contact"
-                    className="px-5 py-2 rounded-full border-2 border-charcoal-foreground/80 text-charcoal-foreground text-sm font-semibold hover:bg-accent hover:border-accent transition-colors"
-                  >
-                    View Details
-                  </a>
-                </div>
+                <a
+                  href="#booking"
+                  className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
+                >
+                  Book Now →
+                </a>
               </div>
             </article>
           ))}
@@ -83,10 +77,10 @@ export default function Treks() {
 
         <div className="mt-14 text-center reveal">
           <a
-            href="#contact"
+            href="#booking"
             className="inline-flex items-center px-10 py-4 rounded-full bg-primary text-primary-foreground font-semibold tracking-wide hover:bg-secondary transition-colors shadow-card"
           >
-            View All Treks →
+            Book Your Trek →
           </a>
         </div>
       </div>
