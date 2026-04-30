@@ -1,16 +1,51 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect } from "react";
+import Navbar from "@/components/site/Navbar";
+import Hero from "@/components/site/Hero";
+import Marquee from "@/components/site/Marquee";
+import About from "@/components/site/About";
+import Stats from "@/components/site/Stats";
+import Treks from "@/components/site/Treks";
+import Experiences from "@/components/site/Experiences";
+import Gallery from "@/components/site/Gallery";
+import Testimonials from "@/components/site/Testimonials";
+import WhyUs from "@/components/site/WhyUs";
+import Contact from "@/components/site/Contact";
+import Footer from "@/components/site/Footer";
+import CursorDot from "@/components/site/CursorDot";
+import { useReveal } from "@/hooks/useReveal";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
+  useReveal();
+
+  useEffect(() => {
+    document.title = "E2 Trails — Guided Treks & Adventures from Hyderabad";
+    const desc = "Join E2 Trails for safe, organized weekend treks, night camps & summit hikes across Telangana and Andhra Pradesh. Built for every adventurer.";
+    let m = document.querySelector('meta[name="description"]');
+    if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
+    m.setAttribute("content", desc);
+
+    let canon = document.querySelector('link[rel="canonical"]');
+    if (!canon) { canon = document.createElement("link"); canon.setAttribute("rel", "canonical"); document.head.appendChild(canon); }
+    canon.setAttribute("href", window.location.origin + "/");
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
+    <main className="min-h-screen bg-background overflow-x-hidden">
+      <CursorDot />
+      <Navbar />
+      <Hero />
+      <Marquee />
+      <About />
+      <Stats />
+      <Treks />
+      <Experiences />
+      <Gallery />
+      <Testimonials />
+      <WhyUs />
+      <Contact />
+      <Footer />
+    </main>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
