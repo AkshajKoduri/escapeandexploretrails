@@ -9,6 +9,7 @@ import Experiences from "@/components/site/Experiences";
 import Gallery from "@/components/site/Gallery";
 import Testimonials from "@/components/site/Testimonials";
 import WhyUs from "@/components/site/WhyUs";
+import Booking from "@/components/site/Booking";
 import Contact from "@/components/site/Contact";
 import Footer from "@/components/site/Footer";
 import CursorDot from "@/components/site/CursorDot";
@@ -42,6 +43,7 @@ const Index = () => {
       <Gallery />
       <Testimonials />
       <WhyUs />
+      <Booking />
       <Contact />
       <Footer />
     </main>
