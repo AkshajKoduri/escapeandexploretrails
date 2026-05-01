@@ -5,16 +5,16 @@ import g3 from "@/assets/gallery-3.jpg";
 import g4 from "@/assets/gallery-4.jpg";
 import g5 from "@/assets/gallery-5.jpg";
 import g6 from "@/assets/gallery-6.jpg";
+import g7 from "@/assets/gallery-7.jpg";
 
 const images = [
-  { src: g1, span: "row-span-2", alt: "Trekkers at sunrise ridge" },
-  { src: g2, span: "", alt: "Bonfire night" },
-  { src: g3, span: "", alt: "Misty forest trail" },
-  { src: g4, span: "row-span-2", alt: "Rappelling cliff" },
-  { src: g5, span: "", alt: "Hidden waterfall" },
-  { src: g6, span: "", alt: "Camping at dusk" },
-  { src: g3, span: "", alt: "Forest path" },
-  { src: g2, span: "", alt: "Campfire glow" },
+  { src: g1, span: "row-span-2", alt: "Group inside waterfall cave" },
+  { src: g2, span: "", alt: "Trek briefing at the trailhead" },
+  { src: g3, span: "", alt: "Group at ancient rock paintings" },
+  { src: g4, span: "row-span-2", alt: "Trekker in a rock crevice" },
+  { src: g5, span: "", alt: "Misty cliff edge views" },
+  { src: g6, span: "", alt: "Group on the fort ramparts" },
+  { src: g7, span: "col-span-2", alt: "Holi celebration with the E2 Trails crew" },
 ];
 
 export default function Gallery() {
