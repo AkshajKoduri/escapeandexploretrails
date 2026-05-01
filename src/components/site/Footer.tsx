@@ -1,12 +1,14 @@
-import { Mountain, Instagram } from "lucide-react";
+import { Instagram } from "lucide-react";
+import logo from "@/assets/logo.png";
 import g1 from "@/assets/gallery-1.jpg";
 import g2 from "@/assets/gallery-2.jpg";
 import g3 from "@/assets/gallery-3.jpg";
 import g4 from "@/assets/gallery-4.jpg";
 import g5 from "@/assets/gallery-5.jpg";
 import g6 from "@/assets/gallery-6.jpg";
+import g7 from "@/assets/gallery-7.jpg";
 
-const thumbs = [g1, g2, g3, g4, g5, g6];
+const thumbs = [g1, g2, g3, g4, g5, g7];
 const links = [
   { label: "Home", href: "#home" },
   { label: "Upcoming Treks", href: "#treks" },
@@ -25,8 +27,8 @@ export default function Footer() {
 
       <div className="container py-16 grid md:grid-cols-3 gap-12">
         <div>
-          <div className="flex items-center gap-2">
-            <Mountain className="w-7 h-7 text-accent" strokeWidth={2.5} />
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="E2 Trails logo" className="w-11 h-11 rounded-full bg-white object-contain p-0.5" />
             <span className="font-heading font-extrabold text-xl">
               E2 <span className="text-accent">TRAILS</span>
             </span>
