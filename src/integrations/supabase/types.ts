@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      booking_members: {
+        Row: {
+          aadhaar_number: string
+          aadhaar_photo: string
+          booking_id: string
+          created_at: string
+          full_name: string
+          id: string
+        }
+        Insert: {
+          aadhaar_number: string
+          aadhaar_photo: string
+          booking_id: string
+          created_at?: string
+          full_name: string
+          id?: string
+        }
+        Update: {
+          aadhaar_number?: string
+          aadhaar_photo?: string
+          booking_id?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_members_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          created_at: string
+          id: string
+          is_group: boolean
+          primary_aadhaar: string
+          primary_aadhaar_photo: string
+          primary_age: number
+          primary_email: string | null
+          primary_gender: string
+          primary_name: string
+          primary_phone: string
+          status: string
+          trek_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_group?: boolean
+          primary_aadhaar: string
+          primary_aadhaar_photo: string
+          primary_age: number
+          primary_email?: string | null
+          primary_gender: string
+          primary_name: string
+          primary_phone: string
+          status?: string
+          trek_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_group?: boolean
+          primary_aadhaar?: string
+          primary_aadhaar_photo?: string
+          primary_age?: number
+          primary_email?: string | null
+          primary_gender?: string
+          primary_name?: string
+          primary_phone?: string
+          status?: string
+          trek_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          aadhaar_number: string | null
+          aadhaar_photo_path: string | null
+          age: number | null
+          created_at: string
+          full_name: string
+          gender: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          aadhaar_number?: string | null
+          aadhaar_photo_path?: string | null
+          age?: number | null
+          created_at?: string
+          full_name?: string
+          gender?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aadhaar_number?: string | null
+          aadhaar_photo_path?: string | null
+          age?: number | null
+          created_at?: string
+          full_name?: string
+          gender?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
