@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, LogOut } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { label: "Home", href: "#home" },
   { label: "Upcoming Treks", href: "#treks" },
   { label: "About Us", href: "#about" },
   { label: "Gallery", href: "#gallery" },
-  { label: "Book", href: "#booking" },
   { label: "Contact", href: "#contact" },
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -21,6 +24,8 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const signOut = () => supabase.auth.signOut();
 
   return (
     <header
@@ -54,12 +59,26 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <a
-          href="#booking"
-          className="hidden lg:inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-orange text-accent-foreground font-semibold text-sm shadow-glow hover:scale-105 transition-transform"
-        >
-          Book a Trek
-        </a>
+        <div className="hidden lg:flex items-center gap-3">
+          {user ? (
+            <button
+              onClick={signOut}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-charcoal-foreground/90 hover:text-accent text-sm font-medium transition"
+            >
+              <LogOut className="w-4 h-4" /> Sign out
+            </button>
+          ) : (
+            <Link to="/auth" className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium transition">
+              Log in
+            </Link>
+          )}
+          <Link
+            to="/booking"
+            className="inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-orange text-accent-foreground font-semibold text-sm shadow-glow hover:scale-105 transition-transform"
+          >
+            Book a Trek
+          </Link>
+        </div>
 
         <button
           aria-label="Toggle menu"
@@ -97,13 +116,29 @@ export default function Navbar() {
                   {l.label}
                 </a>
               ))}
-              <a
-                href="#booking"
+              <Link
+                to="/booking"
                 onClick={() => setOpen(false)}
                 className="mt-4 inline-flex justify-center px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold"
               >
                 Book a Trek
-              </a>
+              </Link>
+              {user ? (
+                <button
+                  onClick={() => { setOpen(false); signOut(); }}
+                  className="inline-flex justify-center px-6 py-3 rounded-full border border-accent/40 text-charcoal-foreground"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex justify-center px-6 py-3 rounded-full border border-accent/40 text-charcoal-foreground"
+                >
+                  Log in
+                </Link>
+              )}
             </nav>
           </aside>
         </div>
