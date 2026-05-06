@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import ahobilam from "@/assets/trek-ahobilam.jpg";
 import bhongir from "@/assets/trek-bhongir.jpg";
 import ananthagiri from "@/assets/trek-ananthagiri.jpg";
@@ -64,24 +65,24 @@ export default function Treks() {
                   <span>⏱ {t.dur}</span>
                   <span>📍 {t.dist} from Hyd</span>
                 </div>
-                <a
-                  href="#booking"
+                <Link
+                  to="/booking"
                   className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
                 >
                   Book Now →
-                </a>
+                </Link>
               </div>
             </article>
           ))}
         </div>
 
         <div className="mt-14 text-center reveal">
-          <a
-            href="#booking"
+          <Link
+            to="/booking"
             className="inline-flex items-center px-10 py-4 rounded-full bg-primary text-primary-foreground font-semibold tracking-wide hover:bg-secondary transition-colors shadow-card"
           >
             Book Your Trek →
-          </a>
+          </Link>
         </div>
       </div>
     </section>
