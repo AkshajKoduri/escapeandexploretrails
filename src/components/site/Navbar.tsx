@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, LogOut } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { label: "Home", href: "#home" },
   { label: "Upcoming Treks", href: "#treks" },
   { label: "About Us", href: "#about" },
   { label: "Gallery", href: "#gallery" },
-  { label: "Book", href: "#booking" },
   { label: "Contact", href: "#contact" },
 ];
 
