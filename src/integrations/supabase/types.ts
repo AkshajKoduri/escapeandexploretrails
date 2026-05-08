@@ -133,6 +133,48 @@ export type Database = {
         }
         Relationships: []
       }
+      upcoming_treks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty: Database["public"]["Enums"]["trek_difficulty"]
+          distance: string | null
+          duration: string | null
+          id: string
+          image_url: string | null
+          location: string | null
+          name: string
+          trek_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["trek_difficulty"]
+          distance?: string | null
+          duration?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          name: string
+          trek_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["trek_difficulty"]
+          distance?: string | null
+          duration?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          name?: string
+          trek_date?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -169,6 +211,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      trek_difficulty: "Easy" | "Moderate" | "Hard"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -297,6 +340,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      trek_difficulty: ["Easy", "Moderate", "Hard"],
     },
   },
 } as const
