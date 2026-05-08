@@ -13,6 +13,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -28,15 +29,21 @@ export default function Auth() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        if (!/^[0-9+\-\s()]{7,15}$/.test(phone.trim())) {
+          throw new Error("Please enter a valid mobile number");
+        }
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/booking`,
-            data: { full_name: fullName },
+            data: { full_name: fullName, phone: phone.trim() },
           },
         });
         if (error) throw error;
+        if (data.user) {
+          await supabase.from("profiles").update({ phone: phone.trim(), full_name: fullName }).eq("id", data.user.id);
+        }
         toast.success("Check your email to confirm your account.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -89,14 +96,24 @@ export default function Auth() {
 
         <form onSubmit={submit} className="space-y-4">
           {mode === "signup" && (
-            <input
-              type="text"
-              required
-              placeholder="Full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent"
-            />
+            <>
+              <input
+                type="text"
+                required
+                placeholder="Full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+              <input
+                type="tel"
+                required
+                placeholder="Mobile number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+            </>
           )}
           <input
             type="email"
