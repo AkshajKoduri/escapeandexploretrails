@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import ahobilam from "@/assets/trek-ahobilam.jpg";
 import bhongir from "@/assets/trek-bhongir.jpg";
 import ananthagiri from "@/assets/trek-ananthagiri.jpg";
@@ -7,23 +9,64 @@ import ethipothala from "@/assets/trek-ethipothala.jpg";
 import medak from "@/assets/trek-medak.jpg";
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
+type TrekCard = {
+  name: string;
+  img: string;
+  diff: Difficulty;
+  dur: string;
+  dist: string;
+  date?: string;
+};
 
-const treks = [
-  { name: "Ahobilam Trek", img: ahobilam, diff: "Hard" as Difficulty, dur: "2 Days", dist: "350 km" },
-  { name: "Bhongir Fort Sunrise", img: bhongir, diff: "Easy" as Difficulty, dur: "1 Day", dist: "50 km" },
-  { name: "Ananthagiri Night Camp", img: ananthagiri, diff: "Moderate" as Difficulty, dur: "1 Night", dist: "85 km" },
-  { name: "Koilkonda Fort Trail", img: koilkonda, diff: "Moderate" as Difficulty, dur: "1 Day", dist: "120 km" },
-  { name: "Ethipothala Falls Hike", img: ethipothala, diff: "Easy" as Difficulty, dur: "1 Day", dist: "180 km" },
-  { name: "Medak Fort Weekend", img: medak, diff: "Easy" as Difficulty, dur: "1 Day", dist: "100 km" },
+const staticTreks: TrekCard[] = [
+  { name: "Ahobilam Trek", img: ahobilam, diff: "Hard", dur: "2 Days", dist: "350 km" },
+  { name: "Bhongir Fort Sunrise", img: bhongir, diff: "Easy", dur: "1 Day", dist: "50 km" },
+  { name: "Ananthagiri Night Camp", img: ananthagiri, diff: "Moderate", dur: "1 Night", dist: "85 km" },
+  { name: "Koilkonda Fort Trail", img: koilkonda, diff: "Moderate", dur: "1 Day", dist: "120 km" },
+  { name: "Ethipothala Falls Hike", img: ethipothala, diff: "Easy", dur: "1 Day", dist: "180 km" },
+  { name: "Medak Fort Weekend", img: medak, diff: "Easy", dur: "1 Day", dist: "100 km" },
 ];
 
-const diffStyle: Record<Difficulty, { dot: string; bg: string; label: string }> = {
-  Easy: { dot: "bg-green-500", bg: "bg-green-500/20 text-green-200", label: "🟢 Easy" },
-  Moderate: { dot: "bg-gold", bg: "bg-gold/20 text-gold", label: "🟡 Moderate" },
-  Hard: { dot: "bg-destructive", bg: "bg-destructive/20 text-red-200", label: "🔴 Hard" },
+const fallbackImg = ahobilam;
+
+const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
+  Easy: { bg: "bg-green-500/20 text-green-200", label: "🟢 Easy" },
+  Moderate: { bg: "bg-gold/20 text-gold", label: "🟡 Moderate" },
+  Hard: { bg: "bg-destructive/20 text-red-200", label: "🔴 Hard" },
 };
 
 export default function Treks() {
+  const [dbTreks, setDbTreks] = useState<TrekCard[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("upcoming_treks")
+        .select("*")
+        .gte("trek_date", today)
+        .order("trek_date", { ascending: true });
+      if (data) {
+        setDbTreks(
+          data.map((t: any) => ({
+            name: t.name,
+            img: t.image_url || fallbackImg,
+            diff: (t.difficulty as Difficulty) ?? "Easy",
+            dur: t.duration ?? "",
+            dist: t.distance ?? (t.location ?? ""),
+            date: new Date(t.trek_date).toLocaleDateString(undefined, {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            }),
+          })),
+        );
+      }
+    })();
+  }, []);
+
+  const treks = [...dbTreks, ...staticTreks];
+
   return (
     <section id="treks" className="py-24 md:py-32 bg-background">
       <div className="container">
@@ -40,7 +83,7 @@ export default function Treks() {
         <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {treks.map((t, i) => (
             <article
-              key={t.name}
+              key={`${t.name}-${i}`}
               className="reveal group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
               style={{ transitionDelay: `${(i % 3) * 80}ms` }}
             >
@@ -57,13 +100,18 @@ export default function Treks() {
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${diffStyle[t.diff].bg}`}>
                   {diffStyle[t.diff].label}
                 </span>
+                {t.date && (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground">
+                    📅 {t.date}
+                  </span>
+                )}
               </div>
 
               <div className="absolute inset-x-0 bottom-0 p-6 text-charcoal-foreground">
                 <h3 className="font-heading font-bold text-2xl mb-2">{t.name}</h3>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-5">
-                  <span>⏱ {t.dur}</span>
-                  <span>📍 {t.dist} from Hyd</span>
+                  {t.dur && <span>⏱ {t.dur}</span>}
+                  {t.dist && <span>📍 {t.dist}</span>}
                 </div>
                 <Link
                   to="/booking"

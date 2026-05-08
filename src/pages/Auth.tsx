@@ -17,7 +17,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate("/booking", { replace: true });
+    if (!loading && user) navigate("/", { replace: true });
   }, [user, loading, navigate]);
 
   useEffect(() => {
