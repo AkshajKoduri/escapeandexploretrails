@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2, Plus, Trash2, Upload, ArrowLeft, LogOut } from "lucide-react";
@@ -7,18 +7,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
 
-const treks = [
-  "Ahobilam Trek",
-  "Bhongir Fort Sunrise",
-  "Ananthagiri Night Camp",
-  "Koilkonda Fort Trail",
-  "Ethipothala Falls Hike",
-  "Medak Fort Weekend",
-];
-
 const aadhaarRegex = /^\d{12}$/;
 
 type Member = { name: string; aadhaar: string; file: File | null };
+type TrekOpt = {
+  id: string;
+  name: string;
+  trek_date: string;
+  trek_time: string | null;
+  meeting_point: string | null;
+  instructions: string | null;
+  price: number;
+  destination: string | null;
+  seats_remaining: number;
+  max_seats: number;
+};
 
 const primarySchema = z.object({
   name: z.string().trim().min(2, "Name too short").max(80),
@@ -27,14 +30,18 @@ const primarySchema = z.object({
   phone: z.string().trim().regex(/^[+]?[0-9\s-]{10,15}$/, "Enter a valid phone"),
   email: z.string().trim().email("Invalid email").optional().or(z.literal("")),
   aadhaar: z.string().regex(aadhaarRegex, "Aadhaar must be 12 digits"),
-  trek: z.string().min(1, "Choose a trek"),
+  trekId: z.string().min(1, "Choose a trek"),
 });
 
 export default function BookingPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  const [trekOptions, setTrekOptions] = useState<TrekOpt[]>([]);
+  const [trekId, setTrekId] = useState<string>(params.get("trek") ?? "");
 
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
@@ -43,14 +50,57 @@ export default function BookingPage() {
   const [email, setEmail] = useState("");
   const [aadhaar, setAadhaar] = useState("");
   const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
-  const [trek, setTrek] = useState("");
   const [isGroup, setIsGroup] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+
+  const selectedTrek = useMemo(() => trekOptions.find((t) => t.id === trekId), [trekOptions, trekId]);
+  const seatsNeeded = 1 + (isGroup ? members.length : 0);
 
   useEffect(() => {
     document.title = "Book a Trek — E2 Trails";
     if (!loading && !user) navigate("/auth", { replace: true });
   }, [user, loading, navigate]);
+
+  const loadTreks = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const [{ data: tdata }, { data: stats }] = await Promise.all([
+      supabase
+        .from("upcoming_treks")
+        .select("*")
+        .eq("is_archived", false)
+        .gte("trek_date", today)
+        .order("trek_date", { ascending: true }),
+      supabase.rpc("get_trek_seat_stats"),
+    ]);
+    const sm = new Map<string, any>();
+    (stats ?? []).forEach((s: any) => sm.set(s.trek_id, s));
+    setTrekOptions(
+      (tdata ?? []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        trek_date: t.trek_date,
+        trek_time: t.trek_time,
+        meeting_point: t.meeting_point,
+        instructions: t.instructions,
+        price: Number(t.price ?? 0),
+        destination: t.destination,
+        seats_remaining: sm.get(t.id)?.seats_remaining ?? t.max_seats ?? 0,
+        max_seats: sm.get(t.id)?.max_seats ?? t.max_seats ?? 0,
+      })),
+    );
+  };
+
+  useEffect(() => {
+    loadTreks();
+    const ch = supabase
+      .channel("booking-treks")
+      .on("postgres_changes", { event: "*", schema: "public", table: "upcoming_treks" }, loadTreks)
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, loadTreks)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, []);
 
   useEffect(() => {
     if (user?.email) setEmail(user.email);
@@ -89,15 +139,14 @@ export default function BookingPage() {
     e.preventDefault();
     if (!user) return;
 
-    const parsed = primarySchema.safeParse({ name, age, gender, phone, email, aadhaar, trek });
+    const parsed = primarySchema.safeParse({ name, age, gender, phone, email, aadhaar, trekId });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
     }
-    if (!aadhaarFile) {
-      toast.error("Please upload your Aadhaar photo");
-      return;
-    }
+    if (!aadhaarFile) return toast.error("Please upload your Aadhaar photo");
+    if (!selectedTrek) return toast.error("Selected trek is no longer available");
+
     if (isGroup) {
       for (const [i, m] of members.entries()) {
         if (!m.name.trim() || !aadhaarRegex.test(m.aadhaar) || !m.file) {
@@ -105,6 +154,16 @@ export default function BookingPage() {
           return;
         }
       }
+    }
+
+    // Re-check seat availability live
+    const { data: stats } = await supabase.rpc("get_trek_seat_stats");
+    const live = (stats ?? []).find((s: any) => s.trek_id === trekId);
+    const remaining = live?.seats_remaining ?? selectedTrek.seats_remaining;
+    if (remaining < seatsNeeded) {
+      toast.error(`Only ${remaining} seat(s) left for this trek`);
+      await loadTreks();
+      return;
     }
 
     setSubmitting(true);
@@ -121,7 +180,8 @@ export default function BookingPage() {
         .from("bookings")
         .insert({
           user_id: user.id,
-          trek_name: parsed.data.trek,
+          trek_id: trekId,
+          trek_name: selectedTrek.name,
           primary_name: parsed.data.name,
           primary_age: parsed.data.age,
           primary_gender: parsed.data.gender,
@@ -130,6 +190,8 @@ export default function BookingPage() {
           primary_aadhaar: parsed.data.aadhaar,
           primary_aadhaar_photo: primaryPhotoPath,
           is_group: isGroup && members.length > 0,
+          seats_booked: seatsNeeded,
+          status: "confirmed",
         })
         .select()
         .single();
@@ -146,7 +208,6 @@ export default function BookingPage() {
         if (mErr) throw mErr;
       }
 
-      // Update profile with latest details
       await supabase.from("profiles").update({
         full_name: parsed.data.name,
         phone: parsed.data.phone,
@@ -158,7 +219,7 @@ export default function BookingPage() {
       }).eq("id", user.id);
 
       setDone(true);
-      toast.success("Booking confirmed! Check your email for details.");
+      toast.success("Booking confirmed!");
     } catch (err: any) {
       toast.error(err.message ?? "Booking failed");
     } finally {
@@ -207,7 +268,8 @@ export default function BookingPage() {
             </div>
             <h2 className="font-heading font-bold text-2xl text-primary">You're on the trail! 🥾</h2>
             <p className="mt-4 text-muted-foreground">
-              Your booking for <span className="font-semibold text-accent">{trek}</span> is confirmed. A confirmation email is on its way.
+              Your booking for <span className="font-semibold text-accent">{selectedTrek?.name}</span> is confirmed.
+              Our team will reach you on <span className="font-semibold">{phone}</span>.
             </p>
             <button
               onClick={() => { setDone(false); setMembers([]); setIsGroup(false); }}
@@ -219,6 +281,47 @@ export default function BookingPage() {
         ) : (
           <form onSubmit={onSubmit} className="bg-card rounded-2xl shadow-trail p-6 md:p-10 border border-primary/10 space-y-6">
             <div>
+              <h2 className="font-heading font-bold text-xl text-primary mb-1">Choose a Trek</h2>
+              {trekOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground mb-5">No upcoming treks are open right now. Please check back soon.</p>
+              ) : (
+                <Field label="Select Trek *">
+                  <select required value={trekId} onChange={(e) => setTrekId(e.target.value)} className={inputCls}>
+                    <option value="">Choose your adventure...</option>
+                    {trekOptions.map((t) => (
+                      <option key={t.id} value={t.id} disabled={t.seats_remaining <= 0}>
+                        {t.name} — {new Date(t.trek_date).toLocaleDateString()} {t.seats_remaining <= 0 ? "(FULL)" : `(${t.seats_remaining} left)`}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+
+              {selectedTrek && (
+                <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm space-y-1.5">
+                  <div className="flex justify-between flex-wrap gap-2">
+                    <span className="font-semibold text-primary">{selectedTrek.name}</span>
+                    {selectedTrek.price > 0 && (
+                      <span className="font-bold text-accent">₹{selectedTrek.price.toLocaleString("en-IN")} / person</span>
+                    )}
+                  </div>
+                  <div className="text-muted-foreground">
+                    📅 {new Date(selectedTrek.trek_date).toLocaleDateString()}
+                    {selectedTrek.trek_time ? ` • 🕒 ${selectedTrek.trek_time}` : ""}
+                    {selectedTrek.destination ? ` • 📍 ${selectedTrek.destination}` : ""}
+                  </div>
+                  <div className="text-muted-foreground">🪑 {selectedTrek.seats_remaining} of {selectedTrek.max_seats} seats remaining</div>
+                  {selectedTrek.meeting_point && (
+                    <div className="text-muted-foreground"><strong className="text-primary">Meeting point:</strong> {selectedTrek.meeting_point}</div>
+                  )}
+                  {selectedTrek.instructions && (
+                    <div className="text-muted-foreground"><strong className="text-primary">Instructions:</strong> {selectedTrek.instructions}</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-border pt-6">
               <h2 className="font-heading font-bold text-xl text-primary mb-1">Your Details</h2>
               <p className="text-sm text-muted-foreground mb-5">As the account holder, please share your full information.</p>
 
@@ -250,12 +353,6 @@ export default function BookingPage() {
                 </Field>
                 <Field label="Aadhaar Photo *">
                   <FileInput file={aadhaarFile} onChange={setAadhaarFile} />
-                </Field>
-                <Field label="Select Trek *">
-                  <select required value={trek} onChange={(e) => setTrek(e.target.value)} className={inputCls}>
-                    <option value="">Choose your adventure...</option>
-                    {treks.map((t) => <option key={t}>{t}</option>)}
-                  </select>
                 </Field>
               </div>
             </div>
@@ -289,10 +386,17 @@ export default function BookingPage() {
               </div>
             )}
 
+            {selectedTrek && selectedTrek.price > 0 && (
+              <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total ({seatsNeeded} {seatsNeeded === 1 ? "person" : "people"})</span>
+                <span className="font-heading font-bold text-2xl text-primary">₹{(selectedTrek.price * seatsNeeded).toLocaleString("en-IN")}</span>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={submitting}
-              className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-orange text-accent-foreground font-semibold tracking-wide shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-60"
+              disabled={submitting || !selectedTrek || (selectedTrek?.seats_remaining ?? 0) < seatsNeeded}
+              className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-orange text-accent-foreground font-semibold tracking-wide shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? "Submitting..." : "Confirm Booking"}
             </button>
