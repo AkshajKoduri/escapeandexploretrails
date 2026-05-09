@@ -43,6 +43,29 @@ export default function About() {
           </div>
         </div>
       </div>
+
+      <div className="container mt-20 md:mt-28">
+        <div className="reveal max-w-4xl mx-auto bg-card border border-border rounded-2xl shadow-card p-8 md:p-12">
+          <span className="font-script text-accent text-xl">— Meet our founder</span>
+          <h3 className="font-heading font-extrabold text-2xl md:text-4xl mt-2 leading-tight text-primary">
+            Ashok — Founder & Lead Trek Guide
+          </h3>
+          <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
+            Ashok is the heart and soul of E2 Trails. An experienced trek leader, he has guided countless safe and secure expeditions across Telangana and Andhra Pradesh — earning the trust of trekkers from all walks of life.
+          </p>
+          <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed">
+            He once built a successful career in the software industry, but his unwavering love for the outdoors pulled him toward the trails. Choosing passion over a desk job, Ashok resigned to dedicate himself fully to trekking and to mentoring young adventurers — sharing not just routes, but a way of life rooted in nature, safety, and camaraderie.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            {["🧭 Lead Guide", "🛡️ Safety Certified", "💚 Mentor to Young Trekkers"].map((p) => (
+              <span key={p} className="px-5 py-2.5 rounded-full bg-accent/10 text-accent-foreground font-semibold text-sm border border-accent/20">
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
