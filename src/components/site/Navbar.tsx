@@ -6,11 +6,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 const links = [
-  { label: "Home", href: "#home" },
-  { label: "Upcoming Treks", href: "#treks" },
-  { label: "About Us", href: "#about" },
-  { label: "Gallery", href: "#gallery" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", href: "/#home", external: false },
+  { label: "Upcoming Treks", href: "/#treks", external: false },
+  { label: "About Us", href: "/#about", external: false },
+  { label: "Past Trips", href: "/past-trips", external: true },
+  { label: "Gallery", href: "/#gallery", external: false },
+  { label: "Contact", href: "/#contact", external: false },
 ];
 
 export default function Navbar() {
@@ -49,13 +50,23 @@ export default function Navbar() {
 
         <nav className="hidden lg:flex items-center gap-8">
           {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium tracking-wide transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-accent after:transition-all hover:after:w-full"
-            >
-              {l.label}
-            </a>
+            l.external ? (
+              <Link
+                key={l.href}
+                to={l.href}
+                className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium tracking-wide transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-accent after:transition-all hover:after:w-full"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                key={l.href}
+                href={l.href}
+                className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium tracking-wide transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-accent after:transition-all hover:after:w-full"
+              >
+                {l.label}
+              </a>
+            )
           ))}
         </nav>
 
@@ -107,14 +118,25 @@ export default function Navbar() {
             </div>
             <nav className="flex flex-col gap-5">
               {links.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="text-lg font-medium hover:text-accent transition-colors"
-                >
-                  {l.label}
-                </a>
+                l.external ? (
+                  <Link
+                    key={l.href}
+                    to={l.href}
+                    onClick={() => setOpen(false)}
+                    className="text-lg font-medium hover:text-accent transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setOpen(false)}
+                    className="text-lg font-medium hover:text-accent transition-colors"
+                  >
+                    {l.label}
+                  </a>
+                )
               ))}
               <Link
                 to="/booking"
