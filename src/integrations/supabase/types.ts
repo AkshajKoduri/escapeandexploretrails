@@ -61,7 +61,9 @@ export type Database = {
           primary_gender: string
           primary_name: string
           primary_phone: string
+          seats_booked: number
           status: string
+          trek_id: string | null
           trek_name: string
           user_id: string
         }
@@ -76,7 +78,9 @@ export type Database = {
           primary_gender: string
           primary_name: string
           primary_phone: string
+          seats_booked?: number
           status?: string
+          trek_id?: string | null
           trek_name: string
           user_id: string
         }
@@ -91,7 +95,9 @@ export type Database = {
           primary_gender?: string
           primary_name?: string
           primary_phone?: string
+          seats_booked?: number
           status?: string
+          trek_id?: string | null
           trek_name?: string
           user_id?: string
         }
@@ -133,45 +139,108 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_album_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+          trek_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          trek_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          trek_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_album_images_trek_id_fkey"
+            columns: ["trek_id"]
+            isOneToOne: false
+            referencedRelation: "trek_seat_stats"
+            referencedColumns: ["trek_id"]
+          },
+          {
+            foreignKeyName: "trip_album_images_trek_id_fkey"
+            columns: ["trek_id"]
+            isOneToOne: false
+            referencedRelation: "upcoming_treks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       upcoming_treks: {
         Row: {
           created_at: string
           created_by: string | null
           description: string | null
+          destination: string | null
           difficulty: Database["public"]["Enums"]["trek_difficulty"]
           distance: string | null
           duration: string | null
           id: string
           image_url: string | null
+          instructions: string | null
+          is_archived: boolean
           location: string | null
+          max_seats: number
+          meeting_point: string | null
           name: string
+          price: number
+          status_override: string | null
           trek_date: string
+          trek_time: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          destination?: string | null
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]
           distance?: string | null
           duration?: string | null
           id?: string
           image_url?: string | null
+          instructions?: string | null
+          is_archived?: boolean
           location?: string | null
+          max_seats?: number
+          meeting_point?: string | null
           name: string
+          price?: number
+          status_override?: string | null
           trek_date: string
+          trek_time?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          destination?: string | null
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]
           distance?: string | null
           duration?: string | null
           id?: string
           image_url?: string | null
+          instructions?: string | null
+          is_archived?: boolean
           location?: string | null
+          max_seats?: number
+          meeting_point?: string | null
           name?: string
+          price?: number
+          status_override?: string | null
           trek_date?: string
+          trek_time?: string | null
         }
         Relationships: []
       }
@@ -198,7 +267,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      trek_seat_stats: {
+        Row: {
+          max_seats: number | null
+          seats_remaining: number | null
+          seats_taken: number | null
+          trek_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
