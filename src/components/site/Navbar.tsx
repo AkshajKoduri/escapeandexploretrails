@@ -50,13 +50,23 @@ export default function Navbar() {
 
         <nav className="hidden lg:flex items-center gap-8">
           {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium tracking-wide transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-accent after:transition-all hover:after:w-full"
-            >
-              {l.label}
-            </a>
+            l.external ? (
+              <Link
+                key={l.href}
+                to={l.href}
+                className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium tracking-wide transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-accent after:transition-all hover:after:w-full"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                key={l.href}
+                href={l.href}
+                className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium tracking-wide transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-accent after:transition-all hover:after:w-full"
+              >
+                {l.label}
+              </a>
+            )
           ))}
         </nav>
 
