@@ -166,13 +166,6 @@ export type Database = {
             foreignKeyName: "trip_album_images_trek_id_fkey"
             columns: ["trek_id"]
             isOneToOne: false
-            referencedRelation: "trek_seat_stats"
-            referencedColumns: ["trek_id"]
-          },
-          {
-            foreignKeyName: "trip_album_images_trek_id_fkey"
-            columns: ["trek_id"]
-            isOneToOne: false
             referencedRelation: "upcoming_treks"
             referencedColumns: ["id"]
           },
@@ -267,17 +260,18 @@ export type Database = {
       }
     }
     Views: {
-      trek_seat_stats: {
-        Row: {
-          max_seats: number | null
-          seats_remaining: number | null
-          seats_taken: number | null
-          trek_id: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_trek_seat_stats: {
+        Args: never
+        Returns: {
+          max_seats: number
+          seats_remaining: number
+          seats_taken: number
+          trek_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
