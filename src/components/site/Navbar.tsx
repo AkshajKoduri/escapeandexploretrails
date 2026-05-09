@@ -118,14 +118,25 @@ export default function Navbar() {
             </div>
             <nav className="flex flex-col gap-5">
               {links.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="text-lg font-medium hover:text-accent transition-colors"
-                >
-                  {l.label}
-                </a>
+                l.external ? (
+                  <Link
+                    key={l.href}
+                    to={l.href}
+                    onClick={() => setOpen(false)}
+                    className="text-lg font-medium hover:text-accent transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setOpen(false)}
+                    className="text-lg font-medium hover:text-accent transition-colors"
+                  >
+                    {l.label}
+                  </a>
+                )
               ))}
               <Link
                 to="/booking"
