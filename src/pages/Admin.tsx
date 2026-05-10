@@ -114,30 +114,40 @@ export default function Admin() {
       });
 
       const allPeople: any[] = [];
-      bookings.forEach((b) => {
+      bookings.forEach((b, idx) => {
+        const groupMembers = membersByBooking.get(b.id) ?? [];
+        const isGroup = b.is_group || groupMembers.length > 0;
         allPeople.push({
           "Booking ID": b.id, Trek: b.trek_name,
           "Booking Date": new Date(b.created_at).toLocaleString(),
-          Status: b.status, Role: "Primary",
-          "Full Name": b.primary_name, Age: b.primary_age, Gender: b.primary_gender,
+          Status: b.status,
+          Role: isGroup ? "⭐ GROUP LEADER (Booked By)" : "Primary",
+          "Full Name": isGroup ? `⭐ ${b.primary_name}` : b.primary_name,
+          Age: b.primary_age, Gender: b.primary_gender,
           Phone: b.primary_phone, Email: b.primary_email ?? "",
           "Aadhaar Number": b.primary_aadhaar, "Aadhaar Photo Path": b.primary_aadhaar_photo,
-          "Group Booking": b.is_group ? "Yes" : "No", "Seats Booked": b.seats_booked ?? 1,
+          "Group Booking": isGroup ? "Yes" : "No", "Seats Booked": b.seats_booked ?? 1,
         });
-        (membersByBooking.get(b.id) ?? []).forEach((m) => {
+        groupMembers.forEach((m, i) => {
           allPeople.push({
             "Booking ID": b.id, Trek: b.trek_name,
             "Booking Date": new Date(b.created_at).toLocaleString(),
-            Status: b.status, Role: "Group Member",
-            "Full Name": m.full_name, Age: "", Gender: "", Phone: "", Email: "",
+            Status: b.status, Role: `   Member ${i + 1} (under ${b.primary_name})`,
+            "Full Name": `    ↳ ${m.full_name}`,
+            Age: "", Gender: "", Phone: "", Email: "",
             "Aadhaar Number": m.aadhaar_number, "Aadhaar Photo Path": m.aadhaar_photo,
             "Group Booking": "Yes", "Seats Booked": "",
           });
         });
+        if (idx < bookings.length - 1) {
+          allPeople.push({ "Booking ID": "", Trek: "", "Booking Date": "", Status: "", Role: "", "Full Name": "", Age: "", Gender: "", Phone: "", Email: "", "Aadhaar Number": "", "Aadhaar Photo Path": "", "Group Booking": "", "Seats Booked": "" });
+        }
       });
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allPeople), "All Trekkers");
+      const ws = XLSX.utils.json_to_sheet(allPeople);
+      ws["!cols"] = [{ wch: 38 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 32 }, { wch: 28 }, { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, ws, "All Trekkers");
       const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       XLSX.writeFile(wb, `e2trails-bookings-${ts}.xlsx`);
       toast.success("Excel file downloaded");
