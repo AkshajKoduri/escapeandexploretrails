@@ -107,8 +107,7 @@ export default function Treks() {
             {treks.map((t, i) => (
               <article
                 key={t.id}
-                className="reveal group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
-                style={{ transitionDelay: `${(i % 3) * 80}ms` }}
+                className="group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
               >
                 <img
                   src={t.img}
