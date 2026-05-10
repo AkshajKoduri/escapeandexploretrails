@@ -73,7 +73,7 @@ export default function About() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               {["🧭 Lead Guide", "🛡️ Safety Certified", "💚 Mentor to Young Trekkers"].map((p) => (
-                <span key={p} className="px-5 py-2.5 rounded-full bg-accent/10 text-accent-foreground font-semibold text-sm border border-accent/20">
+                <span key={p} className="px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold text-sm border border-accent">
                   {p}
                 </span>
               ))}
