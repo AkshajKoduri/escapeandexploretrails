@@ -275,7 +275,7 @@ export default function BookingPage() {
               onClick={() => { setDone(false); setMembers([]); setIsGroup(false); }}
               className="mt-8 px-7 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-secondary transition"
             >
-              Book Another Trek
+              Add a Person
             </button>
           </div>
         ) : (
