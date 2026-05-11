@@ -21,6 +21,8 @@ type TrekOpt = {
   destination: string | null;
   seats_remaining: number;
   max_seats: number;
+  itinerary_url: string | null;
+  itinerary_file_path: string | null;
 };
 
 const primarySchema = z.object({
