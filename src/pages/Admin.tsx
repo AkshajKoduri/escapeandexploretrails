@@ -328,9 +328,23 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
 function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { initial: Trek; isEdit: boolean; userId: string; currentSeatsTaken: number; onDone: () => void }) {
   const [f, setF] = useState<Trek>(initial);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [itineraryFile, setItineraryFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
   const set = (patch: Partial<Trek>) => setF((p) => ({ ...p, ...patch }));
+
+  const isValidUrl = (v: string) => {
+    try { new URL(v); return true; } catch { return false; }
+  };
+
+  const removeItineraryFile = async () => {
+    if (!f.itinerary_file_path) return;
+    if (!confirm("Remove the uploaded itinerary PDF?")) return;
+    await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
+    if (isEdit) await supabase.from("upcoming_treks").update({ itinerary_file_path: null }).eq("id", f.id);
+    set({ itinerary_file_path: null });
+    toast.success("Itinerary removed");
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -338,6 +352,13 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
     if (f.max_seats < currentSeatsTaken) {
       return toast.error(`Can't set max seats below current bookings (${currentSeatsTaken})`);
     }
+    if (f.album_url && !isValidUrl(f.album_url)) return toast.error("Album link must be a valid URL");
+    if (f.itinerary_url && !isValidUrl(f.itinerary_url)) return toast.error("Itinerary link must be a valid URL");
+    if (itineraryFile) {
+      if (itineraryFile.type !== "application/pdf") return toast.error("Itinerary must be a PDF file");
+      if (itineraryFile.size > 10 * 1024 * 1024) return toast.error("Itinerary PDF must be under 10MB");
+    }
+
     setBusy(true);
     try {
       let imageUrl = f.image_url;
@@ -347,6 +368,19 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         const { error: upErr } = await supabase.storage.from("trek-images").upload(path, imageFile);
         if (upErr) throw upErr;
         imageUrl = supabase.storage.from("trek-images").getPublicUrl(path).data.publicUrl;
+      }
+
+      let itineraryPath = f.itinerary_file_path;
+      if (itineraryFile) {
+        const path = `${userId}/${crypto.randomUUID()}.pdf`;
+        const { error: upErr } = await supabase.storage.from("itineraries").upload(path, itineraryFile, {
+          contentType: "application/pdf", upsert: false,
+        });
+        if (upErr) throw upErr;
+        if (f.itinerary_file_path) {
+          await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
+        }
+        itineraryPath = path;
       }
 
       const payload: any = {
@@ -365,6 +399,9 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         instructions: f.instructions?.trim() || null,
         status_override: f.status_override || null,
         image_url: imageUrl ?? null,
+        album_url: f.album_url?.trim() || null,
+        itinerary_url: f.itinerary_url?.trim() || null,
+        itinerary_file_path: itineraryPath || null,
       };
 
       if (isEdit) {
@@ -414,6 +451,35 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
       <FF label="Meeting point" full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" /></FF>
       <FF label="Description" full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} /></FF>
       <FF label="Special instructions" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
+
+      <FF label="Photo album link (Google Drive / any URL — shown on Past Trips)" full>
+        <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
+      </FF>
+
+      <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+          <FileText className="w-4 h-4" /> Itinerary (shown on the booking page)
+        </div>
+        <FF label="Itinerary link (optional)" full>
+          <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
+        </FF>
+        <FF label="Or upload an itinerary PDF (max 10MB)" full>
+          <input
+            type="file" accept="application/pdf"
+            onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent file:text-accent-foreground file:font-semibold hover:file:bg-gold"
+          />
+          {f.itinerary_file_path && !itineraryFile && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground truncate flex-1">📄 Current: {f.itinerary_file_path.split("/").pop()}</span>
+              <button type="button" onClick={removeItineraryFile} className="px-2 py-1 rounded-md text-destructive hover:bg-destructive/10">
+                Remove
+              </button>
+            </div>
+          )}
+        </FF>
+      </div>
+
       <FF label="Cover image" full>
         <input
           type="file" accept="image/*"
