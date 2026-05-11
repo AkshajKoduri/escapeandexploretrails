@@ -88,6 +88,8 @@ export default function BookingPage() {
         destination: t.destination,
         seats_remaining: sm.get(t.id)?.seats_remaining ?? t.max_seats ?? 0,
         max_seats: sm.get(t.id)?.max_seats ?? t.max_seats ?? 0,
+        itinerary_url: t.itinerary_url ?? null,
+        itinerary_file_path: t.itinerary_file_path ?? null,
       })),
     );
   };
