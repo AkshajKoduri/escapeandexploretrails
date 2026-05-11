@@ -4,9 +4,9 @@ import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, Image as ImageIcon, X } from "lucide-react";
+import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, Link as LinkIcon, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type Trek = {
   id: string;
@@ -26,6 +26,9 @@ type Trek = {
   instructions: string | null;
   status_override: string | null;
   is_archived: boolean;
+  album_url: string | null;
+  itinerary_url: string | null;
+  itinerary_file_path: string | null;
 };
 
 type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
@@ -36,6 +39,7 @@ const empty: Partial<Trek> = {
   name: "", destination: "", trek_date: "", trek_time: "", difficulty: "Easy",
   duration: "", distance: "", description: "", price: 0, max_seats: 30,
   meeting_point: "", instructions: "", location: "",
+  album_url: "", itinerary_url: "", itinerary_file_path: "",
 };
 
 function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived" {
@@ -324,9 +328,23 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
 function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { initial: Trek; isEdit: boolean; userId: string; currentSeatsTaken: number; onDone: () => void }) {
   const [f, setF] = useState<Trek>(initial);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [itineraryFile, setItineraryFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
   const set = (patch: Partial<Trek>) => setF((p) => ({ ...p, ...patch }));
+
+  const isValidUrl = (v: string) => {
+    try { new URL(v); return true; } catch { return false; }
+  };
+
+  const removeItineraryFile = async () => {
+    if (!f.itinerary_file_path) return;
+    if (!confirm("Remove the uploaded itinerary PDF?")) return;
+    await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
+    if (isEdit) await supabase.from("upcoming_treks").update({ itinerary_file_path: null }).eq("id", f.id);
+    set({ itinerary_file_path: null });
+    toast.success("Itinerary removed");
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,6 +352,13 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
     if (f.max_seats < currentSeatsTaken) {
       return toast.error(`Can't set max seats below current bookings (${currentSeatsTaken})`);
     }
+    if (f.album_url && !isValidUrl(f.album_url)) return toast.error("Album link must be a valid URL");
+    if (f.itinerary_url && !isValidUrl(f.itinerary_url)) return toast.error("Itinerary link must be a valid URL");
+    if (itineraryFile) {
+      if (itineraryFile.type !== "application/pdf") return toast.error("Itinerary must be a PDF file");
+      if (itineraryFile.size > 10 * 1024 * 1024) return toast.error("Itinerary PDF must be under 10MB");
+    }
+
     setBusy(true);
     try {
       let imageUrl = f.image_url;
@@ -343,6 +368,19 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         const { error: upErr } = await supabase.storage.from("trek-images").upload(path, imageFile);
         if (upErr) throw upErr;
         imageUrl = supabase.storage.from("trek-images").getPublicUrl(path).data.publicUrl;
+      }
+
+      let itineraryPath = f.itinerary_file_path;
+      if (itineraryFile) {
+        const path = `${userId}/${crypto.randomUUID()}.pdf`;
+        const { error: upErr } = await supabase.storage.from("itineraries").upload(path, itineraryFile, {
+          contentType: "application/pdf", upsert: false,
+        });
+        if (upErr) throw upErr;
+        if (f.itinerary_file_path) {
+          await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
+        }
+        itineraryPath = path;
       }
 
       const payload: any = {
@@ -361,6 +399,9 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         instructions: f.instructions?.trim() || null,
         status_override: f.status_override || null,
         image_url: imageUrl ?? null,
+        album_url: f.album_url?.trim() || null,
+        itinerary_url: f.itinerary_url?.trim() || null,
+        itinerary_file_path: itineraryPath || null,
       };
 
       if (isEdit) {
@@ -410,6 +451,35 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
       <FF label="Meeting point" full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" /></FF>
       <FF label="Description" full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} /></FF>
       <FF label="Special instructions" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
+
+      <FF label="Photo album link (Google Drive / any URL — shown on Past Trips)" full>
+        <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
+      </FF>
+
+      <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+          <FileText className="w-4 h-4" /> Itinerary (shown on the booking page)
+        </div>
+        <FF label="Itinerary link (optional)" full>
+          <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
+        </FF>
+        <FF label="Or upload an itinerary PDF (max 10MB)" full>
+          <input
+            type="file" accept="application/pdf"
+            onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent file:text-accent-foreground file:font-semibold hover:file:bg-gold"
+          />
+          {f.itinerary_file_path && !itineraryFile && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground truncate flex-1">📄 Current: {f.itinerary_file_path.split("/").pop()}</span>
+              <button type="button" onClick={removeItineraryFile} className="px-2 py-1 rounded-md text-destructive hover:bg-destructive/10">
+                Remove
+              </button>
+            </div>
+          )}
+        </FF>
+      </div>
+
       <FF label="Cover image" full>
         <input
           type="file" accept="image/*"
@@ -539,121 +609,83 @@ function BookingsTab({ bookings, members, treks, stats }: { bookings: Booking[];
 /* ===================== Past Trips Tab ===================== */
 
 function PastTripsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) {
-  const [albumOf, setAlbumOf] = useState<Trek | null>(null);
-
-  const unarchive = async (id: string) => {
-    const { error } = await supabase.from("upcoming_treks").update({ is_archived: false }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Restored to active treks");
-    reload();
-  };
-
   return (
     <div className="space-y-4">
       <h2 className="font-heading font-bold text-lg text-primary">Past trips ({treks.length})</h2>
-      <p className="text-sm text-muted-foreground">Archived treks live here. Customers can browse the photo albums on the Past Trips page.</p>
+      <p className="text-sm text-muted-foreground">Paste a Google Drive (or any) link to the photo album. Customers will see a "View Photo Album" button on the Past Trips page.</p>
       {treks.length === 0 ? (
         <p className="text-sm text-muted-foreground">No archived trips yet. Use the archive button on a trip to move it here.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {treks.map((t) => (
-            <div key={t.id} className="rounded-xl border border-border bg-background overflow-hidden">
-              {t.image_url ? (
-                <img src={t.image_url} alt={t.name} className="w-full h-40 object-cover" />
-              ) : (
-                <div className="w-full h-40 bg-muted grid place-items-center text-muted-foreground"><Mountain className="w-8 h-8" /></div>
-              )}
-              <div className="p-4 space-y-2">
-                <div className="font-semibold text-foreground">{t.name}</div>
-                <div className="text-xs text-muted-foreground">{new Date(t.trek_date).toLocaleDateString()}</div>
-                <div className="flex gap-2 pt-2">
-                  <button onClick={() => setAlbumOf(t)} className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-secondary">
-                    <ImageIcon className="w-3 h-3" /> Manage album
-                  </button>
-                  <button onClick={() => unarchive(t.id)} className="px-3 py-2 rounded-full border border-border text-xs hover:bg-muted">
-                    Restore
-                  </button>
-                </div>
-              </div>
-            </div>
+            <PastTripCard key={t.id} trek={t} reload={reload} />
           ))}
         </div>
-      )}
-
-      {albumOf && (
-        <Dialog open={!!albumOf} onOpenChange={(o) => !o && setAlbumOf(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Album — {albumOf.name}</DialogTitle>
-            </DialogHeader>
-            <AlbumManager trek={albumOf} />
-            <p className="text-xs text-muted-foreground mt-3">⭐ Customer ratings — coming soon.</p>
-          </DialogContent>
-        </Dialog>
       )}
     </div>
   );
 }
 
-function AlbumManager({ trek }: { trek: Trek }) {
-  const [images, setImages] = useState<any[]>([]);
+function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
+  const [albumUrl, setAlbumUrl] = useState(trek.album_url ?? "");
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    const { data } = await supabase.from("trip_album_images").select("*").eq("trek_id", trek.id).order("created_at");
-    setImages(data ?? []);
-  };
-  useEffect(() => { load(); }, [trek.id]);
-
-  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-    setBusy(true);
-    try {
-      for (const f of files) {
-        const ext = f.name.split(".").pop();
-        const path = `albums/${trek.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("trek-images").upload(path, f);
-        if (upErr) throw upErr;
-        const url = supabase.storage.from("trek-images").getPublicUrl(path).data.publicUrl;
-        const { error: insErr } = await supabase.from("trip_album_images").insert({ trek_id: trek.id, image_url: url });
-        if (insErr) throw insErr;
-      }
-      toast.success(`${files.length} image(s) added`);
-      await load();
-      e.target.value = "";
-    } catch (err: any) {
-      toast.error(err.message ?? "Upload failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const remove = async (id: string) => {
-    if (!confirm("Remove this image?")) return;
-    const { error } = await supabase.from("trip_album_images").delete().eq("id", id);
+  const unarchive = async () => {
+    const { error } = await supabase.from("upcoming_treks").update({ is_archived: false }).eq("id", trek.id);
     if (error) return toast.error(error.message);
-    await load();
+    toast.success("Restored to active treks");
+    reload();
+  };
+
+  const saveAlbum = async () => {
+    const v = albumUrl.trim();
+    if (v) {
+      try { new URL(v); } catch { return toast.error("Enter a valid URL"); }
+    }
+    setBusy(true);
+    const { error } = await supabase.from("upcoming_treks").update({ album_url: v || null }).eq("id", trek.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Album link saved");
+    reload();
   };
 
   return (
-    <div className="space-y-3">
-      <input type="file" accept="image/*" multiple onChange={onUpload} disabled={busy}
-        className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent file:text-accent-foreground file:font-semibold hover:file:bg-gold" />
-      {images.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No images in this album yet.</p>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {images.map((img) => (
-            <div key={img.id} className="relative group">
-              <img src={img.image_url} alt="" className="w-full h-32 object-cover rounded-lg" />
-              <button onClick={() => remove(img.id)} className="absolute top-1 right-1 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
+    <div className="rounded-xl border border-border bg-background overflow-hidden flex flex-col">
+      <div className="flex">
+        {trek.image_url ? (
+          <img src={trek.image_url} alt={trek.name} className="w-32 h-32 object-cover" />
+        ) : (
+          <div className="w-32 h-32 bg-muted grid place-items-center text-muted-foreground"><Mountain className="w-8 h-8" /></div>
+        )}
+        <div className="p-3 flex-1 min-w-0">
+          <div className="font-semibold text-foreground truncate">{trek.name}</div>
+          <div className="text-xs text-muted-foreground">{new Date(trek.trek_date).toLocaleDateString()}</div>
+          {trek.album_url && (
+            <a href={trek.album_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
+              <LinkIcon className="w-3 h-3" /> Open current album
+            </a>
+          )}
         </div>
-      )}
+      </div>
+      <div className="p-3 border-t border-border space-y-2">
+        <label className="block text-xs font-semibold text-muted-foreground">Photo album link (Google Drive / any URL)</label>
+        <input
+          type="url"
+          value={albumUrl}
+          onChange={(e) => setAlbumUrl(e.target.value)}
+          placeholder="https://drive.google.com/drive/folders/..."
+          className={inp}
+        />
+        <div className="flex gap-2">
+          <button onClick={saveAlbum} disabled={busy} className="flex-1 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-secondary disabled:opacity-60">
+            {busy ? "Saving…" : "Save album link"}
+          </button>
+          <button onClick={unarchive} className="px-3 py-2 rounded-full border border-border text-xs hover:bg-muted">
+            Restore
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

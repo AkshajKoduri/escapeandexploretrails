@@ -173,6 +173,7 @@ export type Database = {
       }
       upcoming_treks: {
         Row: {
+          album_url: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -184,6 +185,8 @@ export type Database = {
           image_url: string | null
           instructions: string | null
           is_archived: boolean
+          itinerary_file_path: string | null
+          itinerary_url: string | null
           location: string | null
           max_seats: number
           meeting_point: string | null
@@ -194,6 +197,7 @@ export type Database = {
           trek_time: string | null
         }
         Insert: {
+          album_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -205,6 +209,8 @@ export type Database = {
           image_url?: string | null
           instructions?: string | null
           is_archived?: boolean
+          itinerary_file_path?: string | null
+          itinerary_url?: string | null
           location?: string | null
           max_seats?: number
           meeting_point?: string | null
@@ -215,6 +221,7 @@ export type Database = {
           trek_time?: string | null
         }
         Update: {
+          album_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -226,6 +233,8 @@ export type Database = {
           image_url?: string | null
           instructions?: string | null
           is_archived?: boolean
+          itinerary_file_path?: string | null
+          itinerary_url?: string | null
           location?: string | null
           max_seats?: number
           meeting_point?: string | null

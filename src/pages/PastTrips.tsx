@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Mountain, X } from "lucide-react";
+import { ArrowLeft, Mountain, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
@@ -11,35 +11,21 @@ type PastTrek = {
   destination: string | null;
   description: string | null;
   image_url: string | null;
-  album: { id: string; image_url: string }[];
+  album_url: string | null;
 };
 
 export default function PastTrips() {
   const [trips, setTrips] = useState<PastTrek[]>([]);
-  const [lightbox, setLightbox] = useState<{ images: string[]; i: number } | null>(null);
 
   useEffect(() => {
     document.title = "Past Trips — E2 Trails";
     (async () => {
       const { data: treks } = await supabase
         .from("upcoming_treks")
-        .select("*")
+        .select("id,name,trek_date,destination,description,image_url,album_url")
         .eq("is_archived", true)
         .order("trek_date", { ascending: false });
-      const ids = (treks ?? []).map((t: any) => t.id);
-      const { data: imgs } = ids.length
-        ? await supabase.from("trip_album_images").select("*").in("trek_id", ids)
-        : { data: [] as any[] };
-      const byTrek = new Map<string, any[]>();
-      (imgs ?? []).forEach((i: any) => {
-        const a = byTrek.get(i.trek_id) ?? [];
-        a.push(i); byTrek.set(i.trek_id, a);
-      });
-      setTrips((treks ?? []).map((t: any) => ({
-        id: t.id, name: t.name, trek_date: t.trek_date,
-        destination: t.destination, description: t.description, image_url: t.image_url,
-        album: byTrek.get(t.id) ?? [],
-      })));
+      setTrips((treks ?? []) as PastTrek[]);
     })();
   }, []);
 
@@ -70,63 +56,42 @@ export default function PastTrips() {
           <p className="text-center text-muted-foreground">No past trips archived yet.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trips.map((t) => {
-              const cover = t.album[0]?.image_url ?? t.image_url;
-              const allImages = [
-                ...(t.image_url ? [t.image_url] : []),
-                ...t.album.map((a) => a.image_url),
-              ];
-              return (
-                <article key={t.id} className="group rounded-2xl overflow-hidden bg-card shadow-card border border-border hover:shadow-trail transition">
-                  <button
-                    onClick={() => allImages.length > 0 && setLightbox({ images: allImages, i: 0 })}
-                    className="block relative w-full h-56 bg-muted overflow-hidden"
-                  >
-                    {cover ? (
-                      <img src={cover} alt={t.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110" />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center text-muted-foreground"><Mountain className="w-10 h-10" /></div>
-                    )}
-                    {t.album.length > 0 && (
-                      <span className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold backdrop-blur">
-                        📷 {t.album.length} photos
-                      </span>
-                    )}
-                  </button>
-                  <div className="p-5 space-y-2">
-                    <h3 className="font-heading font-bold text-lg text-primary">{t.name}</h3>
-                    <div className="text-xs text-muted-foreground">
-                      📅 {new Date(t.trek_date).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}
-                      {t.destination ? ` • 📍 ${t.destination}` : ""}
-                    </div>
-                    {t.description && <p className="text-sm text-muted-foreground line-clamp-3">{t.description}</p>}
-                    <div className="pt-2 text-xs text-muted-foreground italic">⭐ Trekker ratings — coming soon</div>
+            {trips.map((t) => (
+              <article key={t.id} className="group rounded-2xl overflow-hidden bg-card shadow-card border border-border hover:shadow-trail transition flex flex-col">
+                <div className="relative w-full h-56 bg-muted overflow-hidden">
+                  {t.image_url ? (
+                    <img src={t.image_url} alt={t.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110" />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center text-muted-foreground"><Mountain className="w-10 h-10" /></div>
+                  )}
+                </div>
+                <div className="p-5 space-y-2 flex-1 flex flex-col">
+                  <h3 className="font-heading font-bold text-lg text-primary">{t.name}</h3>
+                  <div className="text-xs text-muted-foreground">
+                    📅 {new Date(t.trek_date).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}
+                    {t.destination ? ` • 📍 ${t.destination}` : ""}
                   </div>
-                </article>
-              );
-            })}
+                  {t.description && <p className="text-sm text-muted-foreground line-clamp-3">{t.description}</p>}
+                  <div className="pt-3 mt-auto">
+                    {t.album_url ? (
+                      <a
+                        href={t.album_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-gradient-orange text-accent-foreground text-sm font-semibold shadow-glow hover:scale-[1.02] transition"
+                      >
+                        <ExternalLink className="w-4 h-4" /> View Photo Album
+                      </a>
+                    ) : (
+                      <p className="text-xs text-center text-muted-foreground italic">📷 Album coming soon</p>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </section>
-
-      {lightbox && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <button className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20" onClick={() => setLightbox(null)}>
-            <X className="w-6 h-6" />
-          </button>
-          <img src={lightbox.images[lightbox.i]} alt="" className="max-w-full max-h-[80vh] rounded-lg" onClick={(e) => e.stopPropagation()} />
-          {lightbox.images.length > 1 && (
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 overflow-x-auto px-4">
-              {lightbox.images.map((src, i) => (
-                <button key={i} onClick={(e) => { e.stopPropagation(); setLightbox({ ...lightbox, i }); }}
-                  className={`w-16 h-16 rounded-md overflow-hidden border-2 ${i === lightbox.i ? "border-accent" : "border-transparent opacity-60"}`}>
-                  <img src={src} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </main>
   );
 }
