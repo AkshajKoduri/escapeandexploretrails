@@ -26,6 +26,9 @@ type Trek = {
   instructions: string | null;
   status_override: string | null;
   is_archived: boolean;
+  album_url: string | null;
+  itinerary_url: string | null;
+  itinerary_file_path: string | null;
 };
 
 type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
@@ -36,6 +39,7 @@ const empty: Partial<Trek> = {
   name: "", destination: "", trek_date: "", trek_time: "", difficulty: "Easy",
   duration: "", distance: "", description: "", price: 0, max_seats: 30,
   meeting_point: "", instructions: "", location: "",
+  album_url: "", itinerary_url: "", itinerary_file_path: "",
 };
 
 function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived" {
