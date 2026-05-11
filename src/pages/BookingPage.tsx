@@ -321,6 +321,30 @@ export default function BookingPage() {
                   {selectedTrek.instructions && (
                     <div className="text-muted-foreground"><strong className="text-primary">Instructions:</strong> {selectedTrek.instructions}</div>
                   )}
+                  {(selectedTrek.itinerary_url || selectedTrek.itinerary_file_path) && (
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      {selectedTrek.itinerary_url && (
+                        <a
+                          href={selectedTrek.itinerary_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold hover:opacity-90 transition"
+                        >
+                          📋 View Itinerary
+                        </a>
+                      )}
+                      {selectedTrek.itinerary_file_path && (
+                        <a
+                          href={supabase.storage.from("itineraries").getPublicUrl(selectedTrek.itinerary_file_path).data.publicUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition"
+                        >
+                          📄 Download Itinerary (PDF)
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
