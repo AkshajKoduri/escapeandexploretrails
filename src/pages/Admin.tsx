@@ -358,8 +358,8 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         instructions: f.instructions?.trim() || null,
         status_override: f.status_override || null,
         image_url: imageUrl ?? null,
-        album_url: f.album_url?.trim() || null,
-        itinerary_url: f.itinerary_url?.trim() || null,
+        album_url: normalizeUrl(f.album_url),
+        itinerary_url: normalizeUrl(f.itinerary_url),
         itinerary_file_path: itineraryPath || null,
       };
 
