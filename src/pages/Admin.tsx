@@ -26,6 +26,7 @@ type Trek = {
   instructions: string | null;
   status_override: string | null;
   is_archived: boolean;
+  is_draft: boolean;
   album_url: string | null;
   itinerary_url: string | null;
   itinerary_file_path: string | null;
@@ -42,8 +43,17 @@ const empty: Partial<Trek> = {
   album_url: "", itinerary_url: "", itinerary_file_path: "",
 };
 
-function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived" {
+function normalizeUrl(u: string | null | undefined): string | null {
+  if (!u) return null;
+  const v = u.trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://${v}`;
+}
+
+function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived" | "Draft" {
   if (t.is_archived) return "Archived";
+  if (t.is_draft) return "Draft";
   if (t.status_override) return t.status_override as any;
   const today = new Date().toISOString().slice(0, 10);
   if (t.trek_date > today) return "Upcoming";
@@ -56,6 +66,7 @@ const statusColor: Record<string, string> = {
   Ongoing: "bg-accent/15 text-accent",
   Completed: "bg-muted text-muted-foreground",
   Archived: "bg-secondary/20 text-secondary-foreground",
+  Draft: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
 };
 
 export default function Admin() {
