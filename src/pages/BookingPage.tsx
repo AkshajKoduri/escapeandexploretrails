@@ -70,6 +70,7 @@ export default function BookingPage() {
         .from("upcoming_treks")
         .select("*")
         .eq("is_archived", false)
+        .eq("is_draft", false)
         .gte("trek_date", today)
         .order("trek_date", { ascending: true }),
       supabase.rpc("get_trek_seat_stats"),
