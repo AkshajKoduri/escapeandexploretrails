@@ -75,7 +75,7 @@ export default function PastTrips() {
                   <div className="pt-3 mt-auto">
                     {t.album_url ? (
                       <a
-                        href={t.album_url}
+                        href={/^https?:\/\//i.test(t.album_url) ? t.album_url : `https://${t.album_url}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-gradient-orange text-accent-foreground text-sm font-semibold shadow-glow hover:scale-[1.02] transition"
