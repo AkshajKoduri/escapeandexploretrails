@@ -116,60 +116,9 @@ export default function Admin() {
     })();
   }, [user, loading, navigate]);
 
-  const activeTreks = useMemo(() => treks.filter((t) => !t.is_archived), [treks]);
+  const activeTreks = useMemo(() => treks.filter((t) => !t.is_archived && !t.is_draft), [treks]);
+  const draftTreks = useMemo(() => treks.filter((t) => t.is_draft && !t.is_archived), [treks]);
   const archivedTreks = useMemo(() => treks.filter((t) => t.is_archived), [treks]);
-
-  const downloadExcel = async () => {
-    try {
-      const membersByBooking = new Map<string, any[]>();
-      members.forEach((m) => {
-        const arr = membersByBooking.get(m.booking_id) ?? [];
-        arr.push(m);
-        membersByBooking.set(m.booking_id, arr);
-      });
-
-      const allPeople: any[] = [];
-      bookings.forEach((b, idx) => {
-        const groupMembers = membersByBooking.get(b.id) ?? [];
-        const isGroup = b.is_group || groupMembers.length > 0;
-        allPeople.push({
-          "Booking ID": b.id, Trek: b.trek_name,
-          "Booking Date": new Date(b.created_at).toLocaleString(),
-          Status: b.status,
-          Role: isGroup ? "⭐ GROUP LEADER (Booked By)" : "Primary",
-          "Full Name": isGroup ? `⭐ ${b.primary_name}` : b.primary_name,
-          Age: b.primary_age, Gender: b.primary_gender,
-          Phone: b.primary_phone, Email: b.primary_email ?? "",
-          "Aadhaar Number": b.primary_aadhaar, "Aadhaar Photo Path": b.primary_aadhaar_photo,
-          "Group Booking": isGroup ? "Yes" : "No", "Seats Booked": b.seats_booked ?? 1,
-        });
-        groupMembers.forEach((m, i) => {
-          allPeople.push({
-            "Booking ID": b.id, Trek: b.trek_name,
-            "Booking Date": new Date(b.created_at).toLocaleString(),
-            Status: b.status, Role: `   Member ${i + 1} (under ${b.primary_name})`,
-            "Full Name": `    ↳ ${m.full_name}`,
-            Age: "", Gender: "", Phone: "", Email: "",
-            "Aadhaar Number": m.aadhaar_number, "Aadhaar Photo Path": m.aadhaar_photo,
-            "Group Booking": "Yes", "Seats Booked": "",
-          });
-        });
-        if (idx < bookings.length - 1) {
-          allPeople.push({ "Booking ID": "", Trek: "", "Booking Date": "", Status: "", Role: "", "Full Name": "", Age: "", Gender: "", Phone: "", Email: "", "Aadhaar Number": "", "Aadhaar Photo Path": "", "Group Booking": "", "Seats Booked": "" });
-        }
-      });
-
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(allPeople);
-      ws["!cols"] = [{ wch: 38 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 32 }, { wch: 28 }, { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 12 }];
-      XLSX.utils.book_append_sheet(wb, ws, "All Trekkers");
-      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-      XLSX.writeFile(wb, `e2trails-bookings-${ts}.xlsx`);
-      toast.success("Excel file downloaded");
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to download");
-    }
-  };
 
   if (loading || isAdmin === null) {
     return <main className="min-h-screen grid place-items-center">Loading…</main>;
@@ -199,12 +148,6 @@ export default function Admin() {
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-4 h-4" /> Back to home
           </Link>
-          <button
-            onClick={downloadExcel}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-orange text-accent-foreground font-semibold text-sm shadow-glow hover:scale-105 transition"
-          >
-            <Download className="w-4 h-4" /> Download bookings (.xlsx)
-          </button>
         </div>
 
         <div className="bg-card rounded-2xl shadow-trail border border-primary/10 p-6 md:p-8">
@@ -214,9 +157,10 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              <TabsTrigger value="drafts">Drafts</TabsTrigger>
               <TabsTrigger value="past">Past Trips</TabsTrigger>
             </TabsList>
 
@@ -225,7 +169,11 @@ export default function Admin() {
             </TabsContent>
 
             <TabsContent value="bookings" className="mt-6">
-              <BookingsTab bookings={bookings} members={members} treks={treks} stats={stats} />
+              <BookingsTab bookings={bookings} members={members} treks={treks} stats={stats} reload={loadAll} />
+            </TabsContent>
+
+            <TabsContent value="drafts" className="mt-6">
+              <DraftsTab treks={draftTreks} reload={loadAll} />
             </TabsContent>
 
             <TabsContent value="past" className="mt-6">
