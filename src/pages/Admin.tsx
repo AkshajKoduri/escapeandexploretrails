@@ -26,6 +26,7 @@ type Trek = {
   instructions: string | null;
   status_override: string | null;
   is_archived: boolean;
+  is_draft: boolean;
   album_url: string | null;
   itinerary_url: string | null;
   itinerary_file_path: string | null;
@@ -42,8 +43,17 @@ const empty: Partial<Trek> = {
   album_url: "", itinerary_url: "", itinerary_file_path: "",
 };
 
-function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived" {
+function normalizeUrl(u: string | null | undefined): string | null {
+  if (!u) return null;
+  const v = u.trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://${v}`;
+}
+
+function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived" | "Draft" {
   if (t.is_archived) return "Archived";
+  if (t.is_draft) return "Draft";
   if (t.status_override) return t.status_override as any;
   const today = new Date().toISOString().slice(0, 10);
   if (t.trek_date > today) return "Upcoming";
@@ -56,6 +66,7 @@ const statusColor: Record<string, string> = {
   Ongoing: "bg-accent/15 text-accent",
   Completed: "bg-muted text-muted-foreground",
   Archived: "bg-secondary/20 text-secondary-foreground",
+  Draft: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
 };
 
 export default function Admin() {
@@ -105,60 +116,9 @@ export default function Admin() {
     })();
   }, [user, loading, navigate]);
 
-  const activeTreks = useMemo(() => treks.filter((t) => !t.is_archived), [treks]);
+  const activeTreks = useMemo(() => treks.filter((t) => !t.is_archived && !t.is_draft), [treks]);
+  const draftTreks = useMemo(() => treks.filter((t) => t.is_draft && !t.is_archived), [treks]);
   const archivedTreks = useMemo(() => treks.filter((t) => t.is_archived), [treks]);
-
-  const downloadExcel = async () => {
-    try {
-      const membersByBooking = new Map<string, any[]>();
-      members.forEach((m) => {
-        const arr = membersByBooking.get(m.booking_id) ?? [];
-        arr.push(m);
-        membersByBooking.set(m.booking_id, arr);
-      });
-
-      const allPeople: any[] = [];
-      bookings.forEach((b, idx) => {
-        const groupMembers = membersByBooking.get(b.id) ?? [];
-        const isGroup = b.is_group || groupMembers.length > 0;
-        allPeople.push({
-          "Booking ID": b.id, Trek: b.trek_name,
-          "Booking Date": new Date(b.created_at).toLocaleString(),
-          Status: b.status,
-          Role: isGroup ? "⭐ GROUP LEADER (Booked By)" : "Primary",
-          "Full Name": isGroup ? `⭐ ${b.primary_name}` : b.primary_name,
-          Age: b.primary_age, Gender: b.primary_gender,
-          Phone: b.primary_phone, Email: b.primary_email ?? "",
-          "Aadhaar Number": b.primary_aadhaar, "Aadhaar Photo Path": b.primary_aadhaar_photo,
-          "Group Booking": isGroup ? "Yes" : "No", "Seats Booked": b.seats_booked ?? 1,
-        });
-        groupMembers.forEach((m, i) => {
-          allPeople.push({
-            "Booking ID": b.id, Trek: b.trek_name,
-            "Booking Date": new Date(b.created_at).toLocaleString(),
-            Status: b.status, Role: `   Member ${i + 1} (under ${b.primary_name})`,
-            "Full Name": `    ↳ ${m.full_name}`,
-            Age: "", Gender: "", Phone: "", Email: "",
-            "Aadhaar Number": m.aadhaar_number, "Aadhaar Photo Path": m.aadhaar_photo,
-            "Group Booking": "Yes", "Seats Booked": "",
-          });
-        });
-        if (idx < bookings.length - 1) {
-          allPeople.push({ "Booking ID": "", Trek: "", "Booking Date": "", Status: "", Role: "", "Full Name": "", Age: "", Gender: "", Phone: "", Email: "", "Aadhaar Number": "", "Aadhaar Photo Path": "", "Group Booking": "", "Seats Booked": "" });
-        }
-      });
-
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(allPeople);
-      ws["!cols"] = [{ wch: 38 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 32 }, { wch: 28 }, { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 12 }];
-      XLSX.utils.book_append_sheet(wb, ws, "All Trekkers");
-      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-      XLSX.writeFile(wb, `e2trails-bookings-${ts}.xlsx`);
-      toast.success("Excel file downloaded");
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to download");
-    }
-  };
 
   if (loading || isAdmin === null) {
     return <main className="min-h-screen grid place-items-center">Loading…</main>;
@@ -188,12 +148,6 @@ export default function Admin() {
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-4 h-4" /> Back to home
           </Link>
-          <button
-            onClick={downloadExcel}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-orange text-accent-foreground font-semibold text-sm shadow-glow hover:scale-105 transition"
-          >
-            <Download className="w-4 h-4" /> Download bookings (.xlsx)
-          </button>
         </div>
 
         <div className="bg-card rounded-2xl shadow-trail border border-primary/10 p-6 md:p-8">
@@ -203,9 +157,10 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              <TabsTrigger value="drafts">Drafts</TabsTrigger>
               <TabsTrigger value="past">Past Trips</TabsTrigger>
             </TabsList>
 
@@ -214,7 +169,11 @@ export default function Admin() {
             </TabsContent>
 
             <TabsContent value="bookings" className="mt-6">
-              <BookingsTab bookings={bookings} members={members} treks={treks} stats={stats} />
+              <BookingsTab bookings={bookings} members={members} treks={treks} stats={stats} reload={loadAll} />
+            </TabsContent>
+
+            <TabsContent value="drafts" className="mt-6">
+              <DraftsTab treks={draftTreks} reload={loadAll} />
             </TabsContent>
 
             <TabsContent value="past" className="mt-6">
@@ -399,8 +358,8 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         instructions: f.instructions?.trim() || null,
         status_override: f.status_override || null,
         image_url: imageUrl ?? null,
-        album_url: f.album_url?.trim() || null,
-        itinerary_url: f.itinerary_url?.trim() || null,
+        album_url: normalizeUrl(f.album_url),
+        itinerary_url: normalizeUrl(f.itinerary_url),
         itinerary_file_path: itineraryPath || null,
       };
 
@@ -510,7 +469,58 @@ function FF({ label, children, full }: { label: string; children: React.ReactNod
 
 /* ===================== Bookings Tab ===================== */
 
-function BookingsTab({ bookings, members, treks, stats }: { bookings: Booking[]; members: any[]; treks: Trek[]; stats: Map<string, Stats> }) {
+function bookingsToRows(bookingsList: Booking[], membersByBooking: Map<string, any[]>) {
+  const rows: any[] = [];
+  bookingsList.forEach((b, idx) => {
+    const groupMembers = membersByBooking.get(b.id) ?? [];
+    const isGroup = b.is_group || groupMembers.length > 0;
+    rows.push({
+      "Booking ID": b.id, Trek: b.trek_name,
+      "Booking Date": new Date(b.created_at).toLocaleString(),
+      Status: b.status,
+      Role: isGroup ? "⭐ GROUP LEADER (Booked By)" : "Primary",
+      "Full Name": isGroup ? `⭐ ${b.primary_name}` : b.primary_name,
+      Age: b.primary_age, Gender: b.primary_gender,
+      Phone: b.primary_phone, Email: b.primary_email ?? "",
+      "Aadhaar Number": b.primary_aadhaar, "Aadhaar Photo Path": b.primary_aadhaar_photo,
+      "Group Booking": isGroup ? "Yes" : "No", "Seats Booked": b.seats_booked ?? 1,
+    });
+    groupMembers.forEach((m, i) => {
+      rows.push({
+        "Booking ID": b.id, Trek: b.trek_name,
+        "Booking Date": new Date(b.created_at).toLocaleString(),
+        Status: b.status, Role: `   Member ${i + 1} (under ${b.primary_name})`,
+        "Full Name": `    ↳ ${m.full_name}`,
+        Age: "", Gender: "", Phone: "", Email: "",
+        "Aadhaar Number": m.aadhaar_number, "Aadhaar Photo Path": m.aadhaar_photo,
+        "Group Booking": "Yes", "Seats Booked": "",
+      });
+    });
+    if (idx < bookingsList.length - 1) {
+      rows.push({ "Booking ID": "", Trek: "", "Booking Date": "", Status: "", Role: "", "Full Name": "", Age: "", Gender: "", Phone: "", Email: "", "Aadhaar Number": "", "Aadhaar Photo Path": "", "Group Booking": "", "Seats Booked": "" });
+    }
+  });
+  return rows;
+}
+
+function downloadTrekExcel(trek: Trek, bookingsList: Booking[], membersByBooking: Map<string, any[]>) {
+  const trekBookings = bookingsList.filter((b) => b.trek_id === trek.id || b.trek_name === trek.name);
+  if (trekBookings.length === 0) {
+    toast.error("No bookings for this trek yet");
+    return;
+  }
+  const rows = bookingsToRows(trekBookings, membersByBooking);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = [{ wch: 38 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 32 }, { wch: 28 }, { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(wb, ws, "Trekkers");
+  const slug = trek.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "trek";
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  XLSX.writeFile(wb, `e2trails-${slug}-${ts}.xlsx`);
+  toast.success("Excel file downloaded");
+}
+
+function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Booking[]; members: any[]; treks: Trek[]; stats: Map<string, Stats>; reload: () => void }) {
   const [filter, setFilter] = useState<string>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -524,6 +534,14 @@ function BookingsTab({ bookings, members, treks, stats }: { bookings: Booking[];
   }, [members]);
 
   const filtered = filter === "all" ? bookings : bookings.filter((b) => b.trek_id === filter || b.trek_name === filter);
+
+  const cancelBooking = async (b: Booking) => {
+    if (!confirm(`Cancel booking for ${b.primary_name}? Their ${b.seats_booked ?? 1} seat(s) will be freed.`)) return;
+    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id);
+    if (error) return toast.error(error.message);
+    toast.success("Booking cancelled");
+    reload();
+  };
 
   return (
     <div className="space-y-4">
@@ -539,18 +557,26 @@ function BookingsTab({ bookings, members, treks, stats }: { bookings: Booking[];
         </select>
       </div>
 
-      {/* Per-trek seat summary */}
+      {/* Per-trek seat summary + download */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {treks.filter((t) => !t.is_archived).map((t) => {
+        {treks.filter((t) => !t.is_archived && !t.is_draft).map((t) => {
           const s = stats.get(t.id);
           const taken = s?.seats_taken ?? 0;
           const max = t.max_seats;
           const full = taken >= max;
           return (
-            <div key={t.id} className="rounded-xl border border-border bg-background p-3">
-              <div className="text-sm font-semibold text-primary truncate">{t.name}</div>
-              <div className="text-xs text-muted-foreground">{new Date(t.trek_date).toLocaleDateString()}</div>
-              <div className={`mt-1 text-sm font-bold ${full ? "text-destructive" : "text-foreground"}`}>{taken} / {max} seats {full && "• FULL"}</div>
+            <div key={t.id} className="rounded-xl border border-border bg-background p-3 flex flex-col gap-2">
+              <div>
+                <div className="text-sm font-semibold text-primary truncate">{t.name}</div>
+                <div className="text-xs text-muted-foreground">{new Date(t.trek_date).toLocaleDateString()}</div>
+                <div className={`mt-1 text-sm font-bold ${full ? "text-destructive" : "text-foreground"}`}>{taken} / {max} seats {full && "• FULL"}</div>
+              </div>
+              <button
+                onClick={() => downloadTrekExcel(t, bookings, membersByBooking)}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-orange text-accent-foreground text-xs font-semibold shadow-glow hover:scale-[1.02] transition"
+              >
+                <Download className="w-3.5 h-3.5" /> Download bookings (.xlsx)
+              </button>
             </div>
           );
         })}
@@ -563,14 +589,20 @@ function BookingsTab({ bookings, members, treks, stats }: { bookings: Booking[];
           {filtered.map((b) => {
             const ms = membersByBooking.get(b.id) ?? [];
             const isOpen = expanded === b.id;
+            const isCancelled = b.status === "cancelled";
             return (
-              <div key={b.id} className="rounded-xl border border-border bg-background">
+              <div key={b.id} className={`rounded-xl border border-border bg-background ${isCancelled ? "opacity-70" : ""}`}>
                 <button
                   onClick={() => setExpanded(isOpen ? null : b.id)}
                   className="w-full p-4 text-left flex flex-wrap items-center gap-3 hover:bg-muted/40 transition"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-foreground">{b.primary_name}</div>
+                    <div className="font-semibold text-foreground flex items-center gap-2">
+                      <span className={isCancelled ? "line-through" : ""}>{b.primary_name}</span>
+                      {isCancelled && (
+                        <span className="px-2 py-0.5 text-[10px] rounded-full bg-destructive/15 text-destructive font-bold">CANCELLED</span>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {b.trek_name} • {new Date(b.created_at).toLocaleDateString()}
                     </div>
@@ -595,11 +627,86 @@ function BookingsTab({ bookings, members, treks, stats }: { bookings: Booking[];
                         </ul>
                       </div>
                     )}
+                    {!isCancelled && (
+                      <div className="pt-3">
+                        <button
+                          onClick={() => cancelBooking(b)}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold hover:opacity-90 transition"
+                        >
+                          <X className="w-3.5 h-3.5" /> Cancel booking
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ===================== Drafts Tab ===================== */
+
+function DraftsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) {
+  const publish = async (id: string) => {
+    const { error } = await supabase.from("upcoming_treks").update({ is_draft: false }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Trip published to homepage");
+    reload();
+  };
+  const moveToPast = async (id: string) => {
+    if (!confirm("Move this draft to Past Trips?")) return;
+    const { error } = await supabase.from("upcoming_treks").update({ is_archived: true, is_draft: false }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Moved to Past Trips");
+    reload();
+  };
+  const deleteDraft = async (id: string) => {
+    if (!confirm("Permanently delete this draft?")) return;
+    const { error } = await supabase.from("upcoming_treks").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Draft deleted");
+    reload();
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-heading font-bold text-lg text-primary">Drafts ({treks.length})</h2>
+      <p className="text-sm text-muted-foreground">Drafts are hidden from the homepage and booking page. Publish them to make them visible, or move them back to Past Trips.</p>
+      {treks.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No drafts. Restoring a past trip will land it here.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {treks.map((t) => (
+            <div key={t.id} className="rounded-xl border border-border bg-background overflow-hidden flex">
+              {t.image_url ? (
+                <img src={t.image_url} alt={t.name} className="w-32 h-32 object-cover" />
+              ) : (
+                <div className="w-32 h-32 bg-muted grid place-items-center text-muted-foreground"><Mountain className="w-8 h-8" /></div>
+              )}
+              <div className="p-3 flex-1 min-w-0 flex flex-col gap-2">
+                <div>
+                  <div className="font-semibold text-foreground truncate">{t.name}</div>
+                  <div className="text-xs text-muted-foreground">{new Date(t.trek_date).toLocaleDateString()}</div>
+                  <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">Draft</span>
+                </div>
+                <div className="mt-auto flex flex-wrap gap-2">
+                  <button onClick={() => publish(t.id)} className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-secondary">
+                    Publish
+                  </button>
+                  <button onClick={() => moveToPast(t.id)} className="px-3 py-1.5 rounded-full border border-border text-xs hover:bg-muted">
+                    Move to Past Trips
+                  </button>
+                  <button onClick={() => deleteDraft(t.id)} className="px-2 py-1.5 rounded-full text-destructive hover:bg-destructive/10" title="Delete">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -612,7 +719,7 @@ function PastTripsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) 
   return (
     <div className="space-y-4">
       <h2 className="font-heading font-bold text-lg text-primary">Past trips ({treks.length})</h2>
-      <p className="text-sm text-muted-foreground">Paste a Google Drive (or any) link to the photo album. Customers will see a "View Photo Album" button on the Past Trips page.</p>
+      <p className="text-sm text-muted-foreground">Paste a Google Drive (or any) link to the photo album. Customers will see a "View Photo Album" button on the Past Trips page. Click "Restore" to send a trip back to Drafts.</p>
       {treks.length === 0 ? (
         <p className="text-sm text-muted-foreground">No archived trips yet. Use the archive button on a trip to move it here.</p>
       ) : (
@@ -630,25 +737,30 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
   const [albumUrl, setAlbumUrl] = useState(trek.album_url ?? "");
   const [busy, setBusy] = useState(false);
 
-  const unarchive = async () => {
-    const { error } = await supabase.from("upcoming_treks").update({ is_archived: false }).eq("id", trek.id);
+  const restoreToDraft = async () => {
+    if (!confirm("Move this trip to Drafts? It will be hidden from the public site until you publish it.")) return;
+    const { error } = await supabase.from("upcoming_treks").update({ is_archived: false, is_draft: true }).eq("id", trek.id);
     if (error) return toast.error(error.message);
-    toast.success("Restored to active treks");
+    toast.success("Moved to Drafts");
     reload();
   };
 
   const saveAlbum = async () => {
-    const v = albumUrl.trim();
+    const v = normalizeUrl(albumUrl);
+    if (albumUrl.trim() && !v) return toast.error("Enter a valid URL");
     if (v) {
       try { new URL(v); } catch { return toast.error("Enter a valid URL"); }
     }
     setBusy(true);
-    const { error } = await supabase.from("upcoming_treks").update({ album_url: v || null }).eq("id", trek.id);
+    const { error } = await supabase.from("upcoming_treks").update({ album_url: v }).eq("id", trek.id);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Album link saved");
+    if (v) setAlbumUrl(v);
     reload();
   };
+
+  const albumHref = normalizeUrl(trek.album_url);
 
   return (
     <div className="rounded-xl border border-border bg-background overflow-hidden flex flex-col">
@@ -661,8 +773,8 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
         <div className="p-3 flex-1 min-w-0">
           <div className="font-semibold text-foreground truncate">{trek.name}</div>
           <div className="text-xs text-muted-foreground">{new Date(trek.trek_date).toLocaleDateString()}</div>
-          {trek.album_url && (
-            <a href={trek.album_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
+          {albumHref && (
+            <a href={albumHref} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
               <LinkIcon className="w-3 h-3" /> Open current album
             </a>
           )}
@@ -681,7 +793,7 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
           <button onClick={saveAlbum} disabled={busy} className="flex-1 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-secondary disabled:opacity-60">
             {busy ? "Saving…" : "Save album link"}
           </button>
-          <button onClick={unarchive} className="px-3 py-2 rounded-full border border-border text-xs hover:bg-muted">
+          <button onClick={restoreToDraft} className="px-3 py-2 rounded-full border border-border text-xs hover:bg-muted">
             Restore
           </button>
         </div>

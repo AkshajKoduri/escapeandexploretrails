@@ -7,7 +7,7 @@ import Stats from "@/components/site/Stats";
 import Treks from "@/components/site/Treks";
 import Experiences from "@/components/site/Experiences";
 import Gallery from "@/components/site/Gallery";
-import Testimonials from "@/components/site/Testimonials";
+
 import WhyUs from "@/components/site/WhyUs";
 import Contact from "@/components/site/Contact";
 import Footer from "@/components/site/Footer";
@@ -40,7 +40,7 @@ const Index = () => {
       <Treks />
       <Experiences />
       <Gallery />
-      <Testimonials />
+      
       <WhyUs />
       <Contact />
       <Footer />

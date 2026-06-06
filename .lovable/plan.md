@@ -1,58 +1,40 @@
-## Goal
+## What we'll change
 
-1. **Past Trips album** — replace per-image uploads with a single Google Drive link (admin pastes URL, users click "View Album" to open it in a new tab).
-2. **Booking page itinerary** — show an itinerary attached to each trek by the admin, as either an external link OR an uploaded PDF.
+### 1. Drive album link "blocked"
+Most likely cause: users paste links like `drive.google.com/...` without `https://`, so the browser treats it as a relative path and the click does nothing. Fix in both `PastTrips.tsx` and the admin "Open current album" anchor:
+- Normalize the URL before rendering: if it doesn't start with `http://` or `https://`, prepend `https://`.
+- Keep `target="_blank" rel="noopener noreferrer"`.
+- Also normalize on save in admin (Trips form + Past Trips card) so bad values never reach the DB again.
 
----
+### 2. New "Draft" section for restored past trips
+Add a third state to treks (besides active & archived):
+- **Migration**: add column `is_draft boolean NOT NULL DEFAULT false` to `upcoming_treks`.
+- **Public site filters** (`Treks.tsx`, homepage, `BookingPage.tsx` trek picker, `PastTrips.tsx`) — exclude drafts (`is_draft = false AND is_archived = false` for active; archived stays as-is; drafts shown nowhere public).
+- **Admin Dashboard**: add a new **Drafts** tab between Trips and Past Trips (4 tabs total).
+  - Past Trips card → "Restore" button now sets `is_archived = false, is_draft = true` → trek lands in **Drafts**.
+  - Drafts tab lists draft treks with two actions: **Publish** (sets `is_draft = false` → goes back to Active Trips) and **Move to Past Trips** (sets `is_archived = true, is_draft = false`).
+  - Edit/Delete also available on each draft card.
 
-## Database changes
+### 3. Per-trip "Download bookings"
+- Remove the global top-right "Download bookings" button.
+- On each per-trek seat-summary card inside the **Bookings** tab, add a small "⬇ Download (.xlsx)" button that exports **only that trek's** bookings + members using the same Excel format as today.
+- Filename: `e2trails-<trek-slug>-<timestamp>.xlsx`.
 
-Add three columns to `upcoming_treks`:
-- `album_url TEXT` — Drive link for the past-trip album
-- `itinerary_url TEXT` — external link to itinerary (Drive/web URL)
-- `itinerary_file_path TEXT` — storage path if a PDF was uploaded
+### 4. Remove "What Our Trekkers Say"
+- Delete the `<Testimonials />` import + usage from `src/pages/Index.tsx`.
+- Delete `src/components/site/Testimonials.tsx`.
+- Remove any nav link / anchor pointing to `#testimonials` in `Navbar.tsx` / `Footer.tsx` if present.
 
-Create a new public storage bucket `itineraries` with RLS:
-- Public SELECT (so users can download)
-- INSERT/UPDATE/DELETE restricted to admins via `has_role(auth.uid(), 'admin')`
-
-The existing `trip_album_images` table stays in place (no data loss), but the UI for managing it is removed.
-
----
-
-## Admin page (`src/pages/Admin.tsx`)
-
-In the trek create/edit form:
-- Add **Album Drive Link** input (URL field) — saved to `album_url`.
-- Add **Itinerary** section with two options:
-  - URL field for `itinerary_url`
-  - File upload (PDF only, max 10MB) → uploads to `itineraries/{trek_id}/{uuid}.pdf` and saves the path to `itinerary_file_path`. A "Remove" button clears it.
-- Remove the existing per-trek "manage album images" dialog/UI.
-
-Validate URLs with zod (`z.string().url()`), allow blank.
-
----
-
-## Past Trips page (`src/pages/PastTrips.tsx`)
-
-- Drop the `trip_album_images` query and lightbox.
-- Each card shows the trek's cover image and, if `album_url` is set, a prominent **"View Photo Album"** button that opens the link in a new tab.
-- If no `album_url`, show a muted "Album coming soon" line.
-
----
-
-## Booking page (`src/pages/BookingPage.tsx`)
-
-In the selected-trek info card, add an **Itinerary** row when either field is set:
-- `itinerary_url` → "📋 View Itinerary" link (new tab).
-- `itinerary_file_path` → "📋 Download Itinerary (PDF)" link built from the public storage URL of the `itineraries` bucket.
-- If both, show both.
-
-Extend the `TrekOpt` type and `loadTreks` mapping to include the two itinerary fields.
-
----
+### 5. Admin can cancel bookings
+- In the expanded booking row of the Bookings tab, add a red **Cancel booking** button (only shown when `status !== 'cancelled'`).
+- On click → confirm dialog → `UPDATE bookings SET status='cancelled' WHERE id=...`. This automatically frees the seat because `get_trek_seat_stats` already excludes cancelled bookings.
+- Show a "Cancelled" badge on cancelled bookings; hide the Cancel button for them.
+- **RLS**: add a policy on `bookings` allowing `UPDATE` when `has_role(auth.uid(), 'admin')` so admins can change status (current policies likely scope updates to the booking owner).
 
 ## Out of scope
+- Booking page UI/text, founder section, group-leader highlighting, itinerary upload — all untouched.
+- Existing bookings data, members, storage buckets — untouched.
 
-- No change to bookings, members, auth, or seat logic.
-- The existing `trip_album_images` table is left untouched (no data loss); we simply stop reading/writing it.
+## Technical notes
+- Migration: `ALTER TABLE upcoming_treks ADD COLUMN is_draft boolean NOT NULL DEFAULT false;` + admin-update RLS policy on `bookings`.
+- After migration, `src/integrations/supabase/types.ts` regenerates automatically; then update `Admin.tsx`, `PastTrips.tsx`, `BookingPage.tsx`, `Treks.tsx`, `Index.tsx` to use `is_draft` filter and the new UI.
