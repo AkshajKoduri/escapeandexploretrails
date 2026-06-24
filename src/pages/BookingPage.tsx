@@ -276,12 +276,20 @@ export default function BookingPage() {
               Your booking for <span className="font-semibold text-accent">{selectedTrek?.name}</span> is confirmed.
               Our team will reach you on <span className="font-semibold">{phone}</span>.
             </p>
-            <button
-              onClick={() => { setDone(false); setMembers([]); setIsGroup(false); }}
-              className="mt-8 px-7 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-secondary transition"
-            >
-              Add a Person
-            </button>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => { setDone(false); setMembers([]); setIsGroup(false); }}
+                className="px-7 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-secondary transition"
+              >
+                Add a Person
+              </button>
+              <Link
+                to="/"
+                className="px-7 py-3 rounded-full bg-accent text-accent-foreground font-semibold hover:opacity-90 transition"
+              >
+                Return to Homepage
+              </Link>
+            </div>
           </div>
         ) : (
           <form onSubmit={onSubmit} className="bg-card rounded-2xl shadow-trail p-6 md:p-10 border border-primary/10 space-y-6">
