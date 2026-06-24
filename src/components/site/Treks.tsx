@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ahobilam from "@/assets/trek-ahobilam.jpg";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
 type TrekCard = {
@@ -15,6 +16,11 @@ type TrekCard = {
   price: number;
   date: string;
   trekTime: string | null;
+  description: string | null;
+  instructions: string | null;
+  meetingPoint: string | null;
+  itineraryUrl: string | null;
+  itineraryFilePath: string | null;
   seatsRemaining: number;
   maxSeats: number;
   isFull: boolean;
@@ -30,6 +36,7 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
 
 export default function Treks() {
   const [treks, setTreks] = useState<TrekCard[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -66,6 +73,11 @@ export default function Treks() {
             year: "numeric",
           }),
           trekTime: t.trek_time,
+          description: t.description ?? null,
+          instructions: t.instructions ?? null,
+          meetingPoint: t.meeting_point ?? null,
+          itineraryUrl: t.itinerary_url ?? null,
+          itineraryFilePath: t.itinerary_file_path ?? null,
           seatsRemaining: remaining,
           maxSeats: s?.max_seats ?? t.max_seats ?? 0,
           isFull: remaining <= 0,
@@ -86,6 +98,11 @@ export default function Treks() {
     };
   }, []);
 
+  const openTrek = treks.find((t) => t.id === openId) || null;
+  const itineraryFileUrl = openTrek?.itineraryFilePath
+    ? supabase.storage.from("itineraries").getPublicUrl(openTrek.itineraryFilePath).data.publicUrl
+    : null;
+
   return (
     <section id="treks" className="py-24 md:py-32 bg-background">
       <div className="container">
@@ -105,9 +122,10 @@ export default function Treks() {
           </p>
         ) : (
           <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {treks.map((t, i) => (
+            {treks.map((t) => (
               <article
                 key={t.id}
+                onClick={() => setOpenId(t.id)}
                 className="group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
               >
                 <img
@@ -150,6 +168,7 @@ export default function Treks() {
                   {t.isFull ? (
                     <button
                       disabled
+                      onClick={(e) => e.stopPropagation()}
                       className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-muted text-muted-foreground text-sm font-semibold cursor-not-allowed"
                     >
                       Sold Out
@@ -157,6 +176,7 @@ export default function Treks() {
                   ) : (
                     <Link
                       to={`/booking?trek=${t.id}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
                     >
                       Book Now →
@@ -177,6 +197,96 @@ export default function Treks() {
           </Link>
         </div>
       </div>
+
+      <Dialog open={!!openTrek} onOpenChange={(o) => !o && setOpenId(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {openTrek && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-heading text-2xl text-primary">{openTrek.name}</DialogTitle>
+                <DialogDescription className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                  <span>📅 {openTrek.date}</span>
+                  {openTrek.trekTime && <span>🕒 {openTrek.trekTime}</span>}
+                  {openTrek.dur && <span>⏱ {openTrek.dur}</span>}
+                  {openTrek.dist && <span>📍 {openTrek.dist}</span>}
+                </DialogDescription>
+              </DialogHeader>
+              <img src={openTrek.img} alt={openTrek.name} className="w-full h-56 object-cover rounded-lg" />
+              {openTrek.price > 0 && (
+                <div className="text-lg font-bold text-accent">
+                  ₹{openTrek.price.toLocaleString("en-IN")}
+                  <span className="text-xs text-muted-foreground font-normal"> / person</span>
+                </div>
+              )}
+
+              {openTrek.description && (
+                <section>
+                  <h4 className="font-heading font-bold text-primary mb-1">Description</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.description}</p>
+                </section>
+              )}
+
+              {openTrek.meetingPoint && (
+                <section>
+                  <h4 className="font-heading font-bold text-primary mb-1">Meeting Point</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.meetingPoint}</p>
+                </section>
+              )}
+
+              {openTrek.instructions && (
+                <section>
+                  <h4 className="font-heading font-bold text-primary mb-1">Instructions</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.instructions}</p>
+                </section>
+              )}
+
+              {(openTrek.itineraryUrl || itineraryFileUrl) && (
+                <section>
+                  <h4 className="font-heading font-bold text-primary mb-2">Itinerary</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {openTrek.itineraryUrl && (
+                      <a
+                        href={openTrek.itineraryUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold hover:opacity-90"
+                      >
+                        📋 View Itinerary
+                      </a>
+                    )}
+                    {itineraryFileUrl && (
+                      <a
+                        href={itineraryFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90"
+                      >
+                        📄 Download Itinerary (PDF)
+                      </a>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {!openTrek.isFull ? (
+                <Link
+                  to={`/booking?trek=${openTrek.id}`}
+                  className="inline-flex items-center justify-center w-full px-5 py-3 rounded-full bg-accent text-accent-foreground font-semibold hover:bg-gold transition-colors"
+                >
+                  Book Now →
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="inline-flex items-center justify-center w-full px-5 py-3 rounded-full bg-muted text-muted-foreground font-semibold cursor-not-allowed"
+                >
+                  Sold Out
+                </button>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
