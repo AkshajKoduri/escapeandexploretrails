@@ -78,6 +78,7 @@ export default function PastTrips() {
                         href={/^https?:\/\//i.test(t.album_url) ? t.album_url : `https://${t.album_url}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        referrerPolicy="no-referrer"
                         className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-gradient-orange text-accent-foreground text-sm font-semibold shadow-glow hover:scale-[1.02] transition"
                       >
                         <ExternalLink className="w-4 h-4" /> View Photo Album
