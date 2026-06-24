@@ -558,12 +558,14 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
       </div>
 
       {/* Per-trek seat summary + download */}
+      <p className="text-xs text-muted-foreground">Each card below downloads only that trek's bookings.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {treks.filter((t) => !t.is_archived && !t.is_draft).map((t) => {
           const s = stats.get(t.id);
           const taken = s?.seats_taken ?? 0;
           const max = t.max_seats;
           const full = taken >= max;
+          const trekBookingCount = bookings.filter((b) => (b.trek_id === t.id || b.trek_name === t.name) && b.status !== "cancelled").length;
           return (
             <div key={t.id} className="rounded-xl border border-border bg-background p-3 flex flex-col gap-2">
               <div>
@@ -575,7 +577,7 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
                 onClick={() => downloadTrekExcel(t, bookings, membersByBooking)}
                 className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-orange text-accent-foreground text-xs font-semibold shadow-glow hover:scale-[1.02] transition"
               >
-                <Download className="w-3.5 h-3.5" /> Download bookings (.xlsx)
+                <Download className="w-3.5 h-3.5" /> Download bookings for this trek ({trekBookingCount})
               </button>
             </div>
           );
