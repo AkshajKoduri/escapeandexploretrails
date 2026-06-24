@@ -746,8 +746,9 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
   };
 
   const saveAlbum = async () => {
-    const v = normalizeUrl(albumUrl);
-    if (albumUrl.trim() && !v) return toast.error("Enter a valid URL");
+    const raw = albumUrl.trim();
+    const v = normalizeUrl(raw);
+    if (raw && !v) return toast.error("Enter a valid URL");
     if (v) {
       try { new URL(v); } catch { return toast.error("Enter a valid URL"); }
     }
@@ -757,6 +758,7 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
     if (error) return toast.error(error.message);
     toast.success("Album link saved");
     if (v) setAlbumUrl(v);
+    trek.album_url = v;
     reload();
   };
 
@@ -774,7 +776,7 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
           <div className="font-semibold text-foreground truncate">{trek.name}</div>
           <div className="text-xs text-muted-foreground">{new Date(trek.trek_date).toLocaleDateString()}</div>
           {albumHref && (
-            <a href={albumHref} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
+            <a href={albumHref} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
               <LinkIcon className="w-3 h-3" /> Open current album
             </a>
           )}
@@ -783,12 +785,15 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
       <div className="p-3 border-t border-border space-y-2">
         <label className="block text-xs font-semibold text-muted-foreground">Photo album link (Google Drive / any URL)</label>
         <input
-          type="url"
+          type="text"
           value={albumUrl}
           onChange={(e) => setAlbumUrl(e.target.value)}
           placeholder="https://drive.google.com/drive/folders/..."
           className={inp}
         />
+        {trek.album_url && (
+          <div className="text-[11px] text-muted-foreground break-all">Saved: <span className="font-mono">{trek.album_url}</span></div>
+        )}
         <div className="flex gap-2">
           <button onClick={saveAlbum} disabled={busy} className="flex-1 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-secondary disabled:opacity-60">
             {busy ? "Saving…" : "Save album link"}
