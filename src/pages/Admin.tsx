@@ -558,12 +558,14 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
       </div>
 
       {/* Per-trek seat summary + download */}
+      <p className="text-xs text-muted-foreground">Each card below downloads only that trek's bookings.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {treks.filter((t) => !t.is_archived && !t.is_draft).map((t) => {
           const s = stats.get(t.id);
           const taken = s?.seats_taken ?? 0;
           const max = t.max_seats;
           const full = taken >= max;
+          const trekBookingCount = bookings.filter((b) => (b.trek_id === t.id || b.trek_name === t.name) && b.status !== "cancelled").length;
           return (
             <div key={t.id} className="rounded-xl border border-border bg-background p-3 flex flex-col gap-2">
               <div>
@@ -575,7 +577,7 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
                 onClick={() => downloadTrekExcel(t, bookings, membersByBooking)}
                 className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-orange text-accent-foreground text-xs font-semibold shadow-glow hover:scale-[1.02] transition"
               >
-                <Download className="w-3.5 h-3.5" /> Download bookings (.xlsx)
+                <Download className="w-3.5 h-3.5" /> Download bookings for this trek ({trekBookingCount})
               </button>
             </div>
           );
@@ -746,8 +748,9 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
   };
 
   const saveAlbum = async () => {
-    const v = normalizeUrl(albumUrl);
-    if (albumUrl.trim() && !v) return toast.error("Enter a valid URL");
+    const raw = albumUrl.trim();
+    const v = normalizeUrl(raw);
+    if (raw && !v) return toast.error("Enter a valid URL");
     if (v) {
       try { new URL(v); } catch { return toast.error("Enter a valid URL"); }
     }
@@ -757,6 +760,7 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
     if (error) return toast.error(error.message);
     toast.success("Album link saved");
     if (v) setAlbumUrl(v);
+    trek.album_url = v;
     reload();
   };
 
@@ -774,7 +778,7 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
           <div className="font-semibold text-foreground truncate">{trek.name}</div>
           <div className="text-xs text-muted-foreground">{new Date(trek.trek_date).toLocaleDateString()}</div>
           {albumHref && (
-            <a href={albumHref} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
+            <a href={albumHref} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
               <LinkIcon className="w-3 h-3" /> Open current album
             </a>
           )}
@@ -783,12 +787,15 @@ function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
       <div className="p-3 border-t border-border space-y-2">
         <label className="block text-xs font-semibold text-muted-foreground">Photo album link (Google Drive / any URL)</label>
         <input
-          type="url"
+          type="text"
           value={albumUrl}
           onChange={(e) => setAlbumUrl(e.target.value)}
           placeholder="https://drive.google.com/drive/folders/..."
           className={inp}
         />
+        {trek.album_url && (
+          <div className="text-[11px] text-muted-foreground break-all">Saved: <span className="font-mono">{trek.album_url}</span></div>
+        )}
         <div className="flex gap-2">
           <button onClick={saveAlbum} disabled={busy} className="flex-1 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-secondary disabled:opacity-60">
             {busy ? "Saving…" : "Save album link"}
