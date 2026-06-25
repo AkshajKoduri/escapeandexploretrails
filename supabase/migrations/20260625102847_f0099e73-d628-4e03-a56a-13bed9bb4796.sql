@@ -1,0 +1,1 @@
+ALTER TABLE public.upcoming_treks ADD COLUMN IF NOT EXISTS event_type TEXT NOT NULL DEFAULT 'Hike' CHECK (event_type IN ('Hike','Cycling Ride','Outstation Trek'));
