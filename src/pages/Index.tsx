@@ -6,6 +6,7 @@ import About from "@/components/site/About";
 import Stats from "@/components/site/Stats";
 import Treks from "@/components/site/Treks";
 import Experiences from "@/components/site/Experiences";
+import Community from "@/components/site/Community";
 import Gallery from "@/components/site/Gallery";
 
 import WhyUs from "@/components/site/WhyUs";
