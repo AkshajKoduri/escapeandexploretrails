@@ -5,6 +5,8 @@ import ahobilam from "@/assets/trek-ahobilam.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
+type EventType = "Hike" | "Cycling Ride" | "Outstation Trek";
+type FilterType = "All" | EventType;
 type TrekCard = {
   id: string;
   name: string;
@@ -24,6 +26,7 @@ type TrekCard = {
   seatsRemaining: number;
   maxSeats: number;
   isFull: boolean;
+  eventType: EventType;
 };
 
 const fallbackImg = ahobilam;
@@ -37,6 +40,7 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
 export default function Treks() {
   const [treks, setTreks] = useState<TrekCard[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>("All");
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -81,6 +85,7 @@ export default function Treks() {
           seatsRemaining: remaining,
           maxSeats: s?.max_seats ?? t.max_seats ?? 0,
           isFull: remaining <= 0,
+          eventType: (t.event_type as EventType) ?? "Hike",
         };
       }),
     );
@@ -116,13 +121,45 @@ export default function Treks() {
           </p>
         </div>
 
-        {treks.length === 0 ? (
-          <p className="mt-14 text-center text-muted-foreground">
-            No upcoming treks right now — check back soon!
-          </p>
-        ) : (
+        <div className="mt-10 flex flex-wrap justify-center gap-2 reveal">
+          {(["All", "Hike", "Cycling Ride", "Outstation Trek"] as FilterType[]).map((f) => {
+            const label = f === "Hike" ? "Hikes" : f === "Cycling Ride" ? "Cycling Rides" : f === "Outstation Trek" ? "Outstation Treks" : "All";
+            const active = filter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold font-heading transition-colors border ${
+                  active
+                    ? "bg-accent text-accent-foreground border-accent shadow-card"
+                    : "bg-background text-primary border-border hover:bg-accent/10 hover:border-accent"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {(() => {
+          const visible = filter === "All" ? treks : treks.filter((t) => t.eventType === filter);
+          if (treks.length === 0) {
+            return (
+              <p className="mt-14 text-center text-muted-foreground">
+                No upcoming treks right now — check back soon!
+              </p>
+            );
+          }
+          if (visible.length === 0) {
+            return (
+              <p className="mt-14 text-center text-muted-foreground">
+                No events in this category yet — try another filter.
+              </p>
+            );
+          }
+          return (
           <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {treks.map((t) => (
+            {visible.map((t) => (
               <article
                 key={t.id}
                 onClick={() => setOpenId(t.id)}
@@ -186,7 +223,8 @@ export default function Treks() {
               </article>
             ))}
           </div>
-        )}
+          );
+        })()}
 
         <div className="mt-14 text-center reveal">
           <Link

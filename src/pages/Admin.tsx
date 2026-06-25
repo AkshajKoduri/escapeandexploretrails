@@ -30,6 +30,7 @@ type Trek = {
   album_url: string | null;
   itinerary_url: string | null;
   itinerary_file_path: string | null;
+  event_type: "Hike" | "Cycling Ride" | "Outstation Trek";
 };
 
 type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
@@ -40,7 +41,7 @@ const empty: Partial<Trek> = {
   name: "", destination: "", trek_date: "", trek_time: "", difficulty: "Easy",
   duration: "", distance: "", description: "", price: 0, max_seats: 30,
   meeting_point: "", instructions: "", location: "",
-  album_url: "", itinerary_url: "", itinerary_file_path: "",
+  album_url: "", itinerary_url: "", itinerary_file_path: "", event_type: "Hike",
 };
 
 function normalizeUrl(u: string | null | undefined): string | null {
@@ -361,6 +362,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         album_url: normalizeUrl(f.album_url),
         itinerary_url: normalizeUrl(f.itinerary_url),
         itinerary_file_path: itineraryPath || null,
+        event_type: f.event_type || "Hike",
       };
 
       if (isEdit) {
@@ -387,6 +389,13 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
       <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
       <FF label="Date *"><input type="date" className={inp} value={f.trek_date ?? ""} onChange={(e) => set({ trek_date: e.target.value })} required /></FF>
       <FF label="Assembly Time"><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" /></FF>
+      <FF label="Event Type *">
+        <select className={inp} value={f.event_type ?? "Hike"} onChange={(e) => set({ event_type: e.target.value as any })}>
+          <option value="Hike">Hike</option>
+          <option value="Cycling Ride">Cycling Ride</option>
+          <option value="Outstation Trek">Outstation Trek</option>
+        </select>
+      </FF>
       <FF label="Difficulty">
         <select className={inp} value={f.difficulty} onChange={(e) => set({ difficulty: e.target.value as any })}>
           <option>Easy</option><option>Moderate</option><option>Hard</option>

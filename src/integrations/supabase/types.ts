@@ -181,6 +181,7 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["trek_difficulty"]
           distance: string | null
           duration: string | null
+          event_type: string
           id: string
           image_url: string | null
           instructions: string | null
@@ -206,6 +207,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]
           distance?: string | null
           duration?: string | null
+          event_type?: string
           id?: string
           image_url?: string | null
           instructions?: string | null
@@ -231,6 +233,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]
           distance?: string | null
           duration?: string | null
+          event_type?: string
           id?: string
           image_url?: string | null
           instructions?: string | null
