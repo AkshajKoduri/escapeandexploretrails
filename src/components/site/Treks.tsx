@@ -5,6 +5,8 @@ import ahobilam from "@/assets/trek-ahobilam.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
+type EventType = "Hike" | "Cycling Ride" | "Outstation Trek";
+type FilterType = "All" | EventType;
 type TrekCard = {
   id: string;
   name: string;
@@ -24,6 +26,7 @@ type TrekCard = {
   seatsRemaining: number;
   maxSeats: number;
   isFull: boolean;
+  eventType: EventType;
 };
 
 const fallbackImg = ahobilam;
@@ -37,6 +40,7 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
 export default function Treks() {
   const [treks, setTreks] = useState<TrekCard[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>("All");
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -81,6 +85,7 @@ export default function Treks() {
           seatsRemaining: remaining,
           maxSeats: s?.max_seats ?? t.max_seats ?? 0,
           isFull: remaining <= 0,
+          eventType: (t.event_type as EventType) ?? "Hike",
         };
       }),
     );
