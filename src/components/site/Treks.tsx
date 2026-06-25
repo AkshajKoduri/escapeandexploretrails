@@ -223,7 +223,8 @@ export default function Treks() {
               </article>
             ))}
           </div>
-        )}
+          );
+        })()}
 
         <div className="mt-14 text-center reveal">
           <Link
