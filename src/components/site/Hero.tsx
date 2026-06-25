@@ -45,7 +45,7 @@ export default function Hero() {
         </h1>
 
         <p className="mt-8 max-w-2xl text-base md:text-lg text-charcoal-foreground/90 reveal text-shadow-strong">
-          Weekend hikes, cycling rides and seasonal treks across Telangana — where every trail comes with new friendships.
+          Weekend hikes, cycling rides and seasonal treks — where every trail comes memorable moments and new friendships.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 reveal">
