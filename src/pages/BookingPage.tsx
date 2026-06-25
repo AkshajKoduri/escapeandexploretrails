@@ -2,14 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { CheckCircle2, Plus, Trash2, Upload, ArrowLeft, LogOut } from "lucide-react";
+import { CheckCircle2, Plus, Trash2, ArrowLeft, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
 
-const aadhaarRegex = /^\d{12}$/;
-
-type Member = { name: string; aadhaar: string; file: File | null };
+type Member = { name: string };
 type TrekOpt = {
   id: string;
   name: string;
@@ -31,7 +29,6 @@ const primarySchema = z.object({
   gender: z.enum(["Male", "Female", "Other", "Prefer not to say"]),
   phone: z.string().trim().regex(/^[+]?[0-9\s-]{10,15}$/, "Enter a valid phone"),
   email: z.string().trim().email("Invalid email").optional().or(z.literal("")),
-  aadhaar: z.string().regex(aadhaarRegex, "Aadhaar must be 12 digits"),
   trekId: z.string().min(1, "Choose a trek"),
 });
 
@@ -50,8 +47,6 @@ export default function BookingPage() {
   const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [aadhaar, setAadhaar] = useState("");
-  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
   const [isGroup, setIsGroup] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
 
@@ -117,45 +112,30 @@ export default function BookingPage() {
         setPhone((p) => p || data.phone || "");
         setAge((p) => p || (data.age ? String(data.age) : ""));
         setGender((p) => p || data.gender || "");
-        setAadhaar((p) => p || data.aadhaar_number || "");
       }
     })();
   }, [user]);
 
-  const addMember = () => setMembers((m) => [...m, { name: "", aadhaar: "", file: null }]);
+  const addMember = () => setMembers((m) => [...m, { name: "" }]);
   const removeMember = (i: number) => setMembers((m) => m.filter((_, idx) => idx !== i));
   const updateMember = (i: number, patch: Partial<Member>) =>
     setMembers((m) => m.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
-
-  const uploadAadhaar = async (file: File, label: string) => {
-    if (!user) throw new Error("Not signed in");
-    if (file.size > 5 * 1024 * 1024) throw new Error(`${label} photo must be under 5MB`);
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("aadhaar-photos").upload(path, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-    if (error) throw error;
-    return path;
-  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    const parsed = primarySchema.safeParse({ name, age, gender, phone, email, aadhaar, trekId });
+    const parsed = primarySchema.safeParse({ name, age, gender, phone, email, trekId });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
     }
-    if (!aadhaarFile) return toast.error("Please upload your Aadhaar photo");
     if (!selectedTrek) return toast.error("Selected trek is no longer available");
 
     if (isGroup) {
       for (const [i, m] of members.entries()) {
-        if (!m.name.trim() || !aadhaarRegex.test(m.aadhaar) || !m.file) {
-          toast.error(`Member ${i + 1}: name, valid 12-digit Aadhaar and photo are required`);
+        if (!m.name.trim()) {
+          toast.error(`Member ${i + 1}: name is required`);
           return;
         }
       }
@@ -173,14 +153,6 @@ export default function BookingPage() {
 
     setSubmitting(true);
     try {
-      const primaryPhotoPath = await uploadAadhaar(aadhaarFile, "Your Aadhaar");
-
-      const memberPaths: string[] = [];
-      for (const [i, m] of members.entries()) {
-        if (!m.file) continue;
-        memberPaths.push(await uploadAadhaar(m.file, `Member ${i + 1} Aadhaar`));
-      }
-
       const { data: booking, error: bErr } = await supabase
         .from("bookings")
         .insert({
@@ -192,8 +164,8 @@ export default function BookingPage() {
           primary_gender: parsed.data.gender,
           primary_phone: parsed.data.phone,
           primary_email: parsed.data.email || null,
-          primary_aadhaar: parsed.data.aadhaar,
-          primary_aadhaar_photo: primaryPhotoPath,
+          primary_aadhaar: "",
+          primary_aadhaar_photo: "",
           is_group: isGroup && members.length > 0,
           seats_booked: seatsNeeded,
           status: "confirmed",
@@ -203,11 +175,11 @@ export default function BookingPage() {
       if (bErr) throw bErr;
 
       if (isGroup && members.length > 0) {
-        const rows = members.map((m, i) => ({
+        const rows = members.map((m) => ({
           booking_id: booking.id,
           full_name: m.name.trim(),
-          aadhaar_number: m.aadhaar,
-          aadhaar_photo: memberPaths[i],
+          aadhaar_number: "",
+          aadhaar_photo: "",
         }));
         const { error: mErr } = await supabase.from("booking_members").insert(rows);
         if (mErr) throw mErr;
@@ -218,8 +190,6 @@ export default function BookingPage() {
         phone: parsed.data.phone,
         age: parsed.data.age,
         gender: parsed.data.gender,
-        aadhaar_number: parsed.data.aadhaar,
-        aadhaar_photo_path: primaryPhotoPath,
         updated_at: new Date().toISOString(),
       }).eq("id", user.id);
 
@@ -385,12 +355,6 @@ export default function BookingPage() {
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder="you@example.com" />
                   </Field>
                 </div>
-                <Field label="Aadhaar Number *">
-                  <input required inputMode="numeric" maxLength={12} value={aadhaar} onChange={(e) => setAadhaar(e.target.value.replace(/\D/g, ""))} className={inputCls} placeholder="12-digit number" />
-                </Field>
-                <Field label="Aadhaar Photo *">
-                  <FileInput file={aadhaarFile} onChange={setAadhaarFile} />
-                </Field>
               </div>
             </div>
 
@@ -399,7 +363,7 @@ export default function BookingPage() {
                 <input type="checkbox" checked={isGroup} onChange={(e) => { setIsGroup(e.target.checked); if (!e.target.checked) setMembers([]); }} className="w-4 h-4 accent-accent" />
                 <span className="font-semibold text-primary">This is a group / family booking</span>
               </label>
-              <p className="text-sm text-muted-foreground mt-1 ml-7">Add other people you're booking for. We only need their name and Aadhaar.</p>
+              <p className="text-sm text-muted-foreground mt-1 ml-7">Add other people you're booking for. We only need their name.</p>
             </div>
 
             {isGroup && (
@@ -413,8 +377,6 @@ export default function BookingPage() {
                       </button>
                     </div>
                     <input required value={m.name} onChange={(e) => updateMember(i, { name: e.target.value })} className={inputCls} placeholder="Full name" maxLength={80} />
-                    <input required inputMode="numeric" maxLength={12} value={m.aadhaar} onChange={(e) => updateMember(i, { aadhaar: e.target.value.replace(/\D/g, "") })} className={inputCls} placeholder="12-digit Aadhaar" />
-                    <FileInput file={m.file} onChange={(f) => updateMember(i, { file: f })} />
                   </div>
                 ))}
                 <button type="button" onClick={addMember} className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-border hover:border-accent hover:text-accent text-muted-foreground transition">
@@ -437,9 +399,6 @@ export default function BookingPage() {
             >
               {submitting ? "Submitting..." : "Confirm Booking"}
             </button>
-            <p className="text-xs text-center text-muted-foreground">
-              Your Aadhaar details are stored securely and only accessible to you and our verified team.
-            </p>
           </form>
         )}
       </div>
@@ -455,22 +414,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label className="block text-sm font-semibold text-primary mb-2">{label}</label>
       {children}
     </div>
-  );
-}
-
-function FileInput({ file, onChange }: { file: File | null; onChange: (f: File | null) => void }) {
-  return (
-    <label className="flex items-center gap-3 px-4 py-3 rounded-lg border border-input bg-background cursor-pointer hover:border-accent transition">
-      <Upload className="w-4 h-4 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground flex-1 truncate">
-        {file ? file.name : "Upload Aadhaar photo (JPG/PNG, max 5MB)"}
-      </span>
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-      />
-    </label>
   );
 }
