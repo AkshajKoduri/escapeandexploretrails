@@ -166,6 +166,13 @@ export type Database = {
             foreignKeyName: "trip_album_images_trek_id_fkey"
             columns: ["trek_id"]
             isOneToOne: false
+            referencedRelation: "trek_seat_stats"
+            referencedColumns: ["trek_id"]
+          },
+          {
+            foreignKeyName: "trip_album_images_trek_id_fkey"
+            columns: ["trek_id"]
+            isOneToOne: false
             referencedRelation: "upcoming_treks"
             referencedColumns: ["id"]
           },
@@ -275,7 +282,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      trek_seat_stats: {
+        Row: {
+          max_seats: number | null
+          seats_remaining: number | null
+          seats_taken: number | null
+          trek_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_trek_seat_stats: {
