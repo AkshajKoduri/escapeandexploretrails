@@ -194,6 +194,7 @@ export type Database = {
           meeting_point: string | null
           name: string
           price: number
+          seats_taken: number
           status_override: string | null
           trek_date: string
           trek_time: string | null
@@ -220,6 +221,7 @@ export type Database = {
           meeting_point?: string | null
           name: string
           price?: number
+          seats_taken?: number
           status_override?: string | null
           trek_date: string
           trek_time?: string | null
@@ -246,6 +248,7 @@ export type Database = {
           meeting_point?: string | null
           name?: string
           price?: number
+          seats_taken?: number
           status_override?: string | null
           trek_date?: string
           trek_time?: string | null
