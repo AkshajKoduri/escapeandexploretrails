@@ -383,72 +383,95 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
     }
   };
 
+  const et = f.event_type ?? "Hike";
+  const isCycling = et === "Cycling Ride";
+  const isHike = et === "Hike";
+  const isOutstation = et === "Outstation Trek";
+
   return (
     <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-      <FF label="Trip name *" full><input className={inp} value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} required /></FF>
-      <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
-      <FF label="Date *"><input type="date" className={inp} value={f.trek_date ?? ""} onChange={(e) => set({ trek_date: e.target.value })} required /></FF>
-      <FF label="Assembly Time"><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" /></FF>
-      <FF label="Event Type *">
-        <select className={inp} value={f.event_type ?? "Hike"} onChange={(e) => set({ event_type: e.target.value as any })}>
+      <FF label="Event Type *" full>
+        <select className={inp} value={et} onChange={(e) => set({ event_type: e.target.value as any })}>
           <option value="Hike">Hike</option>
           <option value="Cycling Ride">Cycling Ride</option>
           <option value="Outstation Trek">Outstation Trek</option>
         </select>
       </FF>
-      <FF label="Difficulty">
+
+      <FF label="Trip name *" full><input className={inp} value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} required /></FF>
+
+      {isOutstation && (
+        <FF label="Destination *"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" required /></FF>
+      )}
+
+      <FF label="Date *"><input type="date" className={inp} value={f.trek_date ?? ""} onChange={(e) => set({ trek_date: e.target.value })} required /></FF>
+      <FF label="Assembly Time *"><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" required /></FF>
+      <FF label="Meeting point *" full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" required /></FF>
+
+      {isHike && (
+        <FF label="Trail name / Location *" full><input className={inp} value={f.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="Ananthagiri Hills Trail" required /></FF>
+      )}
+
+      {(isCycling || isHike) && (
+        <>
+          <FF label="Distance (km) *"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="25 km" required /></FF>
+          <FF label="Duration (hours) *"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="4 hours" required /></FF>
+        </>
+      )}
+
+      {isOutstation && (
+        <>
+          <FF label="Duration (days) *"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="2 Days" required /></FF>
+          <FF label="Distance from Hyderabad *"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="350 km from Hyd" required /></FF>
+        </>
+      )}
+
+      <FF label="Difficulty *">
         <select className={inp} value={f.difficulty} onChange={(e) => set({ difficulty: e.target.value as any })}>
           <option>Easy</option><option>Moderate</option><option>Hard</option>
         </select>
       </FF>
-      <FF label="Price (₹) *"><input type="number" min={0} className={inp} value={f.price ?? 0} onChange={(e) => set({ price: Number(e.target.value) })} required /></FF>
-      <FF label={`Max seats *${currentSeatsTaken > 0 ? ` (${currentSeatsTaken} booked)` : ""}`}>
+      <FF label="Price per person (₹) *"><input type="number" min={0} className={inp} value={f.price ?? 0} onChange={(e) => set({ price: Number(e.target.value) })} required /></FF>
+      <FF label={`Max seats *${currentSeatsTaken > 0 ? ` (${currentSeatsTaken} booked)` : ""}`} full>
         <input type="number" min={1} className={inp} value={f.max_seats ?? 30} onChange={(e) => set({ max_seats: Number(e.target.value) })} required />
       </FF>
-      <FF label="Duration"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="2 Days" /></FF>
-      <FF label="Distance / from city"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="120 km from Hyd" /></FF>
-      <FF label="Status override">
-        <select className={inp} value={f.status_override ?? ""} onChange={(e) => set({ status_override: e.target.value || null })}>
-          <option value="">Auto (by date)</option>
-          <option value="Upcoming">Upcoming</option>
-          <option value="Ongoing">Ongoing</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </FF>
-      <FF label="Location notes" full><input className={inp} value={f.location ?? ""} onChange={(e) => set({ location: e.target.value })} /></FF>
-      <FF label="Meeting point" full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" /></FF>
-      <FF label="Description" full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} /></FF>
-      <FF label="Special instructions" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
 
-      <FF label="Photo album link (Google Drive / any URL — shown on Past Trips)" full>
-        <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
-      </FF>
+      <FF label="Description *" full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required /></FF>
+      <FF label="Special instructions (what to carry, wear etc.)" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
 
-      <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-          <FileText className="w-4 h-4" /> Itinerary (shown on the booking page)
-        </div>
-        <FF label="Itinerary link (optional)" full>
-          <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
-        </FF>
-        <FF label="Or upload an itinerary PDF (max 10MB)" full>
-          <input
-            type="file" accept="application/pdf"
-            onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent file:text-accent-foreground file:font-semibold hover:file:bg-gold"
-          />
-          {f.itinerary_file_path && !itineraryFile && (
-            <div className="mt-2 flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground truncate flex-1">📄 Current: {f.itinerary_file_path.split("/").pop()}</span>
-              <button type="button" onClick={removeItineraryFile} className="px-2 py-1 rounded-md text-destructive hover:bg-destructive/10">
-                Remove
-              </button>
+      {isOutstation && (
+        <>
+          <FF label="Photo album link (Google Drive / any URL)" full>
+            <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
+          </FF>
+
+          <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+              <FileText className="w-4 h-4" /> Itinerary (shown on the booking page)
             </div>
-          )}
-        </FF>
-      </div>
+            <FF label="Itinerary link (optional)" full>
+              <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
+            </FF>
+            <FF label="Or upload an itinerary PDF (max 10MB)" full>
+              <input
+                type="file" accept="application/pdf"
+                onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent file:text-accent-foreground file:font-semibold hover:file:bg-gold"
+              />
+              {f.itinerary_file_path && !itineraryFile && (
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground truncate flex-1">📄 Current: {f.itinerary_file_path.split("/").pop()}</span>
+                  <button type="button" onClick={removeItineraryFile} className="px-2 py-1 rounded-md text-destructive hover:bg-destructive/10">
+                    Remove
+                  </button>
+                </div>
+              )}
+            </FF>
+          </div>
+        </>
+      )}
 
-      <FF label="Cover image" full>
+      <FF label="Cover image (optional)" full>
         <input
           type="file" accept="image/*"
           onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
@@ -456,6 +479,16 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         />
         {f.image_url && !imageFile && <img src={f.image_url} alt="" className="mt-2 w-24 h-24 rounded-lg object-cover" />}
       </FF>
+
+      <FF label="Status override (admin)" full>
+        <select className={inp} value={f.status_override ?? ""} onChange={(e) => set({ status_override: e.target.value || null })}>
+          <option value="">Auto (by date)</option>
+          <option value="Upcoming">Upcoming</option>
+          <option value="Ongoing">Ongoing</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </FF>
+
       <div className="md:col-span-2">
         <button type="submit" disabled={busy} className="w-full px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-secondary transition disabled:opacity-60">
           {busy ? "Saving…" : isEdit ? "Save changes" : "Add trip to homepage"}
@@ -464,6 +497,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
     </form>
   );
 }
+
 
 const inp = "w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent";
 
