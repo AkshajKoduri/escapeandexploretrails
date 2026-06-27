@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, Link as LinkIcon, X } from "lucide-react";
+import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -119,7 +119,7 @@ export default function Admin() {
 
   const activeTreks = useMemo(() => treks.filter((t) => !t.is_archived && !t.is_draft), [treks]);
   const draftTreks = useMemo(() => treks.filter((t) => t.is_draft && !t.is_archived), [treks]);
-  const archivedTreks = useMemo(() => treks.filter((t) => t.is_archived), [treks]);
+  
 
   if (loading || isAdmin === null) {
     return <main className="min-h-screen grid place-items-center">Loading…</main>;
