@@ -29,7 +29,7 @@ export default function About() {
             From One Climb to a Community
           </h2>
           <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
-            E2 Trails was born on a trail — not in a boardroom. On one of our first climbs, legs burning and lungs struggling, it wasn't the view that kept us going. It was the people beside us — strangers who cheered, encouraged and refused to let us quit. That moment made one thing clear: the right community can make you capable of things you never imagined.
+            E2 Trails was born on a trail — not in a boardroom. On one of my first climbs, legs burning and lungs struggling, it wasn't the view that kept me going. It was the people beside me — strangers who cheered, encouraged and refused to let me quit. That moment made one thing clear: the right community can make you capable of things you never imagined.
           </p>
           <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed">
             So we built one. E2 Trails started in Hyderabad as a weekend escape for people who wanted more than a desk and a screen. Two years and hundreds of adventurers later, it has grown into something far bigger — a tribe of cyclists, hikers and explorers who show up every weekend not just for the trail, but for each other. Whether you're stepping onto your first trail or chasing your next summit — you belong here.
