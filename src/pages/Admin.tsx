@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, Link as LinkIcon, X } from "lucide-react";
+import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -119,7 +119,7 @@ export default function Admin() {
 
   const activeTreks = useMemo(() => treks.filter((t) => !t.is_archived && !t.is_draft), [treks]);
   const draftTreks = useMemo(() => treks.filter((t) => t.is_draft && !t.is_archived), [treks]);
-  const archivedTreks = useMemo(() => treks.filter((t) => t.is_archived), [treks]);
+  
 
   if (loading || isAdmin === null) {
     return <main className="min-h-screen grid place-items-center">Loading…</main>;
@@ -158,11 +158,10 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 max-w-xl">
+            <TabsList className="grid w-full grid-cols-3 max-w-xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="drafts">Drafts</TabsTrigger>
-              <TabsTrigger value="past">Past Trips</TabsTrigger>
             </TabsList>
 
             <TabsContent value="trips" className="mt-6">
@@ -175,10 +174,6 @@ export default function Admin() {
 
             <TabsContent value="drafts" className="mt-6">
               <DraftsTab treks={draftTreks} reload={loadAll} />
-            </TabsContent>
-
-            <TabsContent value="past" className="mt-6">
-              <PastTripsTab treks={archivedTreks} reload={loadAll} />
             </TabsContent>
           </Tabs>
         </div>
@@ -758,96 +753,3 @@ function DraftsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) {
   );
 }
 
-/* ===================== Past Trips Tab ===================== */
-
-function PastTripsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) {
-  return (
-    <div className="space-y-4">
-      <h2 className="font-heading font-bold text-lg text-primary">Past trips ({treks.length})</h2>
-      <p className="text-sm text-muted-foreground">Paste a Google Drive (or any) link to the photo album. Customers will see a "View Photo Album" button on the Past Trips page. Click "Restore" to send a trip back to Drafts.</p>
-      {treks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No archived trips yet. Use the archive button on a trip to move it here.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {treks.map((t) => (
-            <PastTripCard key={t.id} trek={t} reload={reload} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PastTripCard({ trek, reload }: { trek: Trek; reload: () => void }) {
-  const [albumUrl, setAlbumUrl] = useState(trek.album_url ?? "");
-  const [busy, setBusy] = useState(false);
-
-  const restoreToDraft = async () => {
-    if (!confirm("Move this trip to Drafts? It will be hidden from the public site until you publish it.")) return;
-    const { error } = await supabase.from("upcoming_treks").update({ is_archived: false, is_draft: true }).eq("id", trek.id);
-    if (error) return toast.error(error.message);
-    toast.success("Moved to Drafts");
-    reload();
-  };
-
-  const saveAlbum = async () => {
-    const raw = albumUrl.trim();
-    const v = normalizeUrl(raw);
-    if (raw && !v) return toast.error("Enter a valid URL");
-    if (v) {
-      try { new URL(v); } catch { return toast.error("Enter a valid URL"); }
-    }
-    setBusy(true);
-    const { error } = await supabase.from("upcoming_treks").update({ album_url: v }).eq("id", trek.id);
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Album link saved");
-    if (v) setAlbumUrl(v);
-    trek.album_url = v;
-    reload();
-  };
-
-  const albumHref = normalizeUrl(trek.album_url);
-
-  return (
-    <div className="rounded-xl border border-border bg-background overflow-hidden flex flex-col">
-      <div className="flex">
-        {trek.image_url ? (
-          <img src={trek.image_url} alt={trek.name} className="w-32 h-32 object-cover" />
-        ) : (
-          <div className="w-32 h-32 bg-muted grid place-items-center text-muted-foreground"><Mountain className="w-8 h-8" /></div>
-        )}
-        <div className="p-3 flex-1 min-w-0">
-          <div className="font-semibold text-foreground truncate">{trek.name}</div>
-          <div className="text-xs text-muted-foreground">{new Date(trek.trek_date).toLocaleDateString()}</div>
-          {albumHref && (
-            <a href={albumHref} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline">
-              <LinkIcon className="w-3 h-3" /> Open current album
-            </a>
-          )}
-        </div>
-      </div>
-      <div className="p-3 border-t border-border space-y-2">
-        <label className="block text-xs font-semibold text-muted-foreground">Photo album link (Google Drive / any URL)</label>
-        <input
-          type="text"
-          value={albumUrl}
-          onChange={(e) => setAlbumUrl(e.target.value)}
-          placeholder="https://drive.google.com/drive/folders/..."
-          className={inp}
-        />
-        {trek.album_url && (
-          <div className="text-[11px] text-muted-foreground break-all">Saved: <span className="font-mono">{trek.album_url}</span></div>
-        )}
-        <div className="flex gap-2">
-          <button onClick={saveAlbum} disabled={busy} className="flex-1 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:bg-secondary disabled:opacity-60">
-            {busy ? "Saving…" : "Save album link"}
-          </button>
-          <button onClick={restoreToDraft} className="px-3 py-2 rounded-full border border-border text-xs hover:bg-muted">
-            Restore
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

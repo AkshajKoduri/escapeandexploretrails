@@ -226,14 +226,6 @@ export default function Treks() {
           );
         })()}
 
-        <div className="mt-14 text-center reveal">
-          <Link
-            to="/past-trips"
-            className="inline-flex items-center px-10 py-4 rounded-full bg-primary text-primary-foreground font-semibold tracking-wide hover:bg-secondary transition-colors shadow-card"
-          >
-            View Past Trips →
-          </Link>
-        </div>
       </div>
 
       <Dialog open={!!openTrek} onOpenChange={(o) => !o && setOpenId(null)}>
