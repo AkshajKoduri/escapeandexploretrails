@@ -319,7 +319,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
       let imageUrl = f.image_url;
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
-        const path = `${userId}/${Date.now()}.${ext}`;
+        const path = `trips/${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from("trek-images").upload(path, imageFile);
         if (upErr) throw upErr;
         imageUrl = supabase.storage.from("trek-images").getPublicUrl(path).data.publicUrl;
@@ -327,7 +327,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
 
       let itineraryPath = f.itinerary_file_path;
       if (itineraryFile) {
-        const path = `${userId}/${crypto.randomUUID()}.pdf`;
+        const path = `trips/${crypto.randomUUID()}.pdf`;
         const { error: upErr } = await supabase.storage.from("itineraries").upload(path, itineraryFile, {
           contentType: "application/pdf", upsert: false,
         });
@@ -365,7 +365,6 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         if (error) throw error;
         toast.success("Trip updated");
       } else {
-        payload.created_by = userId;
         const { error } = await supabase.from("upcoming_treks").insert(payload);
         if (error) throw error;
         toast.success("Trip added");
