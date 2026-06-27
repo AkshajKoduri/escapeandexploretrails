@@ -190,7 +190,6 @@ export type Database = {
         Row: {
           album_url: string | null
           created_at: string
-          created_by: string | null
           description: string | null
           destination: string | null
           difficulty: Database["public"]["Enums"]["trek_difficulty"]
@@ -217,7 +216,6 @@ export type Database = {
         Insert: {
           album_url?: string | null
           created_at?: string
-          created_by?: string | null
           description?: string | null
           destination?: string | null
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]
@@ -244,7 +242,6 @@ export type Database = {
         Update: {
           album_url?: string | null
           created_at?: string
-          created_by?: string | null
           description?: string | null
           destination?: string | null
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]

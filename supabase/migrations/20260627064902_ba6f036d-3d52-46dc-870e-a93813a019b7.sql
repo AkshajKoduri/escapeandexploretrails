@@ -1,0 +1,1 @@
+ALTER TABLE public.upcoming_treks DROP COLUMN IF EXISTS created_by;
