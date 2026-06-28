@@ -58,7 +58,8 @@ export default function Auth() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/booking");
+        const from = (location.state as { from?: string } | undefined)?.from;
+        navigate(from === "/booking" ? "/booking" : "/");
       }
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
