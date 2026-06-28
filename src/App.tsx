@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import FloatingWhatsApp from "@/components/site/FloatingWhatsApp";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
@@ -31,6 +32,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FloatingWhatsApp />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
