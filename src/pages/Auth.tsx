@@ -18,8 +18,17 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate("/", { replace: true });
-  }, [user, loading, navigate]);
+    if (!loading && user) {
+      const redirect = sessionStorage.getItem("auth_redirect");
+      if (redirect) {
+        sessionStorage.removeItem("auth_redirect");
+        navigate(redirect, { replace: true });
+      } else {
+        const from = (location.state as { from?: string } | undefined)?.from;
+        navigate(from === "/booking" ? "/booking" : "/", { replace: true });
+      }
+    }
+  }, [user, loading, navigate, location]);
 
   useEffect(() => {
     document.title = mode === "login" ? "Log in — E2 Trails" : "Sign up — E2 Trails";
