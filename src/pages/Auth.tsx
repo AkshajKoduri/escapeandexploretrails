@@ -70,7 +70,11 @@ export default function Auth() {
 
   const google = async () => {
     setBusy(true);
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/booking` });
+    const from = (location.state as { from?: string } | undefined)?.from;
+    if (from === "/booking") {
+      sessionStorage.setItem("auth_redirect", "/booking");
+    }
+    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth` });
     if (r.error) {
       toast.error(r.error.message ?? "Google sign-in failed");
       setBusy(false);
