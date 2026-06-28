@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +8,7 @@ import { Mountain } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -17,8 +18,17 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate("/", { replace: true });
-  }, [user, loading, navigate]);
+    if (!loading && user) {
+      const redirect = sessionStorage.getItem("auth_redirect");
+      if (redirect) {
+        sessionStorage.removeItem("auth_redirect");
+        navigate(redirect, { replace: true });
+      } else {
+        const from = (location.state as { from?: string } | undefined)?.from;
+        navigate(from === "/booking" ? "/booking" : "/", { replace: true });
+      }
+    }
+  }, [user, loading, navigate, location]);
 
   useEffect(() => {
     document.title = mode === "login" ? "Log in — E2 Trails" : "Sign up — E2 Trails";
@@ -36,7 +46,7 @@ export default function Auth() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/booking`,
+            emailRedirectTo: `${window.location.origin}/`,
             data: { full_name: fullName, phone: phone.trim() },
           },
         });
@@ -48,7 +58,8 @@ export default function Auth() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/booking");
+        const from = (location.state as { from?: string } | undefined)?.from;
+        navigate(from === "/booking" ? "/booking" : "/");
       }
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
@@ -59,7 +70,11 @@ export default function Auth() {
 
   const google = async () => {
     setBusy(true);
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/booking` });
+    const from = (location.state as { from?: string } | undefined)?.from;
+    if (from === "/booking") {
+      sessionStorage.setItem("auth_redirect", "/booking");
+    }
+    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth` });
     if (r.error) {
       toast.error(r.error.message ?? "Google sign-in failed");
       setBusy(false);

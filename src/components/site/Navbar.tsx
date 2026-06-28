@@ -80,7 +80,7 @@ export default function Navbar() {
             </button>
           ) : (
             <Link to="/auth" className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium transition">
-              Log in
+              Sign In
             </Link>
           )}
           <Link
@@ -158,7 +158,7 @@ export default function Navbar() {
                   onClick={() => setOpen(false)}
                   className="inline-flex justify-center px-6 py-3 rounded-full border border-accent/40 text-charcoal-foreground"
                 >
-                  Log in
+                  Sign In
                 </Link>
               )}
             </nav>
