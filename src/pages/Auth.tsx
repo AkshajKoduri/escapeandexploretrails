@@ -8,6 +8,7 @@ import { Mountain } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
