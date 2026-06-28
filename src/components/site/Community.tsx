@@ -10,6 +10,17 @@ export default function Community() {
           <p className="mt-6 text-muted-foreground text-base md:text-lg leading-relaxed">
             E2 Trails is more than an adventure company — it's a growing community of people who share a love for the outdoors, new experiences and genuine human connections. Every trail we walk together adds another story to our journey.
           </p>
+          <a
+            href="https://wa.me/916303682022"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-accent-foreground font-semibold hover:bg-gold transition-colors"
+          >
+            Chat with Us on WhatsApp
+          </a>
+          <p className="mt-3 text-sm text-muted-foreground">
+            For personal enquiries &amp; queries
+          </p>
         </div>
       </div>
     </section>

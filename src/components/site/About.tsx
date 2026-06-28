@@ -65,7 +65,7 @@ export default function About() {
               Ashok — Founder & Lead Trek Guide
             </h3>
             <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
-              Ashok is the heart and soul of E2 Trails. An experienced trek leader, he has guided countless safe and secure expeditions across Telangana and Andhra Pradesh — earning the trust of trekkers from all walks of life.
+              Ashok is the heart and soul of E2 Trails. An experienced trek leader, he has guided countless safe and secure expeditions across India — earning the trust of adventurers from all walks of life.
             </p>
             <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed">
               He once built a successful career in the software industry, but his unwavering love for the outdoors pulled him toward the trails. Choosing passion over a desk job, Ashok resigned to dedicate himself fully to trekking and to mentoring young adventurers — sharing not just routes, but a way of life rooted in nature, safety, and camaraderie.

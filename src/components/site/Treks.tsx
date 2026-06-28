@@ -117,7 +117,7 @@ export default function Treks() {
             Your Next Adventure Awaits
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Handpicked weekend escapes across the Deccan — book your spot before they sell out.
+            Handpicked weekend escapes across India — book your spot before they sell out.
           </p>
         </div>
 

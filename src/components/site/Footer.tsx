@@ -34,7 +34,7 @@ export default function Footer() {
             </span>
           </div>
           <p className="mt-4 text-charcoal-foreground/70 leading-relaxed">
-            Curating safe, soulful adventures across Telangana &amp; Andhra Pradesh — one trail at a time.
+            Curating safe, soulful adventures across India — one trail at a time.
           </p>
           <p className="mt-4 font-script text-gold">"Every summit, a new story."</p>
         </div>
@@ -74,7 +74,7 @@ export default function Footer() {
 
       <div className="border-t border-charcoal-foreground/10 py-6">
         <div className="container text-center text-sm text-charcoal-foreground/60">
-          © 2025 E2 Trails. All rights reserved. | Made with <span className="text-accent">🧡</span> in Hyderabad
+          © 2026 E2 Trails. All rights reserved. | Made with <span className="text-accent">🧡</span> in Hyderabad
         </div>
       </div>
     </footer>
