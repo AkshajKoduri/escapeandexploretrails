@@ -1,23 +1,42 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-
-const ADMIN_EMAIL = "koduri134679@gmail.com";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
-
-  const isAdmin = !!user && user.email === ADMIN_EMAIL;
+  const [checking, setChecking] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && !isAdmin) {
-      toast({ title: "Access denied", variant: "destructive" });
+    let cancelled = false;
+    async function check() {
+      if (!user) {
+        setChecking(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const ok = !!data && !error;
+      setIsAdmin(ok);
+      setChecking(false);
+      if (!ok) {
+        toast({ title: "Access denied", variant: "destructive" });
+      }
     }
-  }, [loading, user, isAdmin]);
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
-  if (loading) {
+  if (loading || checking) {
     return <main className="min-h-screen grid place-items-center text-muted-foreground">Loading…</main>;
   }
   if (!user) {
