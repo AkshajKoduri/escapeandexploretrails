@@ -9,6 +9,7 @@ import AdminRoute from "@/components/AdminRoute";
 import FloatingWhatsApp from "@/components/site/FloatingWhatsApp";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
+import AuthCallback from "./pages/AuthCallback.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
 import Admin from "./pages/Admin.tsx";
 
@@ -25,6 +26,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<Index />} />
             <Route path="/booking" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
