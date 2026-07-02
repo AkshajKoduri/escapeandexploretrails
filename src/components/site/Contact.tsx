@@ -85,16 +85,16 @@ export default function Contact() {
           <form onSubmit={onSubmit} className="reveal-right bg-background rounded-2xl p-8 md:p-10 shadow-card border border-border space-y-5">
             <div>
               <label className="text-sm font-semibold text-foreground mb-1.5 block">Full Name</label>
-              <input required name="name" type="text" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+              <input required maxLength={100} name="name" type="text" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <label className="text-sm font-semibold text-foreground mb-1.5 block">Email</label>
-                <input required name="email" type="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+                <input required maxLength={255} name="email" type="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
               </div>
               <div>
                 <label className="text-sm font-semibold text-foreground mb-1.5 block">Phone</label>
-                <input required name="phone" type="tel" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+                <input required maxLength={20} name="phone" type="tel" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
               </div>
             </div>
             <div>
@@ -110,8 +110,9 @@ export default function Contact() {
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground mb-1.5 block">Message / Special Requirements</label>
-              <textarea name="message" rows={4} className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+              <textarea name="message" rows={4} maxLength={1000} className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
             </div>
+
             <button
               type="submit"
               disabled={sending}
