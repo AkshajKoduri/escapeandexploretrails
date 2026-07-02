@@ -1,19 +1,42 @@
 import { useState } from "react";
 import { Mail, Instagram, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const contactSchema = z.object({
+  name: z.string().trim().min(2, "Please enter your name").max(100, "Name too long"),
+  email: z.string().trim().email("Invalid email").max(255),
+  phone: z.string().trim().regex(/^[+]?[0-9\s()-]{7,20}$/, "Enter a valid phone number"),
+  trek: z.string().trim().max(100).optional().or(z.literal("")),
+  message: z.string().trim().max(1000, "Message too long").optional().or(z.literal("")),
+});
 
 export default function Contact() {
   const [sending, setSending] = useState(false);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const parsed = contactSchema.safeParse({
+      name: fd.get("name"),
+      email: fd.get("email"),
+      phone: fd.get("phone"),
+      trek: fd.get("trek"),
+      message: fd.get("message"),
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     setSending(true);
     setTimeout(() => {
       setSending(false);
-      (e.target as HTMLFormElement).reset();
+      form.reset();
       toast.success("Enquiry sent! We'll reach out within 24 hours.");
     }, 800);
   };
+
 
   return (
     <section id="contact" className="py-24 md:py-32 bg-muted/40">
@@ -62,16 +85,16 @@ export default function Contact() {
           <form onSubmit={onSubmit} className="reveal-right bg-background rounded-2xl p-8 md:p-10 shadow-card border border-border space-y-5">
             <div>
               <label className="text-sm font-semibold text-foreground mb-1.5 block">Full Name</label>
-              <input required name="name" type="text" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+              <input required maxLength={100} name="name" type="text" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <label className="text-sm font-semibold text-foreground mb-1.5 block">Email</label>
-                <input required name="email" type="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+                <input required maxLength={255} name="email" type="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
               </div>
               <div>
                 <label className="text-sm font-semibold text-foreground mb-1.5 block">Phone</label>
-                <input required name="phone" type="tel" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+                <input required maxLength={20} name="phone" type="tel" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
               </div>
             </div>
             <div>
@@ -87,8 +110,9 @@ export default function Contact() {
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground mb-1.5 block">Message / Special Requirements</label>
-              <textarea name="message" rows={4} className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+              <textarea name="message" rows={4} maxLength={1000} className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
             </div>
+
             <button
               type="submit"
               disabled={sending}

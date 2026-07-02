@@ -34,14 +34,18 @@ export default function Auth() {
     document.title = mode === "login" ? "Log in — E2 Trails" : "Sign up — E2 Trails";
   }, [mode]);
 
-  const submit = async (e: React.FormEvent) => {
+    const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
+      if (email.length > 255) throw new Error("Email too long");
+      if (password.length < 8 || password.length > 128) throw new Error("Password must be 8-128 characters");
       if (mode === "signup") {
+        if (fullName.trim().length < 2 || fullName.length > 100) throw new Error("Please enter a valid full name");
         if (!/^[0-9+\-\s()]{7,15}$/.test(phone.trim())) {
           throw new Error("Please enter a valid mobile number");
         }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -118,6 +122,7 @@ export default function Auth() {
               <input
                 type="text"
                 required
+                maxLength={100}
                 placeholder="Full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -126,6 +131,7 @@ export default function Auth() {
               <input
                 type="tel"
                 required
+                maxLength={15}
                 placeholder="Mobile number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -136,6 +142,7 @@ export default function Auth() {
           <input
             type="email"
             required
+            maxLength={255}
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -144,12 +151,14 @@ export default function Auth() {
           <input
             type="password"
             required
-            minLength={6}
-            placeholder="Password (min 6 chars)"
+            minLength={8}
+            maxLength={128}
+            placeholder="Password (min 8 chars)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent"
           />
+
           <button
             type="submit"
             disabled={busy}
