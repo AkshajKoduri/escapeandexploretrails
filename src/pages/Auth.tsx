@@ -34,14 +34,18 @@ export default function Auth() {
     document.title = mode === "login" ? "Log in — E2 Trails" : "Sign up — E2 Trails";
   }, [mode]);
 
-  const submit = async (e: React.FormEvent) => {
+    const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
+      if (email.length > 255) throw new Error("Email too long");
+      if (password.length < 8 || password.length > 128) throw new Error("Password must be 8-128 characters");
       if (mode === "signup") {
+        if (fullName.trim().length < 2 || fullName.length > 100) throw new Error("Please enter a valid full name");
         if (!/^[0-9+\-\s()]{7,15}$/.test(phone.trim())) {
           throw new Error("Please enter a valid mobile number");
         }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
