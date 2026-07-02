@@ -1,19 +1,42 @@
 import { useState } from "react";
 import { Mail, Instagram, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const contactSchema = z.object({
+  name: z.string().trim().min(2, "Please enter your name").max(100, "Name too long"),
+  email: z.string().trim().email("Invalid email").max(255),
+  phone: z.string().trim().regex(/^[+]?[0-9\s()-]{7,20}$/, "Enter a valid phone number"),
+  trek: z.string().trim().max(100).optional().or(z.literal("")),
+  message: z.string().trim().max(1000, "Message too long").optional().or(z.literal("")),
+});
 
 export default function Contact() {
   const [sending, setSending] = useState(false);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const parsed = contactSchema.safeParse({
+      name: fd.get("name"),
+      email: fd.get("email"),
+      phone: fd.get("phone"),
+      trek: fd.get("trek"),
+      message: fd.get("message"),
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     setSending(true);
     setTimeout(() => {
       setSending(false);
-      (e.target as HTMLFormElement).reset();
+      form.reset();
       toast.success("Enquiry sent! We'll reach out within 24 hours.");
     }, 800);
   };
+
 
   return (
     <section id="contact" className="py-24 md:py-32 bg-muted/40">
