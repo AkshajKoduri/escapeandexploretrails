@@ -122,6 +122,7 @@ export default function Auth() {
               <input
                 type="text"
                 required
+                maxLength={100}
                 placeholder="Full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -130,6 +131,7 @@ export default function Auth() {
               <input
                 type="tel"
                 required
+                maxLength={15}
                 placeholder="Mobile number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -140,6 +142,7 @@ export default function Auth() {
           <input
             type="email"
             required
+            maxLength={255}
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -148,12 +151,14 @@ export default function Auth() {
           <input
             type="password"
             required
-            minLength={6}
-            placeholder="Password (min 6 chars)"
+            minLength={8}
+            maxLength={128}
+            placeholder="Password (min 8 chars)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent"
           />
+
           <button
             type="submit"
             disabled={busy}
