@@ -469,6 +469,49 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
       <FF label="Special instructions (what to carry, wear etc.)" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
 
       {isOutstation && (
+        <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+          <div className="text-sm font-semibold text-primary">Outstation trek details (optional)</div>
+          <p className="text-xs text-muted-foreground">Click the pencil next to any label to rename it. Leave a field blank to hide it from the public trip page.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {OUTSTATION_EXTRA_FIELDS.map((field) => {
+              const key = field.key as string;
+              const currentLabel = (f.field_labels && f.field_labels[key]) || field.label;
+              const value = (f as any)[key] ?? "";
+              return (
+                <div key={key}>
+                  <EditableLabel
+                    value={currentLabel}
+                    defaultValue={field.label}
+                    onChange={(newLabel) => {
+                      const labels = { ...(f.field_labels ?? {}) };
+                      if (!newLabel || newLabel === field.label) delete labels[key];
+                      else labels[key] = newLabel;
+                      set({ field_labels: labels } as any);
+                    }}
+                  />
+                  {field.type === "select" ? (
+                    <select className={inp} value={value} onChange={(e) => set({ [key]: e.target.value } as any)}>
+                      {(field.options ?? []).map((o) => (
+                        <option key={o} value={o}>{o || "— none —"}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className={inp}
+                      value={value}
+                      onChange={(e) => set({ [key]: e.target.value } as any)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
+      {isOutstation && (
         <>
           <FF label="Photo album link (Google Drive / any URL)" full>
             <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
