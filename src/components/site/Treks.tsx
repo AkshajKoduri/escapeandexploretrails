@@ -27,7 +27,20 @@ type TrekCard = {
   maxSeats: number;
   isFull: boolean;
   eventType: EventType;
+  extras: { key: string; label: string; value: string }[];
 };
+
+const OUTSTATION_FIELDS: { key: string; label: string }[] = [
+  { key: "trek_difficulty", label: "Trek Difficulty" },
+  { key: "trek_distance", label: "Trek Distance" },
+  { key: "altitude", label: "Altitude" },
+  { key: "region", label: "Region" },
+  { key: "elevation_gain", label: "Elevation Gain" },
+  { key: "mountain_range", label: "Mountain Range" },
+  { key: "base_village", label: "Base Village" },
+  { key: "duration_text", label: "Duration" },
+  { key: "stay_location", label: "Stay Location" },
+];
 
 const fallbackImg = ahobilam;
 
