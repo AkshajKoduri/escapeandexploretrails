@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X } from "lucide-react";
+import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -31,6 +31,16 @@ type Trek = {
   itinerary_url: string | null;
   itinerary_file_path: string | null;
   event_type: "Hike" | "Cycling Ride" | "Outstation Trek";
+  trek_difficulty: string | null;
+  trek_distance: string | null;
+  altitude: string | null;
+  region: string | null;
+  elevation_gain: string | null;
+  mountain_range: string | null;
+  base_village: string | null;
+  duration_text: string | null;
+  stay_location: string | null;
+  field_labels: Record<string, string> | null;
 };
 
 type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
@@ -42,7 +52,22 @@ const empty: Partial<Trek> = {
   duration: "", distance: "", description: "", price: 0, max_seats: 30,
   meeting_point: "", instructions: "", location: "",
   album_url: "", itinerary_url: "", itinerary_file_path: "", event_type: "Hike",
+  trek_difficulty: "", trek_distance: "", altitude: "", region: "",
+  elevation_gain: "", mountain_range: "", base_village: "",
+  duration_text: "", stay_location: "", field_labels: {},
 };
+
+export const OUTSTATION_EXTRA_FIELDS: { key: keyof Trek; label: string; type?: "select"; options?: string[]; placeholder?: string }[] = [
+  { key: "trek_difficulty", label: "Trek Difficulty", type: "select", options: ["", "Easy", "Moderate", "Hard", "Very Hard"] },
+  { key: "trek_distance", label: "Trek Distance", placeholder: "14 Kms/10 hrs" },
+  { key: "altitude", label: "Altitude", placeholder: "1,422 M/4,670 FT" },
+  { key: "region", label: "Region", placeholder: "Malshej Ghat, Maharashtra" },
+  { key: "elevation_gain", label: "Elevation Gain", placeholder: "700 M/2,297 FT" },
+  { key: "mountain_range", label: "Mountain Range", placeholder: "Western Ghats" },
+  { key: "base_village", label: "Base Village", placeholder: "Khireshwar" },
+  { key: "duration_text", label: "Duration", placeholder: "3D/2N" },
+  { key: "stay_location", label: "Stay Location", placeholder: "Khireshwar Village" },
+];
 
 function normalizeUrl(u: string | null | undefined): string | null {
   if (!u) return null;
@@ -358,6 +383,16 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         itinerary_url: normalizeUrl(f.itinerary_url),
         itinerary_file_path: itineraryPath || null,
         event_type: f.event_type || "Hike",
+        trek_difficulty: f.trek_difficulty?.trim() || null,
+        trek_distance: f.trek_distance?.trim() || null,
+        altitude: f.altitude?.trim() || null,
+        region: f.region?.trim() || null,
+        elevation_gain: f.elevation_gain?.trim() || null,
+        mountain_range: f.mountain_range?.trim() || null,
+        base_village: f.base_village?.trim() || null,
+        duration_text: f.duration_text?.trim() || null,
+        stay_location: f.stay_location?.trim() || null,
+        field_labels: f.field_labels ?? {},
       };
 
       if (isEdit) {
@@ -434,6 +469,49 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
       <FF label="Special instructions (what to carry, wear etc.)" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
 
       {isOutstation && (
+        <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+          <div className="text-sm font-semibold text-primary">Outstation trek details (optional)</div>
+          <p className="text-xs text-muted-foreground">Click the pencil next to any label to rename it. Leave a field blank to hide it from the public trip page.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {OUTSTATION_EXTRA_FIELDS.map((field) => {
+              const key = field.key as string;
+              const currentLabel = (f.field_labels && f.field_labels[key]) || field.label;
+              const value = (f as any)[key] ?? "";
+              return (
+                <div key={key}>
+                  <EditableLabel
+                    value={currentLabel}
+                    defaultValue={field.label}
+                    onChange={(newLabel) => {
+                      const labels = { ...(f.field_labels ?? {}) };
+                      if (!newLabel || newLabel === field.label) delete labels[key];
+                      else labels[key] = newLabel;
+                      set({ field_labels: labels } as any);
+                    }}
+                  />
+                  {field.type === "select" ? (
+                    <select className={inp} value={value} onChange={(e) => set({ [key]: e.target.value } as any)}>
+                      {(field.options ?? []).map((o) => (
+                        <option key={o} value={o}>{o || "— none —"}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className={inp}
+                      value={value}
+                      onChange={(e) => set({ [key]: e.target.value } as any)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
+      {isOutstation && (
         <>
           <FF label="Photo album link (Google Drive / any URL)" full>
             <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
@@ -500,6 +578,41 @@ function FF({ label, children, full }: { label: string; children: React.ReactNod
     <div className={full ? "md:col-span-2" : ""}>
       <label className="block text-xs font-semibold mb-1 text-muted-foreground">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function EditableLabel({ value, defaultValue, onChange }: { value: string; defaultValue: string; onChange: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { setDraft(value); }, [value]);
+  const commit = () => {
+    const v = draft.trim();
+    onChange(v || defaultValue);
+    setEditing(false);
+  };
+  return (
+    <div className="flex items-center gap-1.5 mb-1">
+      {editing ? (
+        <>
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setDraft(value); setEditing(false); } }}
+            className="text-xs font-semibold px-2 py-0.5 rounded border border-input bg-background flex-1"
+          />
+          <button type="button" onClick={commit} className="p-1 text-primary hover:bg-primary/10 rounded" title="Save label"><Check className="w-3.5 h-3.5" /></button>
+          <button type="button" onClick={() => { setDraft(value); setEditing(false); }} className="p-1 text-muted-foreground hover:bg-muted rounded" title="Cancel"><X className="w-3.5 h-3.5" /></button>
+        </>
+      ) : (
+        <>
+          <label className="block text-xs font-semibold text-muted-foreground">{value}</label>
+          <button type="button" onClick={() => setEditing(true)} className="p-0.5 text-muted-foreground hover:text-primary" title="Rename label">
+            <Pencil className="w-3 h-3" />
+          </button>
+        </>
+      )}
     </div>
   );
 }

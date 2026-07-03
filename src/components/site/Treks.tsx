@@ -27,7 +27,20 @@ type TrekCard = {
   maxSeats: number;
   isFull: boolean;
   eventType: EventType;
+  extras: { key: string; label: string; value: string }[];
 };
+
+const OUTSTATION_FIELDS: { key: string; label: string }[] = [
+  { key: "trek_difficulty", label: "Trek Difficulty" },
+  { key: "trek_distance", label: "Trek Distance" },
+  { key: "altitude", label: "Altitude" },
+  { key: "region", label: "Region" },
+  { key: "elevation_gain", label: "Elevation Gain" },
+  { key: "mountain_range", label: "Mountain Range" },
+  { key: "base_village", label: "Base Village" },
+  { key: "duration_text", label: "Duration" },
+  { key: "stay_location", label: "Stay Location" },
+];
 
 const fallbackImg = ahobilam;
 
@@ -86,6 +99,13 @@ export default function Treks() {
           maxSeats: s?.max_seats ?? t.max_seats ?? 0,
           isFull: remaining <= 0,
           eventType: (t.event_type as EventType) ?? "Hike",
+          extras: OUTSTATION_FIELDS
+            .map((f) => ({
+              key: f.key,
+              label: (t.field_labels && t.field_labels[f.key]) || f.label,
+              value: (t[f.key] ?? "") as string,
+            }))
+            .filter((x) => x.value && String(x.value).trim() !== ""),
         };
       }),
     );
@@ -248,6 +268,21 @@ export default function Treks() {
                   <span className="text-xs text-muted-foreground font-normal"> / person</span>
                 </div>
               )}
+
+              {openTrek.eventType === "Outstation Trek" && openTrek.extras.length > 0 && (
+                <section>
+                  <h4 className="font-heading font-bold text-primary mb-2">Trek Details</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {openTrek.extras.map((x) => (
+                      <div key={x.key} className="rounded-lg border border-border bg-muted/20 p-3">
+                        <div className="text-xs font-bold text-primary uppercase tracking-wide">{x.label}</div>
+                        <div className="text-sm text-foreground mt-0.5">{x.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
 
               {openTrek.description && (
                 <section>

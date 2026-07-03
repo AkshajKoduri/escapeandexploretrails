@@ -189,13 +189,18 @@ export type Database = {
       upcoming_treks: {
         Row: {
           album_url: string | null
+          altitude: string | null
+          base_village: string | null
           created_at: string
           description: string | null
           destination: string | null
           difficulty: Database["public"]["Enums"]["trek_difficulty"]
           distance: string | null
           duration: string | null
+          duration_text: string | null
+          elevation_gain: string | null
           event_type: string
+          field_labels: Json
           id: string
           image_url: string | null
           instructions: string | null
@@ -206,22 +211,32 @@ export type Database = {
           location: string | null
           max_seats: number
           meeting_point: string | null
+          mountain_range: string | null
           name: string
           price: number
+          region: string | null
           seats_taken: number
           status_override: string | null
+          stay_location: string | null
           trek_date: string
+          trek_difficulty: string | null
+          trek_distance: string | null
           trek_time: string | null
         }
         Insert: {
           album_url?: string | null
+          altitude?: string | null
+          base_village?: string | null
           created_at?: string
           description?: string | null
           destination?: string | null
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]
           distance?: string | null
           duration?: string | null
+          duration_text?: string | null
+          elevation_gain?: string | null
           event_type?: string
+          field_labels?: Json
           id?: string
           image_url?: string | null
           instructions?: string | null
@@ -232,22 +247,32 @@ export type Database = {
           location?: string | null
           max_seats?: number
           meeting_point?: string | null
+          mountain_range?: string | null
           name: string
           price?: number
+          region?: string | null
           seats_taken?: number
           status_override?: string | null
+          stay_location?: string | null
           trek_date: string
+          trek_difficulty?: string | null
+          trek_distance?: string | null
           trek_time?: string | null
         }
         Update: {
           album_url?: string | null
+          altitude?: string | null
+          base_village?: string | null
           created_at?: string
           description?: string | null
           destination?: string | null
           difficulty?: Database["public"]["Enums"]["trek_difficulty"]
           distance?: string | null
           duration?: string | null
+          duration_text?: string | null
+          elevation_gain?: string | null
           event_type?: string
+          field_labels?: Json
           id?: string
           image_url?: string | null
           instructions?: string | null
@@ -258,11 +283,16 @@ export type Database = {
           location?: string | null
           max_seats?: number
           meeting_point?: string | null
+          mountain_range?: string | null
           name?: string
           price?: number
+          region?: string | null
           seats_taken?: number
           status_override?: string | null
+          stay_location?: string | null
           trek_date?: string
+          trek_difficulty?: string | null
+          trek_distance?: string | null
           trek_time?: string | null
         }
         Relationships: []
