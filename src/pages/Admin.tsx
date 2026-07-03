@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X } from "lucide-react";
+import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
