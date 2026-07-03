@@ -99,6 +99,13 @@ export default function Treks() {
           maxSeats: s?.max_seats ?? t.max_seats ?? 0,
           isFull: remaining <= 0,
           eventType: (t.event_type as EventType) ?? "Hike",
+          extras: OUTSTATION_FIELDS
+            .map((f) => ({
+              key: f.key,
+              label: (t.field_labels && t.field_labels[f.key]) || f.label,
+              value: (t[f.key] ?? "") as string,
+            }))
+            .filter((x) => x.value && String(x.value).trim() !== ""),
         };
       }),
     );
