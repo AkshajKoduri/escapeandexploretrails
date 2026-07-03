@@ -31,6 +31,16 @@ type Trek = {
   itinerary_url: string | null;
   itinerary_file_path: string | null;
   event_type: "Hike" | "Cycling Ride" | "Outstation Trek";
+  trek_difficulty: string | null;
+  trek_distance: string | null;
+  altitude: string | null;
+  region: string | null;
+  elevation_gain: string | null;
+  mountain_range: string | null;
+  base_village: string | null;
+  duration_text: string | null;
+  stay_location: string | null;
+  field_labels: Record<string, string> | null;
 };
 
 type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
@@ -42,7 +52,22 @@ const empty: Partial<Trek> = {
   duration: "", distance: "", description: "", price: 0, max_seats: 30,
   meeting_point: "", instructions: "", location: "",
   album_url: "", itinerary_url: "", itinerary_file_path: "", event_type: "Hike",
+  trek_difficulty: "", trek_distance: "", altitude: "", region: "",
+  elevation_gain: "", mountain_range: "", base_village: "",
+  duration_text: "", stay_location: "", field_labels: {},
 };
+
+export const OUTSTATION_EXTRA_FIELDS: { key: keyof Trek; label: string; type?: "select"; options?: string[]; placeholder?: string }[] = [
+  { key: "trek_difficulty", label: "Trek Difficulty", type: "select", options: ["", "Easy", "Moderate", "Hard", "Very Hard"] },
+  { key: "trek_distance", label: "Trek Distance", placeholder: "14 Kms/10 hrs" },
+  { key: "altitude", label: "Altitude", placeholder: "1,422 M/4,670 FT" },
+  { key: "region", label: "Region", placeholder: "Malshej Ghat, Maharashtra" },
+  { key: "elevation_gain", label: "Elevation Gain", placeholder: "700 M/2,297 FT" },
+  { key: "mountain_range", label: "Mountain Range", placeholder: "Western Ghats" },
+  { key: "base_village", label: "Base Village", placeholder: "Khireshwar" },
+  { key: "duration_text", label: "Duration", placeholder: "3D/2N" },
+  { key: "stay_location", label: "Stay Location", placeholder: "Khireshwar Village" },
+];
 
 function normalizeUrl(u: string | null | undefined): string | null {
   if (!u) return null;
