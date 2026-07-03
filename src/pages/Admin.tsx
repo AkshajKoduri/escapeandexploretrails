@@ -582,6 +582,41 @@ function FF({ label, children, full }: { label: string; children: React.ReactNod
   );
 }
 
+function EditableLabel({ value, defaultValue, onChange }: { value: string; defaultValue: string; onChange: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { setDraft(value); }, [value]);
+  const commit = () => {
+    const v = draft.trim();
+    onChange(v || defaultValue);
+    setEditing(false);
+  };
+  return (
+    <div className="flex items-center gap-1.5 mb-1">
+      {editing ? (
+        <>
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setDraft(value); setEditing(false); } }}
+            className="text-xs font-semibold px-2 py-0.5 rounded border border-input bg-background flex-1"
+          />
+          <button type="button" onClick={commit} className="p-1 text-primary hover:bg-primary/10 rounded" title="Save label"><Check className="w-3.5 h-3.5" /></button>
+          <button type="button" onClick={() => { setDraft(value); setEditing(false); }} className="p-1 text-muted-foreground hover:bg-muted rounded" title="Cancel"><X className="w-3.5 h-3.5" /></button>
+        </>
+      ) : (
+        <>
+          <label className="block text-xs font-semibold text-muted-foreground">{value}</label>
+          <button type="button" onClick={() => setEditing(true)} className="p-0.5 text-muted-foreground hover:text-primary" title="Rename label">
+            <Pencil className="w-3 h-3" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ===================== Bookings Tab ===================== */
 
 function bookingsToRows(bookingsList: Booking[], membersByBooking: Map<string, any[]>) {
