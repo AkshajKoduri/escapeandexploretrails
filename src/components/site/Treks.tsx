@@ -269,6 +269,21 @@ export default function Treks() {
                 </div>
               )}
 
+              {openTrek.eventType === "Outstation Trek" && openTrek.extras.length > 0 && (
+                <section>
+                  <h4 className="font-heading font-bold text-primary mb-2">Trek Details</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {openTrek.extras.map((x) => (
+                      <div key={x.key} className="rounded-lg border border-border bg-muted/20 p-3">
+                        <div className="text-xs font-bold text-primary uppercase tracking-wide">{x.label}</div>
+                        <div className="text-sm text-foreground mt-0.5">{x.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+
               {openTrek.description && (
                 <section>
                   <h4 className="font-heading font-bold text-primary mb-1">Description</h4>
