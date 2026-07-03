@@ -383,6 +383,16 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         itinerary_url: normalizeUrl(f.itinerary_url),
         itinerary_file_path: itineraryPath || null,
         event_type: f.event_type || "Hike",
+        trek_difficulty: f.trek_difficulty?.trim() || null,
+        trek_distance: f.trek_distance?.trim() || null,
+        altitude: f.altitude?.trim() || null,
+        region: f.region?.trim() || null,
+        elevation_gain: f.elevation_gain?.trim() || null,
+        mountain_range: f.mountain_range?.trim() || null,
+        base_village: f.base_village?.trim() || null,
+        duration_text: f.duration_text?.trim() || null,
+        stay_location: f.stay_location?.trim() || null,
+        field_labels: f.field_labels ?? {},
       };
 
       if (isEdit) {
