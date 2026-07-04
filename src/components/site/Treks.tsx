@@ -60,6 +60,8 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
 export default function Treks() {
   const [treks, setTreks] = useState<TrekCard[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [callbackForId, setCallbackForId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>("All");
   const [filter, setFilter] = useState<FilterType>("All");
 
   const load = async () => {
