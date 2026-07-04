@@ -123,7 +123,7 @@ export default function Admin() {
         adminApi<{ data: Booking[] }>("listBookings"),
         adminApi<{ data: any[] }>("listBookingMembers"),
       ]);
-      if (trekData) setTreks(trekData as Trek[]);
+      if (trekData) setTreks(trekData as unknown as Trek[]);
       const sm = new Map<string, Stats>();
       (statsData ?? []).forEach((s: any) => sm.set(s.trek_id, s));
       setStats(sm);
