@@ -36,6 +36,7 @@ type Trek = {
   album_url: string | null;
   itinerary_url: string | null;
   itinerary_file_path: string | null;
+  itinerary_days: { title: string; description: string }[];
   event_type: "Hike" | "Cycling Ride" | "Outstation Trek";
   trek_difficulty: string | null;
   trek_distance: string | null;
