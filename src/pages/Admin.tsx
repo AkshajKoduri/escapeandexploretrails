@@ -198,19 +198,26 @@ function TripsTab({ treks, stats, reload }: { treks: Trek[]; stats: Map<string, 
 
   const archiveTrek = async (id: string) => {
     if (!confirm("Move this trek to Past Trips?")) return;
-    const { error } = await supabase.from("upcoming_treks").update({ is_archived: true }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Moved to Past Trips");
-    reload();
+    try {
+      await adminApi("updateTrek", { id, patch: { is_archived: true } });
+      toast.success("Moved to Past Trips");
+      reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const deleteTrek = async (id: string) => {
     if (!confirm("Permanently delete this trek?")) return;
-    const { error } = await supabase.from("upcoming_treks").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Trek deleted");
-    reload();
+    try {
+      await adminApi("deleteTrek", { id });
+      toast.success("Trek deleted");
+      reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
+
 
   return (
     <div className="space-y-4">
