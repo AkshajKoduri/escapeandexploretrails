@@ -62,7 +62,6 @@ export default function Treks() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [callbackForId, setCallbackForId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("All");
-  const [filter, setFilter] = useState<FilterType>("All");
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
