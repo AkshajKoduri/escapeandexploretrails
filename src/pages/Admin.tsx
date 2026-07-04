@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
+import { adminApi, adminRemove, adminUpload } from "@/lib/adminApi";
 import { toast } from "sonner";
 import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 type Trek = {
   id: string;
@@ -113,19 +115,24 @@ export default function Admin() {
   const [members, setMembers] = useState<any[]>([]);
 
   const loadAll = async () => {
-    const [{ data: trekData }, { data: statsData }, { data: bData }, { data: mData }] = await Promise.all([
-      supabase.from("upcoming_treks").select("*").order("trek_date", { ascending: true }),
-      supabase.rpc("get_trek_seat_stats"),
-      supabase.from("bookings").select("*").order("created_at", { ascending: false }),
-      supabase.from("booking_members").select("*"),
-    ]);
-    if (trekData) setTreks(trekData as Trek[]);
-    const sm = new Map<string, Stats>();
-    (statsData ?? []).forEach((s: any) => sm.set(s.trek_id, s));
-    setStats(sm);
-    setBookings(bData ?? []);
-    setMembers(mData ?? []);
+    try {
+      const [{ data: trekData }, { data: statsData }, bRes, mRes] = await Promise.all([
+        supabase.from("upcoming_treks").select("*").order("trek_date", { ascending: true }),
+        supabase.rpc("get_trek_seat_stats"),
+        adminApi<{ data: Booking[] }>("listBookings"),
+        adminApi<{ data: any[] }>("listBookingMembers"),
+      ]);
+      if (trekData) setTreks(trekData as Trek[]);
+      const sm = new Map<string, Stats>();
+      (statsData ?? []).forEach((s: any) => sm.set(s.trek_id, s));
+      setStats(sm);
+      setBookings(bRes?.data ?? []);
+      setMembers(mRes?.data ?? []);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to load admin data");
+    }
   };
+
 
   useEffect(() => {
     document.title = "Admin — E2 Trails";
@@ -191,19 +198,26 @@ function TripsTab({ treks, stats, reload }: { treks: Trek[]; stats: Map<string, 
 
   const archiveTrek = async (id: string) => {
     if (!confirm("Move this trek to Past Trips?")) return;
-    const { error } = await supabase.from("upcoming_treks").update({ is_archived: true }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Moved to Past Trips");
-    reload();
+    try {
+      await adminApi("updateTrek", { id, patch: { is_archived: true } });
+      toast.success("Moved to Past Trips");
+      reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const deleteTrek = async (id: string) => {
     if (!confirm("Permanently delete this trek?")) return;
-    const { error } = await supabase.from("upcoming_treks").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Trek deleted");
-    reload();
+    try {
+      await adminApi("deleteTrek", { id });
+      toast.success("Trek deleted");
+      reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
+
 
   return (
     <div className="space-y-4">
@@ -299,11 +313,16 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   const removeItineraryFile = async () => {
     if (!f.itinerary_file_path) return;
     if (!confirm("Remove the uploaded itinerary PDF?")) return;
-    await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
-    if (isEdit) await supabase.from("upcoming_treks").update({ itinerary_file_path: null }).eq("id", f.id);
-    set({ itinerary_file_path: null });
-    toast.success("Itinerary removed");
+    try {
+      await adminRemove("itineraries", f.itinerary_file_path);
+      if (isEdit) await adminApi("updateTrek", { id: f.id, patch: { itinerary_file_path: null } });
+      set({ itinerary_file_path: null });
+      toast.success("Itinerary removed");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,23 +343,20 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
         const path = `trips/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("trek-images").upload(path, imageFile);
-        if (upErr) throw upErr;
-        imageUrl = supabase.storage.from("trek-images").getPublicUrl(path).data.publicUrl;
+        const up = await adminUpload("trek-images", path, imageFile);
+        imageUrl = up.publicUrl ?? imageUrl;
       }
 
       let itineraryPath = f.itinerary_file_path;
       if (itineraryFile) {
         const path = `trips/${crypto.randomUUID()}.pdf`;
-        const { error: upErr } = await supabase.storage.from("itineraries").upload(path, itineraryFile, {
-          contentType: "application/pdf", upsert: false,
-        });
-        if (upErr) throw upErr;
+        const up = await adminUpload("itineraries", path, itineraryFile);
         if (f.itinerary_file_path) {
-          await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
+          try { await adminRemove("itineraries", f.itinerary_file_path); } catch { /* ignore */ }
         }
-        itineraryPath = path;
+        itineraryPath = up.path;
       }
+
 
       const cleanDates = (f.additional_dates ?? []).map((d) => (d ?? "").trim()).filter(Boolean);
       const startPrice = f.starting_price != null && !Number.isNaN(Number(f.starting_price)) ? Number(f.starting_price) : null;
@@ -385,14 +401,13 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
 
 
       if (isEdit) {
-        const { error } = await supabase.from("upcoming_treks").update(payload).eq("id", f.id);
-        if (error) throw error;
+        await adminApi("updateTrek", { id: f.id, patch: payload });
         toast.success("Trip updated");
       } else {
-        const { error } = await supabase.from("upcoming_treks").insert(payload);
-        if (error) throw error;
+        await adminApi("insertTrek", { row: payload });
         toast.success("Trip added");
       }
+
       onDone();
     } catch (err: any) {
       toast.error(err.message ?? "Failed to save");
@@ -731,11 +746,15 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
 
   const cancelBooking = async (b: Booking) => {
     if (!confirm(`Cancel booking for ${b.primary_name}? Their ${b.seats_booked ?? 1} seat(s) will be freed.`)) return;
-    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id);
-    if (error) return toast.error(error.message);
-    toast.success("Booking cancelled");
-    reload();
+    try {
+      await adminApi("updateBooking", { id: b.id, patch: { status: "cancelled" } });
+      toast.success("Booking cancelled");
+      reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
+
 
   return (
     <div className="space-y-4">
@@ -848,25 +867,29 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
 
 function DraftsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) {
   const publish = async (id: string) => {
-    const { error } = await supabase.from("upcoming_treks").update({ is_draft: false }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Trip published to homepage");
-    reload();
+    try {
+      await adminApi("updateTrek", { id, patch: { is_draft: false } });
+      toast.success("Trip published to homepage");
+      reload();
+    } catch (err: any) { toast.error(err.message); }
   };
   const moveToPast = async (id: string) => {
     if (!confirm("Move this draft to Past Trips?")) return;
-    const { error } = await supabase.from("upcoming_treks").update({ is_archived: true, is_draft: false }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Moved to Past Trips");
-    reload();
+    try {
+      await adminApi("updateTrek", { id, patch: { is_archived: true, is_draft: false } });
+      toast.success("Moved to Past Trips");
+      reload();
+    } catch (err: any) { toast.error(err.message); }
   };
   const deleteDraft = async (id: string) => {
     if (!confirm("Permanently delete this draft?")) return;
-    const { error } = await supabase.from("upcoming_treks").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Draft deleted");
-    reload();
+    try {
+      await adminApi("deleteTrek", { id });
+      toast.success("Draft deleted");
+      reload();
+    } catch (err: any) { toast.error(err.message); }
   };
+
 
   return (
     <div className="space-y-4">
@@ -929,31 +952,36 @@ function CallbacksTab() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("callback_requests" as any)
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setRows((data as any) ?? []);
-    setLoading(false);
+    try {
+      const res = await adminApi<{ data: CallbackRequest[] }>("listCallbackRequests");
+      setRows(res?.data ?? []);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
 
   const markContacted = async (id: string) => {
-    const { error } = await supabase.from("callback_requests" as any).update({ status: "contacted" }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Marked as contacted");
-    load();
+    try {
+      await adminApi("updateCallback", { id, patch: { status: "contacted" } });
+      toast.success("Marked as contacted");
+      load();
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this callback request?")) return;
-    const { error } = await supabase.from("callback_requests" as any).delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Deleted");
-    load();
+    try {
+      await adminApi("deleteCallback", { id });
+      toast.success("Deleted");
+      load();
+    } catch (err: any) { toast.error(err.message); }
   };
+
+
 
   if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   if (rows.length === 0) return <div className="text-sm text-muted-foreground">No callback requests yet.</div>;

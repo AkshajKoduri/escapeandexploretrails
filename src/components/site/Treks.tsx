@@ -147,20 +147,21 @@ export default function Treks() {
   const [itineraryFileUrl, setItineraryFileUrl] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    if (!openTrek?.itineraryFilePath) {
-      setItineraryFileUrl(null);
-      return;
-    }
-    supabase.storage
-      .from("itineraries")
-      .createSignedUrl(openTrek.itineraryFilePath, 60 * 60)
+    setItineraryFileUrl(null);
+    if (!openTrek?.itineraryFilePath || !openTrek?.id) return;
+    supabase.functions
+      .invoke("itinerary-signed-url", { body: { trekId: openTrek.id } })
       .then(({ data }) => {
-        if (!cancelled) setItineraryFileUrl(data?.signedUrl ?? null);
+        if (!cancelled) setItineraryFileUrl((data as any)?.url ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setItineraryFileUrl(null);
       });
     return () => {
       cancelled = true;
     };
-  }, [openTrek?.itineraryFilePath]);
+  }, [openTrek?.id, openTrek?.itineraryFilePath]);
+
 
 
   return (

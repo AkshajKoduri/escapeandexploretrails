@@ -138,9 +138,11 @@ export default function BookingPage() {
 
     setSubmitting(true);
     try {
-      const { data: booking, error: bErr } = await supabase
+      const bookingId = crypto.randomUUID();
+      const { error: bErr } = await supabase
         .from("bookings")
         .insert({
+          id: bookingId,
           trek_id: trekId,
           trek_name: selectedTrek.name,
           primary_name: parsed.data.name,
@@ -153,14 +155,12 @@ export default function BookingPage() {
           is_group: isGroup && members.length > 0,
           seats_booked: seatsNeeded,
           status: "confirmed",
-        } as any)
-        .select()
-        .single();
+        } as any);
       if (bErr) throw bErr;
 
       if (isGroup && members.length > 0) {
         const rows = members.map((m) => ({
-          booking_id: booking.id,
+          booking_id: bookingId,
           full_name: m.name.trim(),
           aadhaar_number: "",
           aadhaar_photo: "",
@@ -168,6 +168,7 @@ export default function BookingPage() {
         const { error: mErr } = await supabase.from("booking_members").insert(rows);
         if (mErr) throw mErr;
       }
+
 
       setDone(true);
       toast.success("Booking confirmed!");
@@ -278,15 +279,24 @@ export default function BookingPage() {
                         </a>
                       )}
                       {selectedTrek.itinerary_file_path && (
-                        <a
-                          href={supabase.storage.from("itineraries").getPublicUrl(selectedTrek.itinerary_file_path).data.publicUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const { data, error } = await supabase.functions.invoke("itinerary-signed-url", {
+                              body: { trekId: selectedTrek.id },
+                            });
+                            if (error || !data?.url) {
+                              toast.error("Itinerary is not available right now");
+                              return;
+                            }
+                            window.open(data.url, "_blank", "noopener,noreferrer");
+                          }}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition"
                         >
                           📄 Download Itinerary (PDF)
-                        </a>
+                        </button>
                       )}
+
                     </div>
                   )}
                 </div>
