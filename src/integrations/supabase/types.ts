@@ -188,6 +188,7 @@ export type Database = {
       }
       upcoming_treks: {
         Row: {
+          additional_dates: string[]
           album_url: string | null
           altitude: string | null
           base_village: string | null
@@ -216,14 +217,19 @@ export type Database = {
           price: number
           region: string | null
           seats_taken: number
+          starting_price: number | null
+          starting_price_label: string | null
           status_override: string | null
           stay_location: string | null
-          trek_date: string
+          top_end_price: number | null
+          top_end_price_label: string | null
+          trek_date: string | null
           trek_difficulty: string | null
           trek_distance: string | null
           trek_time: string | null
         }
         Insert: {
+          additional_dates?: string[]
           album_url?: string | null
           altitude?: string | null
           base_village?: string | null
@@ -252,14 +258,19 @@ export type Database = {
           price?: number
           region?: string | null
           seats_taken?: number
+          starting_price?: number | null
+          starting_price_label?: string | null
           status_override?: string | null
           stay_location?: string | null
-          trek_date: string
+          top_end_price?: number | null
+          top_end_price_label?: string | null
+          trek_date?: string | null
           trek_difficulty?: string | null
           trek_distance?: string | null
           trek_time?: string | null
         }
         Update: {
+          additional_dates?: string[]
           album_url?: string | null
           altitude?: string | null
           base_village?: string | null
@@ -288,9 +299,13 @@ export type Database = {
           price?: number
           region?: string | null
           seats_taken?: number
+          starting_price?: number | null
+          starting_price_label?: string | null
           status_override?: string | null
           stay_location?: string | null
-          trek_date?: string
+          top_end_price?: number | null
+          top_end_price_label?: string | null
+          trek_date?: string | null
           trek_difficulty?: string | null
           trek_distance?: string | null
           trek_time?: string | null

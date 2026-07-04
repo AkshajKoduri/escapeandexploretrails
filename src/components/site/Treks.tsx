@@ -16,7 +16,12 @@ type TrekCard = {
   dur: string;
   dist: string;
   price: number;
-  date: string;
+  startingPrice: number | null;
+  startingPriceLabel: string | null;
+  topEndPrice: number | null;
+  topEndPriceLabel: string | null;
+  dates: string[];
+  dateLabel: string;
   trekTime: string | null;
   description: string | null;
   instructions: string | null;
@@ -29,6 +34,7 @@ type TrekCard = {
   eventType: EventType;
   extras: { key: string; label: string; value: string }[];
 };
+
 
 const OUTSTATION_FIELDS: { key: string; label: string }[] = [
   { key: "trek_difficulty", label: "Trek Difficulty" },
@@ -63,52 +69,64 @@ export default function Treks() {
         .select("*")
         .eq("is_archived", false)
         .eq("is_draft", false)
-        .gte("trek_date", today)
-        .order("trek_date", { ascending: true }),
+        .order("trek_date", { ascending: true, nullsFirst: false }),
       supabase.rpc("get_trek_seat_stats"),
     ]);
 
     const statsMap = new Map<string, { seats_remaining: number; max_seats: number }>();
     (stats ?? []).forEach((s: any) => statsMap.set(s.trek_id, s));
 
+    const fmt = (d: string) => new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+
     setTreks(
-      (trekData ?? []).map((t: any) => {
-        const s = statsMap.get(t.id);
-        const remaining = s?.seats_remaining ?? t.max_seats ?? 0;
-        return {
-          id: t.id,
-          name: t.name,
-          destination: t.destination,
-          img: t.image_url || fallbackImg,
-          diff: (t.difficulty as Difficulty) ?? "Easy",
-          dur: t.duration ?? "",
-          dist: t.distance ?? t.location ?? "",
-          price: Number(t.price ?? 0),
-          date: new Date(t.trek_date).toLocaleDateString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }),
-          trekTime: t.trek_time,
-          description: t.description ?? null,
-          instructions: t.instructions ?? null,
-          meetingPoint: t.meeting_point ?? null,
-          itineraryUrl: t.itinerary_url ?? null,
-          itineraryFilePath: t.itinerary_file_path ?? null,
-          seatsRemaining: remaining,
-          maxSeats: s?.max_seats ?? t.max_seats ?? 0,
-          isFull: remaining <= 0,
-          eventType: (t.event_type as EventType) ?? "Hike",
-          extras: OUTSTATION_FIELDS
-            .map((f) => ({
-              key: f.key,
-              label: (t.field_labels && t.field_labels[f.key]) || f.label,
-              value: (t[f.key] ?? "") as string,
-            }))
-            .filter((x) => x.value && String(x.value).trim() !== ""),
-        };
-      }),
+      (trekData ?? [])
+        .filter((t: any) => {
+          const all = [t.trek_date, ...((t.additional_dates ?? []) as string[])].filter(Boolean);
+          if (all.length === 0) return true;
+          return all.some((d: string) => d >= today);
+        })
+        .map((t: any) => {
+          const s = statsMap.get(t.id);
+          const remaining = s?.seats_remaining ?? t.max_seats ?? 0;
+          const dates = [t.trek_date, ...((t.additional_dates ?? []) as string[])]
+            .filter(Boolean)
+            .filter((d: string) => d >= today);
+          return {
+            id: t.id,
+            name: t.name,
+            destination: t.destination,
+            img: t.image_url || fallbackImg,
+            diff: (t.difficulty as Difficulty) ?? "Easy",
+            dur: t.duration ?? "",
+            dist: t.distance ?? t.location ?? "",
+            price: Number(t.price ?? 0),
+            startingPrice: t.starting_price != null ? Number(t.starting_price) : null,
+            startingPriceLabel: t.starting_price_label ?? null,
+            topEndPrice: t.top_end_price != null ? Number(t.top_end_price) : null,
+            topEndPriceLabel: t.top_end_price_label ?? null,
+            dates,
+            dateLabel: dates.length ? dates.map(fmt).join(", ") : "",
+            trekTime: t.trek_time,
+            description: t.description ?? null,
+            instructions: t.instructions ?? null,
+            meetingPoint: t.meeting_point ?? null,
+            itineraryUrl: t.itinerary_url ?? null,
+            itineraryFilePath: t.itinerary_file_path ?? null,
+            seatsRemaining: remaining,
+            maxSeats: s?.max_seats ?? t.max_seats ?? 0,
+            isFull: remaining <= 0,
+            eventType: (t.event_type as EventType) ?? "Hike",
+            extras: OUTSTATION_FIELDS
+              .map((f) => ({
+                key: f.key,
+                label: (t.field_labels && t.field_labels[f.key]) || f.label,
+                value: (t[f.key] ?? "") as string,
+              }))
+              .filter((x) => x.value && String(x.value).trim() !== ""),
+          };
+        }),
     );
+
   };
 
   useEffect(() => {
@@ -198,9 +216,11 @@ export default function Treks() {
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${diffStyle[t.diff].bg}`}>
                     {diffStyle[t.diff].label}
                   </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground">
-                    📅 {t.date}
-                  </span>
+                  {t.dateLabel && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground">
+                      📅 Date: {t.dateLabel}
+                    </span>
+                  )}
                   {t.isFull ? (
                     <span className="px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md bg-destructive/80 text-destructive-foreground ml-auto">
                       Trip Full
@@ -215,13 +235,23 @@ export default function Treks() {
                 <div className="absolute inset-x-0 bottom-0 p-6 text-charcoal-foreground">
                   <h3 className="font-heading font-bold text-2xl mb-2">{t.name}</h3>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-3">
-                    {t.dur && <span>⏱ {t.dur}</span>}
-                    {t.trekTime && <span>🕒 {t.trekTime}</span>}
+                    {t.dur && <span>⏱ Duration: {t.dur}</span>}
+                    {t.trekTime && <span>🕒 Assembly: {t.trekTime}</span>}
                     {t.dist && <span>📍 {t.dist}</span>}
                   </div>
-                  {t.price > 0 && (
+                  {(t.startingPrice != null || t.topEndPrice != null) ? (
+                    <div className="text-sm font-bold text-accent mb-4 space-y-0.5">
+                      {t.startingPrice != null && (
+                        <div>₹{t.startingPrice.toLocaleString("en-IN")}{t.startingPriceLabel ? <span className="text-xs text-charcoal-foreground/80 font-normal"> ({t.startingPriceLabel})</span> : null}</div>
+                      )}
+                      {t.topEndPrice != null && (
+                        <div>₹{t.topEndPrice.toLocaleString("en-IN")}{t.topEndPriceLabel ? <span className="text-xs text-charcoal-foreground/80 font-normal"> ({t.topEndPriceLabel})</span> : null}</div>
+                      )}
+                    </div>
+                  ) : t.price > 0 ? (
                     <div className="text-lg font-bold text-accent mb-4">₹{t.price.toLocaleString("en-IN")}<span className="text-xs text-charcoal-foreground/70 font-normal"> / person</span></div>
-                  )}
+                  ) : null}
+
                   {t.isFull ? (
                     <button
                       disabled
@@ -255,19 +285,30 @@ export default function Treks() {
               <DialogHeader>
                 <DialogTitle className="font-heading text-2xl text-primary">{openTrek.name}</DialogTitle>
                 <DialogDescription className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  <span>📅 {openTrek.date}</span>
-                  {openTrek.trekTime && <span>🕒 {openTrek.trekTime}</span>}
-                  {openTrek.dur && <span>⏱ {openTrek.dur}</span>}
+                  {openTrek.dateLabel && <span>📅 Date: {openTrek.dateLabel}</span>}
+                  {openTrek.trekTime && <span>🕒 Assembly: {openTrek.trekTime}</span>}
+                  {openTrek.dur && <span>⏱ Duration: {openTrek.dur}</span>}
                   {openTrek.dist && <span>📍 {openTrek.dist}</span>}
+                  {openTrek.meetingPoint && <span>📌 Meeting Point: {openTrek.meetingPoint}</span>}
                 </DialogDescription>
               </DialogHeader>
               <img src={openTrek.img} alt={openTrek.name} className="w-full h-56 object-cover rounded-lg" />
-              {openTrek.price > 0 && (
+              {(openTrek.startingPrice != null || openTrek.topEndPrice != null) ? (
+                <div className="text-base font-bold text-accent space-y-0.5">
+                  {openTrek.startingPrice != null && (
+                    <div>₹{openTrek.startingPrice.toLocaleString("en-IN")}{openTrek.startingPriceLabel ? <span className="text-xs text-muted-foreground font-normal"> ({openTrek.startingPriceLabel})</span> : null}</div>
+                  )}
+                  {openTrek.topEndPrice != null && (
+                    <div>₹{openTrek.topEndPrice.toLocaleString("en-IN")}{openTrek.topEndPriceLabel ? <span className="text-xs text-muted-foreground font-normal"> ({openTrek.topEndPriceLabel})</span> : null}</div>
+                  )}
+                </div>
+              ) : openTrek.price > 0 ? (
                 <div className="text-lg font-bold text-accent">
                   ₹{openTrek.price.toLocaleString("en-IN")}
                   <span className="text-xs text-muted-foreground font-normal"> / person</span>
                 </div>
-              )}
+              ) : null}
+
 
               {openTrek.eventType === "Outstation Trek" && openTrek.extras.length > 0 && (
                 <section>

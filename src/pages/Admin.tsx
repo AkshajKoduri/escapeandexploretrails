@@ -13,7 +13,8 @@ type Trek = {
   name: string;
   destination: string | null;
   location: string | null;
-  trek_date: string;
+  trek_date: string | null;
+  additional_dates: string[];
   trek_time: string | null;
   difficulty: "Easy" | "Moderate" | "Hard";
   duration: string | null;
@@ -21,6 +22,10 @@ type Trek = {
   image_url: string | null;
   description: string | null;
   price: number;
+  starting_price: number | null;
+  starting_price_label: string | null;
+  top_end_price: number | null;
+  top_end_price_label: string | null;
   max_seats: number;
   meeting_point: string | null;
   instructions: string | null;
@@ -48,14 +53,17 @@ type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_re
 type Booking = any;
 
 const empty: Partial<Trek> = {
-  name: "", destination: "", trek_date: "", trek_time: "", difficulty: "Easy",
-  duration: "", distance: "", description: "", price: 0, max_seats: 30,
+  name: "", destination: "", trek_date: "", additional_dates: [], trek_time: "", difficulty: "Easy",
+  duration: "", distance: "", description: "", price: 0,
+  starting_price: null, starting_price_label: "", top_end_price: null, top_end_price_label: "",
+  max_seats: 30,
   meeting_point: "", instructions: "", location: "",
   album_url: "", itinerary_url: "", itinerary_file_path: "", event_type: "Hike",
   trek_difficulty: "", trek_distance: "", altitude: "", region: "",
   elevation_gain: "", mountain_range: "", base_village: "",
   duration_text: "", stay_location: "", field_labels: {},
 };
+
 
 export const OUTSTATION_EXTRA_FIELDS: { key: keyof Trek; label: string; type?: "select"; options?: string[]; placeholder?: string }[] = [
   { key: "trek_difficulty", label: "Trek Difficulty", type: "select", options: ["", "Easy", "Moderate", "Hard", "Very Hard"] },
@@ -82,10 +90,14 @@ function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived
   if (t.is_draft) return "Draft";
   if (t.status_override) return t.status_override as any;
   const today = new Date().toISOString().slice(0, 10);
-  if (t.trek_date > today) return "Upcoming";
-  if (t.trek_date === today) return "Ongoing";
+  const allDates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
+  if (allDates.length === 0) return "Upcoming";
+  const latest = allDates.reduce((a, b) => (a > b ? a : b));
+  if (latest > today) return "Upcoming";
+  if (allDates.includes(today)) return "Ongoing";
   return "Completed";
 }
+
 
 const statusColor: Record<string, string> = {
   Upcoming: "bg-green-500/15 text-green-700 dark:text-green-300",
@@ -269,12 +281,18 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
                     {taken >= max && <span className="px-2 py-0.5 text-xs rounded-full bg-destructive/15 text-destructive font-bold">FULL</span>}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {new Date(t.trek_date).toLocaleDateString()}{t.trek_time ? ` • ${t.trek_time}` : ""} • {t.difficulty}
-                    {t.destination ? ` • ${t.destination}` : ""}
+                    {(() => {
+                      const dates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
+                      const dateStr = dates.length ? dates.map((d) => new Date(d).toLocaleDateString()).join(", ") : "No date";
+                      return <>{dateStr}{t.trek_time ? ` • ${t.trek_time}` : ""} • {t.difficulty}{t.destination ? ` • ${t.destination}` : ""}</>;
+                    })()}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    💰 ₹{Number(t.price).toLocaleString("en-IN")} • 🪑 {taken}/{max} seats
+                    💰 {t.starting_price != null || t.top_end_price != null
+                      ? [t.starting_price, t.top_end_price].filter((x) => x != null).map((p) => `₹${Number(p).toLocaleString("en-IN")}`).join(" – ")
+                      : t.price > 0 ? `₹${Number(t.price).toLocaleString("en-IN")}` : "—"} • 🪑 {taken}/{max} seats
                   </div>
+
                 </div>
                 <div className="flex gap-1 self-end md:self-auto">
                   <button onClick={() => startEdit(t)} className="p-2 rounded-lg text-primary hover:bg-primary/10" title="Edit"><Pencil className="w-4 h-4" /></button>
@@ -328,7 +346,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!f.name?.trim() || !f.trek_date) return toast.error("Name and date are required");
+    if (!f.name?.trim()) return toast.error("Trip name is required");
     if (f.max_seats < currentSeatsTaken) {
       return toast.error(`Can't set max seats below current bookings (${currentSeatsTaken})`);
     }
@@ -363,17 +381,26 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         itineraryPath = path;
       }
 
+      const cleanDates = (f.additional_dates ?? []).map((d) => (d ?? "").trim()).filter(Boolean);
+      const startPrice = f.starting_price != null && !Number.isNaN(Number(f.starting_price)) ? Number(f.starting_price) : null;
+      const topPrice = f.top_end_price != null && !Number.isNaN(Number(f.top_end_price)) ? Number(f.top_end_price) : null;
+
       const payload: any = {
         name: f.name.trim(),
         destination: f.destination?.trim() || null,
         location: f.location?.trim() || null,
-        trek_date: f.trek_date,
+        trek_date: f.trek_date || null,
+        additional_dates: cleanDates,
         trek_time: f.trek_time?.trim() || null,
         difficulty: f.difficulty,
         duration: f.duration?.trim() || null,
         distance: f.distance?.trim() || null,
         description: f.description?.trim() || null,
-        price: Number(f.price) || 0,
+        price: startPrice ?? (Number(f.price) || 0),
+        starting_price: startPrice,
+        starting_price_label: f.starting_price_label?.trim() || null,
+        top_end_price: topPrice,
+        top_end_price_label: f.top_end_price_label?.trim() || null,
         max_seats: Number(f.max_seats) || 1,
         meeting_point: f.meeting_point?.trim() || null,
         instructions: f.instructions?.trim() || null,
@@ -394,6 +421,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         stay_location: f.stay_location?.trim() || null,
         field_labels: f.field_labels ?? {},
       };
+
 
       if (isEdit) {
         const { error } = await supabase.from("upcoming_treks").update(payload).eq("id", f.id);
@@ -429,13 +457,55 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
 
       <FF label="Trip name *" full><input className={inp} value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} required /></FF>
 
-      {isOutstation && (
-        <FF label="Destination *"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" required /></FF>
-      )}
+      {isOutstation ? (
+        <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
+      ) : null}
 
-      <FF label="Date *"><input type="date" className={inp} value={f.trek_date ?? ""} onChange={(e) => set({ trek_date: e.target.value })} required /></FF>
-      <FF label="Assembly Time *"><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" required /></FF>
-      <FF label="Meeting point *" full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" required /></FF>
+      <FF label={isOutstation ? "Dates" : "Date *"} full>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              className={inp}
+              value={f.trek_date ?? ""}
+              onChange={(e) => set({ trek_date: e.target.value })}
+              required={!isOutstation}
+            />
+          </div>
+          {(f.additional_dates ?? []).map((d, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="date"
+                className={inp}
+                value={d}
+                onChange={(e) => {
+                  const next = [...(f.additional_dates ?? [])];
+                  next[i] = e.target.value;
+                  set({ additional_dates: next });
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => set({ additional_dates: (f.additional_dates ?? []).filter((_, j) => j !== i) })}
+                className="p-2 rounded-lg text-destructive hover:bg-destructive/10"
+                title="Remove date"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => set({ additional_dates: [...(f.additional_dates ?? []), ""] })}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add another date
+          </button>
+        </div>
+      </FF>
+
+      <FF label={isOutstation ? "Assembly Time" : "Assembly Time *"}><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" required={!isOutstation} /></FF>
+      <FF label={isOutstation ? "Meeting point" : "Meeting point *"} full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" required={!isOutstation} /></FF>
 
       {isHike && (
         <FF label="Trail name / Location *" full><input className={inp} value={f.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="Ananthagiri Hills Trail" required /></FF>
@@ -450,23 +520,36 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
 
       {isOutstation && (
         <>
-          <FF label="Duration (days) *"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="2 Days" required /></FF>
-          <FF label="Distance from Hyderabad *"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="350 km from Hyd" required /></FF>
+          <FF label="Duration (days)"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="2 Days" /></FF>
+          <FF label="Distance from Hyderabad"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="350 km from Hyd" /></FF>
         </>
       )}
 
-      <FF label="Difficulty *">
+      <FF label={isOutstation ? "Difficulty" : "Difficulty *"}>
         <select className={inp} value={f.difficulty} onChange={(e) => set({ difficulty: e.target.value as any })}>
           <option>Easy</option><option>Moderate</option><option>Hard</option>
         </select>
       </FF>
-      <FF label="Price per person (₹) *"><input type="number" min={0} className={inp} value={f.price ?? 0} onChange={(e) => set({ price: Number(e.target.value) })} required /></FF>
-      <FF label={`Max seats *${currentSeatsTaken > 0 ? ` (${currentSeatsTaken} booked)` : ""}`} full>
-        <input type="number" min={1} className={inp} value={f.max_seats ?? 30} onChange={(e) => set({ max_seats: Number(e.target.value) })} required />
+      <FF label={isOutstation ? "Max seats" : `Max seats *${currentSeatsTaken > 0 ? ` (${currentSeatsTaken} booked)` : ""}`}>
+        <input type="number" min={1} className={inp} value={f.max_seats ?? 30} onChange={(e) => set({ max_seats: Number(e.target.value) })} required={!isOutstation} />
       </FF>
 
-      <FF label="Description *" full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required /></FF>
+      <FF label="Starting Price (₹)" full>
+        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
+          <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="6999" />
+          <input className={inp} value={f.starting_price_label ?? ""} onChange={(e) => set({ starting_price_label: e.target.value })} placeholder="e.g. 6,999 - Non-AC Sleeper Train" />
+        </div>
+      </FF>
+      <FF label="Top End Price (₹)" full>
+        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
+          <input type="number" min={0} className={inp} value={f.top_end_price ?? ""} onChange={(e) => set({ top_end_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="8500" />
+          <input className={inp} value={f.top_end_price_label ?? ""} onChange={(e) => set({ top_end_price_label: e.target.value })} placeholder="e.g. 8,500 - 3AC Sleeper Train" />
+        </div>
+      </FF>
+
+      <FF label={isOutstation ? "Description" : "Description *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
       <FF label="Special instructions (what to carry, wear etc.)" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
+
 
       {isOutstation && (
         <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
