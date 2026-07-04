@@ -587,7 +587,55 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
             <FF label="Itinerary link (optional)" full>
               <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
             </FF>
-            <FF label="Or upload an itinerary PDF (max 10MB)" full>
+            <div>
+              <label className="block text-xs font-semibold mb-2 text-muted-foreground">Day-wise itinerary (structured)</label>
+              <div className="space-y-3">
+                {(f.itinerary_days ?? []).map((day, idx) => (
+                  <div key={idx} className="rounded-lg border border-border bg-background p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground">Day {idx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => set({ itinerary_days: (f.itinerary_days ?? []).filter((_, i) => i !== idx) })}
+                        className="ml-auto text-xs text-destructive hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      className={inp}
+                      placeholder="Day title (e.g. Day 1: Arrival & Trek Start)"
+                      value={day.title}
+                      onChange={(e) => {
+                        const next = [...(f.itinerary_days ?? [])];
+                        next[idx] = { ...next[idx], title: e.target.value };
+                        set({ itinerary_days: next });
+                      }}
+                    />
+                    <textarea
+                      className={`${inp} min-h-[80px]`}
+                      placeholder="Day description"
+                      value={day.description}
+                      onChange={(e) => {
+                        const next = [...(f.itinerary_days ?? [])];
+                        next[idx] = { ...next[idx], description: e.target.value };
+                        set({ itinerary_days: next });
+                      }}
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => set({ itinerary_days: [...(f.itinerary_days ?? []), { title: "", description: "" }] })}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border text-sm font-semibold hover:bg-muted"
+                >
+                  <Plus className="w-4 h-4" /> Add day
+                </button>
+              </div>
+            </div>
+
+            <FF label="Optional: upload a PDF fallback (max 10MB)" full>
               <input
                 type="file" accept="application/pdf"
                 onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
