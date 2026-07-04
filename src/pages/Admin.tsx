@@ -687,6 +687,8 @@ function bookingsToRows(bookingsList: Booking[], membersByBooking: Map<string, a
       "Booking ID": b.id, Trek: b.trek_name,
       "Booking Date": new Date(b.created_at).toLocaleString(),
       Status: b.status,
+      "Payment Status": (b.payment_status ?? "pending") === "paid" ? "Paid" : "Pending",
+      "Booking Source": b.booking_source === "manual" ? "Manual" : "Online",
       Role: isGroup ? "⭐ GROUP LEADER (Booked By)" : "Primary",
       "Full Name": isGroup ? `⭐ ${b.primary_name}` : b.primary_name,
       Age: b.primary_age, Gender: b.primary_gender,
@@ -698,7 +700,10 @@ function bookingsToRows(bookingsList: Booking[], membersByBooking: Map<string, a
       rows.push({
         "Booking ID": b.id, Trek: b.trek_name,
         "Booking Date": new Date(b.created_at).toLocaleString(),
-        Status: b.status, Role: `   Member ${i + 1} (under ${b.primary_name})`,
+        Status: b.status,
+        "Payment Status": "",
+        "Booking Source": "",
+        Role: `   Member ${i + 1} (under ${b.primary_name})`,
         "Full Name": `    ↳ ${m.full_name}`,
         Age: "", Gender: "", Phone: "", Email: "",
         "Aadhaar Number": m.aadhaar_number, "Aadhaar Photo Path": m.aadhaar_photo,
@@ -706,8 +711,9 @@ function bookingsToRows(bookingsList: Booking[], membersByBooking: Map<string, a
       });
     });
     if (idx < bookingsList.length - 1) {
-      rows.push({ "Booking ID": "", Trek: "", "Booking Date": "", Status: "", Role: "", "Full Name": "", Age: "", Gender: "", Phone: "", Email: "", "Aadhaar Number": "", "Aadhaar Photo Path": "", "Group Booking": "", "Seats Booked": "" });
+      rows.push({ "Booking ID": "", Trek: "", "Booking Date": "", Status: "", "Payment Status": "", "Booking Source": "", Role: "", "Full Name": "", Age: "", Gender: "", Phone: "", Email: "", "Aadhaar Number": "", "Aadhaar Photo Path": "", "Group Booking": "", "Seats Booked": "" });
     }
+
   });
   return rows;
 }
@@ -721,7 +727,7 @@ function downloadTrekExcel(trek: Trek, bookingsList: Booking[], membersByBooking
   const rows = bookingsToRows(trekBookings, membersByBooking);
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws["!cols"] = [{ wch: 38 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 32 }, { wch: 28 }, { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 12 }];
+  ws["!cols"] = [{ wch: 38 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 32 }, { wch: 28 }, { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, ws, "Trekkers");
   const slug = trek.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "trek";
   const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
