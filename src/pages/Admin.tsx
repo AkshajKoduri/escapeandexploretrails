@@ -867,25 +867,29 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
 
 function DraftsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) {
   const publish = async (id: string) => {
-    const { error } = await supabase.from("upcoming_treks").update({ is_draft: false }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Trip published to homepage");
-    reload();
+    try {
+      await adminApi("updateTrek", { id, patch: { is_draft: false } });
+      toast.success("Trip published to homepage");
+      reload();
+    } catch (err: any) { toast.error(err.message); }
   };
   const moveToPast = async (id: string) => {
     if (!confirm("Move this draft to Past Trips?")) return;
-    const { error } = await supabase.from("upcoming_treks").update({ is_archived: true, is_draft: false }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Moved to Past Trips");
-    reload();
+    try {
+      await adminApi("updateTrek", { id, patch: { is_archived: true, is_draft: false } });
+      toast.success("Moved to Past Trips");
+      reload();
+    } catch (err: any) { toast.error(err.message); }
   };
   const deleteDraft = async (id: string) => {
     if (!confirm("Permanently delete this draft?")) return;
-    const { error } = await supabase.from("upcoming_treks").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Draft deleted");
-    reload();
+    try {
+      await adminApi("deleteTrek", { id });
+      toast.success("Draft deleted");
+      reload();
+    } catch (err: any) { toast.error(err.message); }
   };
+
 
   return (
     <div className="space-y-4">
