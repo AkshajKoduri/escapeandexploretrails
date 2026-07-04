@@ -403,6 +403,119 @@ export default function Treks() {
           )}
         </DialogContent>
       </Dialog>
+
+      <CallbackDialog
+        trek={callbackForId ? treks.find((t) => t.id === callbackForId) ?? null : null}
+        onClose={() => setCallbackForId(null)}
+      />
     </section>
   );
 }
+
+function CallbackDialog({ trek, onClose }: { trek: TrekCard | null; onClose: () => void }) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [preferredTime, setPreferredTime] = useState("Anytime");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (trek) {
+      setFullName(""); setEmail(""); setMobile(""); setPreferredTime("Anytime");
+    }
+  }, [trek?.id]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trek) return;
+    if (!fullName.trim() || !mobile.trim()) {
+      toast.error("Please enter your name and mobile number.");
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from("callback_requests" as any).insert({
+      trip_id: trek.id,
+      trip_name: trek.name,
+      full_name: fullName.trim(),
+      email: email.trim() || null,
+      mobile_number: mobile.trim(),
+      preferred_time: preferredTime,
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Thanks! We'll call you back soon.");
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!trek} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        {trek && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-heading text-xl text-primary">Request a Callback</DialogTitle>
+              <DialogDescription>
+                Requesting callback for: <span className="font-semibold text-foreground">{trek.name}</span>
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={submit} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email <span className="text-muted-foreground font-normal">(optional)</span></label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Mobile Number *</label>
+                <input
+                  type="tel"
+                  required
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Preferred Time to Call</label>
+                <select
+                  value={preferredTime}
+                  onChange={(e) => setPreferredTime(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option>Morning (9 AM - 12 PM)</option>
+                  <option>Afternoon (12 PM - 4 PM)</option>
+                  <option>Evening (4 PM - 8 PM)</option>
+                  <option>Anytime</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full mt-2 px-5 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-colors disabled:opacity-60"
+              >
+                {submitting ? "Submitting…" : "Submit Request"}
+              </button>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
