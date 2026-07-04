@@ -321,11 +321,29 @@ export default function Treks() {
               )}
 
 
-              {openTrek.description && (
-                <section>
-                  <h4 className="font-heading font-bold text-primary mb-1">Description</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.description}</p>
-                </section>
+              {(openTrek.description || openTrek.instructions) && (
+                <Accordion type="multiple" className="w-full">
+                  {openTrek.description && (
+                    <AccordionItem value="description">
+                      <AccordionTrigger className="font-heading font-bold text-primary hover:no-underline">
+                        Description
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {openTrek.description}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                  {openTrek.instructions && (
+                    <AccordionItem value="instructions">
+                      <AccordionTrigger className="font-heading font-bold text-primary hover:no-underline">
+                        Special Instructions
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {openTrek.instructions}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                </Accordion>
               )}
 
               {openTrek.meetingPoint && (
@@ -335,49 +353,18 @@ export default function Treks() {
                 </section>
               )}
 
-              {openTrek.instructions && (
-                <section>
-                  <h4 className="font-heading font-bold text-primary mb-1">Instructions</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.instructions}</p>
-                </section>
-              )}
-
-              {(openTrek.itineraryUrl || itineraryFileUrl) && (
+              {hasItinerary && (
                 <section>
                   <h4 className="font-heading font-bold text-primary mb-2">Itinerary</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {openTrek.itineraryUrl && (
-                      <a
-                        href={openTrek.itineraryUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold hover:opacity-90"
-                      >
-                        📋 View Itinerary
-                      </a>
-                    )}
-                    {itineraryFileUrl && (
-                      <div className="w-full mt-2 space-y-2">
-                        <div className="w-full rounded-lg overflow-hidden border border-border bg-muted">
-                          <object data={`${itineraryFileUrl}#view=FitH`} type="application/pdf" className="w-full h-[500px]">
-                            <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(itineraryFileUrl)}&embedded=true`} className="w-full h-[500px]" title="Itinerary PDF" />
-                          </object>
-                        </div>
-                        <a
-                          href={itineraryFileUrl}
-                          download
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                        >
-                          ⬇ Download PDF
-                        </a>
-                      </div>
-                    )}
-
-                  </div>
+                  <Link
+                    to={`/itinerary/${openTrek.id}`}
+                    className="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
+                  >
+                    📋 View Itinerary
+                  </Link>
                 </section>
               )}
+
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <a
