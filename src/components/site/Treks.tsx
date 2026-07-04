@@ -116,6 +116,7 @@ export default function Treks() {
             meetingPoint: t.meeting_point ?? null,
             itineraryUrl: t.itinerary_url ?? null,
             itineraryFilePath: t.itinerary_file_path ?? null,
+            itineraryDays: Array.isArray(t.itinerary_days) ? (t.itinerary_days as any) : [],
             seatsRemaining: remaining,
             maxSeats: s?.max_seats ?? t.max_seats ?? 0,
             isFull: remaining <= 0,
