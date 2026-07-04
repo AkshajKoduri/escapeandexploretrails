@@ -81,6 +81,15 @@ Deno.serve(async (req) => {
         if (error) throw error;
         return json({ ok: true });
       }
+      case "insertBooking": {
+        const { row } = payload;
+        if (!row?.primary_name || !row?.primary_phone || !row?.trek_name) {
+          return json({ error: "Missing required fields" }, 400);
+        }
+        const { data, error } = await supabase.from("bookings").insert(row).select().single();
+        if (error) throw error;
+        return json({ data });
+      }
 
       // ---- Callbacks ----
       case "updateCallback": {
