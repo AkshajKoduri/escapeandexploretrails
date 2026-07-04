@@ -457,13 +457,55 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
 
       <FF label="Trip name *" full><input className={inp} value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} required /></FF>
 
-      {isOutstation && (
-        <FF label="Destination *"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" required /></FF>
-      )}
+      {isOutstation ? (
+        <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
+      ) : null}
 
-      <FF label="Date *"><input type="date" className={inp} value={f.trek_date ?? ""} onChange={(e) => set({ trek_date: e.target.value })} required /></FF>
-      <FF label="Assembly Time *"><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" required /></FF>
-      <FF label="Meeting point *" full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" required /></FF>
+      <FF label={isOutstation ? "Dates" : "Date *"} full>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              className={inp}
+              value={f.trek_date ?? ""}
+              onChange={(e) => set({ trek_date: e.target.value })}
+              required={!isOutstation}
+            />
+          </div>
+          {(f.additional_dates ?? []).map((d, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="date"
+                className={inp}
+                value={d}
+                onChange={(e) => {
+                  const next = [...(f.additional_dates ?? [])];
+                  next[i] = e.target.value;
+                  set({ additional_dates: next });
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => set({ additional_dates: (f.additional_dates ?? []).filter((_, j) => j !== i) })}
+                className="p-2 rounded-lg text-destructive hover:bg-destructive/10"
+                title="Remove date"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => set({ additional_dates: [...(f.additional_dates ?? []), ""] })}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add another date
+          </button>
+        </div>
+      </FF>
+
+      <FF label={isOutstation ? "Assembly Time" : "Assembly Time *"}><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" required={!isOutstation} /></FF>
+      <FF label={isOutstation ? "Meeting point" : "Meeting point *"} full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" required={!isOutstation} /></FF>
 
       {isHike && (
         <FF label="Trail name / Location *" full><input className={inp} value={f.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="Ananthagiri Hills Trail" required /></FF>
@@ -478,23 +520,36 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
 
       {isOutstation && (
         <>
-          <FF label="Duration (days) *"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="2 Days" required /></FF>
-          <FF label="Distance from Hyderabad *"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="350 km from Hyd" required /></FF>
+          <FF label="Duration (days)"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="2 Days" /></FF>
+          <FF label="Distance from Hyderabad"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="350 km from Hyd" /></FF>
         </>
       )}
 
-      <FF label="Difficulty *">
+      <FF label={isOutstation ? "Difficulty" : "Difficulty *"}>
         <select className={inp} value={f.difficulty} onChange={(e) => set({ difficulty: e.target.value as any })}>
           <option>Easy</option><option>Moderate</option><option>Hard</option>
         </select>
       </FF>
-      <FF label="Price per person (₹) *"><input type="number" min={0} className={inp} value={f.price ?? 0} onChange={(e) => set({ price: Number(e.target.value) })} required /></FF>
-      <FF label={`Max seats *${currentSeatsTaken > 0 ? ` (${currentSeatsTaken} booked)` : ""}`} full>
-        <input type="number" min={1} className={inp} value={f.max_seats ?? 30} onChange={(e) => set({ max_seats: Number(e.target.value) })} required />
+      <FF label={isOutstation ? "Max seats" : `Max seats *${currentSeatsTaken > 0 ? ` (${currentSeatsTaken} booked)` : ""}`}>
+        <input type="number" min={1} className={inp} value={f.max_seats ?? 30} onChange={(e) => set({ max_seats: Number(e.target.value) })} required={!isOutstation} />
       </FF>
 
-      <FF label="Description *" full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required /></FF>
+      <FF label="Starting Price (₹)" full>
+        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
+          <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="6999" />
+          <input className={inp} value={f.starting_price_label ?? ""} onChange={(e) => set({ starting_price_label: e.target.value })} placeholder="e.g. 6,999 - Non-AC Sleeper Train" />
+        </div>
+      </FF>
+      <FF label="Top End Price (₹)" full>
+        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
+          <input type="number" min={0} className={inp} value={f.top_end_price ?? ""} onChange={(e) => set({ top_end_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="8500" />
+          <input className={inp} value={f.top_end_price_label ?? ""} onChange={(e) => set({ top_end_price_label: e.target.value })} placeholder="e.g. 8,500 - 3AC Sleeper Train" />
+        </div>
+      </FF>
+
+      <FF label={isOutstation ? "Description" : "Description *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
       <FF label="Special instructions (what to carry, wear etc.)" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
+
 
       {isOutstation && (
         <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
