@@ -275,7 +275,7 @@ export default function Treks() {
       </div>
 
       <Dialog open={!!openTrek} onOpenChange={(o) => !o && setOpenId(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto">
           {openTrek && (
             <>
               <DialogHeader>
