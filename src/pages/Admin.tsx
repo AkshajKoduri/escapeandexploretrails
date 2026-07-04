@@ -346,7 +346,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!f.name?.trim() || !f.trek_date) return toast.error("Name and date are required");
+    if (!f.name?.trim()) return toast.error("Trip name is required");
     if (f.max_seats < currentSeatsTaken) {
       return toast.error(`Can't set max seats below current bookings (${currentSeatsTaken})`);
     }
@@ -381,17 +381,26 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         itineraryPath = path;
       }
 
+      const cleanDates = (f.additional_dates ?? []).map((d) => (d ?? "").trim()).filter(Boolean);
+      const startPrice = f.starting_price != null && !Number.isNaN(Number(f.starting_price)) ? Number(f.starting_price) : null;
+      const topPrice = f.top_end_price != null && !Number.isNaN(Number(f.top_end_price)) ? Number(f.top_end_price) : null;
+
       const payload: any = {
         name: f.name.trim(),
         destination: f.destination?.trim() || null,
         location: f.location?.trim() || null,
-        trek_date: f.trek_date,
+        trek_date: f.trek_date || null,
+        additional_dates: cleanDates,
         trek_time: f.trek_time?.trim() || null,
         difficulty: f.difficulty,
         duration: f.duration?.trim() || null,
         distance: f.distance?.trim() || null,
         description: f.description?.trim() || null,
-        price: Number(f.price) || 0,
+        price: startPrice ?? Number(f.price) || 0,
+        starting_price: startPrice,
+        starting_price_label: f.starting_price_label?.trim() || null,
+        top_end_price: topPrice,
+        top_end_price_label: f.top_end_price_label?.trim() || null,
         max_seats: Number(f.max_seats) || 1,
         meeting_point: f.meeting_point?.trim() || null,
         instructions: f.instructions?.trim() || null,
@@ -412,6 +421,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         stay_location: f.stay_location?.trim() || null,
         field_labels: f.field_labels ?? {},
       };
+
 
       if (isEdit) {
         const { error } = await supabase.from("upcoming_treks").update(payload).eq("id", f.id);
