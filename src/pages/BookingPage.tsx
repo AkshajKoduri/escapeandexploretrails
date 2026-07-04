@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { CheckCircle2, Plus, Trash2, ArrowLeft, LogOut } from "lucide-react";
+import { CheckCircle2, Plus, Trash2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
 
 type Member = { name: string };
@@ -33,8 +32,6 @@ const primarySchema = z.object({
 });
 
 export default function BookingPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -55,8 +52,7 @@ export default function BookingPage() {
 
   useEffect(() => {
     document.title = "Book a Trek — E2 Trails";
-    if (!loading && !user) navigate("/auth", { replace: true });
-  }, [user, loading, navigate]);
+  }, []);
 
   const loadTreks = async () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -103,18 +99,8 @@ export default function BookingPage() {
   }, []);
 
   useEffect(() => {
-    if (user?.email) setEmail(user.email);
-    (async () => {
-      if (!user) return;
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-      if (data) {
-        setName((p) => p || data.full_name || "");
-        setPhone((p) => p || data.phone || "");
-        setAge((p) => p || (data.age ? String(data.age) : ""));
-        setGender((p) => p || data.gender || "");
-      }
-    })();
-  }, [user]);
+    // no-op: booking is now public; users enter their details manually
+  }, []);
 
   const addMember = () => setMembers((m) => [...m, { name: "" }]);
   const removeMember = (i: number) => setMembers((m) => m.filter((_, idx) => idx !== i));
