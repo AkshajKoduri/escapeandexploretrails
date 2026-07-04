@@ -731,7 +731,10 @@ function downloadTrekExcel(trek: Trek, bookingsList: Booking[], membersByBooking
 
 function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Booking[]; members: any[]; treks: Trek[]; stats: Map<string, Stats>; reload: () => void }) {
   const [filter, setFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "paid">("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "online" | "manual">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   const membersByBooking = useMemo(() => {
     const m = new Map<string, any[]>();
@@ -742,7 +745,12 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
     return m;
   }, [members]);
 
-  const filtered = filter === "all" ? bookings : bookings.filter((b) => b.trek_id === filter || b.trek_name === filter);
+  const filtered = bookings.filter((b) => {
+    if (filter !== "all" && b.trek_id !== filter && b.trek_name !== filter) return false;
+    if (paymentFilter !== "all" && (b.payment_status ?? "pending") !== paymentFilter) return false;
+    if (sourceFilter !== "all" && (b.booking_source ?? "online") !== sourceFilter) return false;
+    return true;
+  });
 
   const cancelBooking = async (b: Booking) => {
     if (!confirm(`Cancel booking for ${b.primary_name}? Their ${b.seats_booked ?? 1} seat(s) will be freed.`)) return;
@@ -755,6 +763,15 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
     }
   };
 
+  const setPaymentStatus = async (b: Booking, value: "pending" | "paid") => {
+    try {
+      await adminApi("updateBooking", { id: b.id, patch: { payment_status: value } });
+      toast.success(`Marked as ${value}`);
+      reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -762,11 +779,30 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
         <h2 className="font-heading font-bold text-lg text-primary flex items-center gap-2">
           <Users className="w-5 h-5" /> Bookings ({filtered.length})
         </h2>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className={inp + " max-w-xs"}>
+        <button
+          onClick={() => setAddOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-secondary transition"
+        >
+          <Plus className="w-4 h-4" /> Add Manual Booking
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className={inp}>
           <option value="all">All treks</option>
           {treks.filter((t) => !t.is_archived).map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
+        </select>
+        <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value as any)} className={inp}>
+          <option value="all">Payment: All</option>
+          <option value="pending">Payment: Pending</option>
+          <option value="paid">Payment: Paid</option>
+        </select>
+        <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value as any)} className={inp}>
+          <option value="all">Source: All</option>
+          <option value="online">Source: Online</option>
+          <option value="manual">Source: Manual</option>
         </select>
       </div>
 
@@ -798,40 +834,65 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No bookings yet.</p>
+        <p className="text-sm text-muted-foreground">No bookings match the current filters.</p>
       ) : (
         <div className="space-y-2">
           {filtered.map((b) => {
             const ms = membersByBooking.get(b.id) ?? [];
             const isOpen = expanded === b.id;
             const isCancelled = b.status === "cancelled";
+            const pay = (b.payment_status ?? "pending") as "pending" | "paid";
+            const source = (b.booking_source ?? "online") as "online" | "manual";
             return (
               <div key={b.id} className={`rounded-xl border border-border bg-background ${isCancelled ? "opacity-70" : ""}`}>
-                <button
-                  onClick={() => setExpanded(isOpen ? null : b.id)}
-                  className="w-full p-4 text-left flex flex-wrap items-center gap-3 hover:bg-muted/40 transition"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-foreground flex items-center gap-2">
+                <div className="w-full p-4 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setExpanded(isOpen ? null : b.id)}
+                    className="flex-1 min-w-0 text-left hover:opacity-80 transition"
+                  >
+                    <div className="font-semibold text-foreground flex items-center gap-2 flex-wrap">
                       <span className={isCancelled ? "line-through" : ""}>{b.primary_name}</span>
                       {isCancelled && (
                         <span className="px-2 py-0.5 text-[10px] rounded-full bg-destructive/15 text-destructive font-bold">CANCELLED</span>
+                      )}
+                      {source === "manual" && (
+                        <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 font-semibold">MANUAL</span>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {b.trek_name} • {new Date(b.created_at).toLocaleDateString()}
                     </div>
-                  </div>
+                  </button>
                   <div className="text-xs text-muted-foreground">{b.primary_phone}</div>
                   <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-semibold">
                     {b.seats_booked ?? 1} seat{(b.seats_booked ?? 1) > 1 ? "s" : ""}
                   </span>
-                </button>
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full font-semibold ${
+                      pay === "paid"
+                        ? "bg-green-500/15 text-green-700 dark:text-green-300"
+                        : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                    }`}
+                  >
+                    {pay === "paid" ? "Paid" : "Pending"}
+                  </span>
+                  <select
+                    value={pay}
+                    onChange={(e) => setPaymentStatus(b, e.target.value as "pending" | "paid")}
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2 py-1 rounded-md border border-input bg-background text-xs"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </div>
                 {isOpen && (
                   <div className="border-t border-border p-4 text-sm space-y-2 bg-muted/20">
                     <div><strong>Email:</strong> {b.primary_email ?? "—"}</div>
-                    <div><strong>Age / Gender:</strong> {b.primary_age} / {b.primary_gender}</div>
-                    <div><strong>Aadhaar:</strong> {b.primary_aadhaar}</div>
+                    <div><strong>Age / Gender:</strong> {b.primary_age ?? "—"} / {b.primary_gender ?? "—"}</div>
+                    <div><strong>Aadhaar:</strong> {b.primary_aadhaar ?? "—"}</div>
+                    <div><strong>Source:</strong> {source}</div>
+                    {b.notes && <div><strong>Notes:</strong> {b.notes}</div>}
                     {ms.length > 0 && (
                       <div>
                         <div className="font-semibold mt-2 mb-1">Group members ({ms.length}):</div>
@@ -859,7 +920,132 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
           })}
         </div>
       )}
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Manual Booking</DialogTitle>
+          </DialogHeader>
+          <ManualBookingForm
+            treks={treks.filter((t) => !t.is_archived && !t.is_draft)}
+            onDone={() => { setAddOpen(false); reload(); }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => void }) {
+  const [trekId, setTrekId] = useState<string>(treks[0]?.id ?? "");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [seats, setSeats] = useState(1);
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "paid">("pending");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trekId) return toast.error("Please select a trip");
+    if (!fullName.trim()) return toast.error("Full name is required");
+    if (!phone.trim()) return toast.error("Phone number is required");
+    const trek = treks.find((t) => t.id === trekId);
+    if (!trek) return toast.error("Invalid trip");
+
+    setBusy(true);
+    try {
+      await adminApi("insertBooking", {
+        row: {
+          trek_id: trek.id,
+          trek_name: trek.name,
+          primary_name: fullName.trim(),
+          primary_phone: phone.trim(),
+          primary_email: email.trim() || null,
+          primary_age: age ? Number(age) : null,
+          primary_gender: gender || null,
+          seats_booked: Math.max(1, Number(seats) || 1),
+          payment_status: paymentStatus,
+          booking_source: "manual",
+          notes: notes.trim() || null,
+          status: "pending",
+        },
+      });
+      toast.success("Manual booking added");
+      onDone();
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to add booking");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground">Select Trip *</label>
+        <select value={trekId} onChange={(e) => setTrekId(e.target.value)} className={inp} required>
+          {treks.length === 0 && <option value="">No active trips</option>}
+          {treks.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Full Name *</label>
+          <input value={fullName} onChange={(e) => setFullName(e.target.value)} className={inp} required />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Phone Number *</label>
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inp} required />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inp} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Age</label>
+          <input type="number" min={0} value={age} onChange={(e) => setAge(e.target.value)} className={inp} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Gender</label>
+          <select value={gender} onChange={(e) => setGender(e.target.value)} className={inp}>
+            <option value="">—</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Number of people</label>
+          <input type="number" min={1} value={seats} onChange={(e) => setSeats(Number(e.target.value))} className={inp} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs font-semibold text-muted-foreground">Payment Status</label>
+          <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as any)} className={inp}>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs font-semibold text-muted-foreground">Notes</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className={inp} rows={3} placeholder="e.g. Paid via UPI to trek lead" />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <button
+          type="submit"
+          disabled={busy}
+          className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-secondary disabled:opacity-60"
+        >
+          {busy ? "Saving…" : "Add Booking"}
+        </button>
+      </div>
+    </form>
   );
 }
 
