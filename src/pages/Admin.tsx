@@ -343,23 +343,20 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
         const path = `trips/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("trek-images").upload(path, imageFile);
-        if (upErr) throw upErr;
-        imageUrl = supabase.storage.from("trek-images").getPublicUrl(path).data.publicUrl;
+        const up = await adminUpload("trek-images", path, imageFile);
+        imageUrl = up.publicUrl ?? imageUrl;
       }
 
       let itineraryPath = f.itinerary_file_path;
       if (itineraryFile) {
         const path = `trips/${crypto.randomUUID()}.pdf`;
-        const { error: upErr } = await supabase.storage.from("itineraries").upload(path, itineraryFile, {
-          contentType: "application/pdf", upsert: false,
-        });
-        if (upErr) throw upErr;
+        const up = await adminUpload("itineraries", path, itineraryFile);
         if (f.itinerary_file_path) {
-          await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
+          try { await adminRemove("itineraries", f.itinerary_file_path); } catch { /* ignore */ }
         }
-        itineraryPath = path;
+        itineraryPath = up.path;
       }
+
 
       const cleanDates = (f.additional_dates ?? []).map((d) => (d ?? "").trim()).filter(Boolean);
       const startPrice = f.starting_price != null && !Number.isNaN(Number(f.starting_price)) ? Number(f.starting_price) : null;
