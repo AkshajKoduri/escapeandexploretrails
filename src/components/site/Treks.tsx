@@ -285,19 +285,30 @@ export default function Treks() {
               <DialogHeader>
                 <DialogTitle className="font-heading text-2xl text-primary">{openTrek.name}</DialogTitle>
                 <DialogDescription className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  <span>📅 {openTrek.date}</span>
-                  {openTrek.trekTime && <span>🕒 {openTrek.trekTime}</span>}
-                  {openTrek.dur && <span>⏱ {openTrek.dur}</span>}
+                  {openTrek.dateLabel && <span>📅 Date: {openTrek.dateLabel}</span>}
+                  {openTrek.trekTime && <span>🕒 Assembly: {openTrek.trekTime}</span>}
+                  {openTrek.dur && <span>⏱ Duration: {openTrek.dur}</span>}
                   {openTrek.dist && <span>📍 {openTrek.dist}</span>}
+                  {openTrek.meetingPoint && <span>📌 Meeting Point: {openTrek.meetingPoint}</span>}
                 </DialogDescription>
               </DialogHeader>
               <img src={openTrek.img} alt={openTrek.name} className="w-full h-56 object-cover rounded-lg" />
-              {openTrek.price > 0 && (
+              {(openTrek.startingPrice != null || openTrek.topEndPrice != null) ? (
+                <div className="text-base font-bold text-accent space-y-0.5">
+                  {openTrek.startingPrice != null && (
+                    <div>₹{openTrek.startingPrice.toLocaleString("en-IN")}{openTrek.startingPriceLabel ? <span className="text-xs text-muted-foreground font-normal"> ({openTrek.startingPriceLabel})</span> : null}</div>
+                  )}
+                  {openTrek.topEndPrice != null && (
+                    <div>₹{openTrek.topEndPrice.toLocaleString("en-IN")}{openTrek.topEndPriceLabel ? <span className="text-xs text-muted-foreground font-normal"> ({openTrek.topEndPriceLabel})</span> : null}</div>
+                  )}
+                </div>
+              ) : openTrek.price > 0 ? (
                 <div className="text-lg font-bold text-accent">
                   ₹{openTrek.price.toLocaleString("en-IN")}
                   <span className="text-xs text-muted-foreground font-normal"> / person</span>
                 </div>
-              )}
+              ) : null}
+
 
               {openTrek.eventType === "Outstation Trek" && openTrek.extras.length > 0 && (
                 <section>
