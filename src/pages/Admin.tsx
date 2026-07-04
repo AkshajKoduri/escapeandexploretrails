@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -108,9 +107,6 @@ const statusColor: Record<string, string> = {
 };
 
 export default function Admin() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [treks, setTreks] = useState<Trek[]>([]);
   const [stats, setStats] = useState<Map<string, Stats>>(new Map());
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -133,51 +129,11 @@ export default function Admin() {
 
   useEffect(() => {
     document.title = "Admin — E2 Trails";
+    loadAll();
   }, []);
-
-  useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      navigate("/auth", { replace: true });
-      return;
-    }
-    (async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      const admin = !!data;
-      setIsAdmin(admin);
-      if (admin) await loadAll();
-    })();
-  }, [user, loading, navigate]);
 
   const activeTreks = useMemo(() => treks.filter((t) => !t.is_archived && !t.is_draft), [treks]);
   const draftTreks = useMemo(() => treks.filter((t) => t.is_draft && !t.is_archived), [treks]);
-  
-
-  if (loading || isAdmin === null) {
-    return <main className="min-h-screen grid place-items-center">Loading…</main>;
-  }
-
-  if (!isAdmin) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary/10 via-background to-primary/10 px-4">
-        <div className="max-w-md text-center bg-card rounded-2xl shadow-trail border border-primary/10 p-8">
-          <Mountain className="w-10 h-10 text-primary mx-auto mb-3" />
-          <h1 className="font-heading font-bold text-2xl text-primary mb-2">Admin access only</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            You're signed in as <span className="font-medium">{user?.email}</span>, but this page is restricted to trek leads.
-          </p>
-          <Link to="/" className="inline-flex items-center gap-2 text-accent font-semibold hover:underline">
-            <ArrowLeft className="w-4 h-4" /> Back to home
-          </Link>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-secondary/10 via-background to-primary/10 px-4 py-8 md:py-12">
@@ -202,7 +158,7 @@ export default function Admin() {
             </TabsList>
 
             <TabsContent value="trips" className="mt-6">
-              <TripsTab treks={activeTreks} stats={stats} reload={loadAll} userId={user!.id} />
+              <TripsTab treks={activeTreks} stats={stats} reload={loadAll} />
             </TabsContent>
 
             <TabsContent value="bookings" className="mt-6">
@@ -221,7 +177,7 @@ export default function Admin() {
 
 /* ===================== Trips Tab ===================== */
 
-function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<string, Stats>; reload: () => void; userId: string }) {
+function TripsTab({ treks, stats, reload }: { treks: Trek[]; stats: Map<string, Stats>; reload: () => void }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Trek | null>(null);
 
@@ -313,7 +269,7 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
           <TripForm
             initial={editing ?? (empty as Trek)}
             isEdit={!!editing}
-            userId={userId}
+            
             currentSeatsTaken={editing ? stats.get(editing.id)?.seats_taken ?? 0 : 0}
             onDone={() => { setOpen(false); reload(); }}
           />
@@ -323,7 +279,7 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
   );
 }
 
-function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { initial: Trek; isEdit: boolean; userId: string; currentSeatsTaken: number; onDone: () => void }) {
+function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Trek; isEdit: boolean; currentSeatsTaken: number; onDone: () => void }) {
   const [f, setF] = useState<Trek>(initial);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [itineraryFile, setItineraryFile] = useState<File | null>(null);

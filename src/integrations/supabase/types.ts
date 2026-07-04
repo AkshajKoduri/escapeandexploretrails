@@ -80,7 +80,7 @@ export type Database = {
           status: string
           trek_id: string | null
           trek_name: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -97,7 +97,7 @@ export type Database = {
           status?: string
           trek_id?: string | null
           trek_name: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -114,7 +114,7 @@ export type Database = {
           status?: string
           trek_id?: string | null
           trek_name?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

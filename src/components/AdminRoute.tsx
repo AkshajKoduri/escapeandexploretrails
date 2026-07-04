@@ -1,30 +1,59 @@
-import { ReactNode, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/hooks/use-toast";
+import { ReactNode, useEffect, useState, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { Mountain } from "lucide-react";
+import { toast } from "sonner";
+import logo from "@/assets/logo.png";
 
-const ADMIN_EMAIL = "koduri134679@gmail.com";
+const ADMIN_PASSWORD = "e2trails2024admin";
+const SESSION_KEY = "e2_admin_ok";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+  const navigate = useNavigate();
+  const [ok, setOk] = useState<boolean>(() => sessionStorage.getItem(SESSION_KEY) === "1");
+  const [pwd, setPwd] = useState("");
 
-  const isAdmin = !!user && user.email === ADMIN_EMAIL;
+  useEffect(() => { document.title = "Admin — E2 Trails"; }, []);
 
-  useEffect(() => {
-    if (!loading && user && !isAdmin) {
-      toast({ title: "Access denied", variant: "destructive" });
+  if (ok) return <>{children}</>;
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (pwd === ADMIN_PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      setOk(true);
+    } else {
+      toast.error("Access denied.");
+      navigate("/", { replace: true });
     }
-  }, [loading, user, isAdmin]);
+  };
 
-  if (loading) {
-    return <main className="min-h-screen grid place-items-center text-muted-foreground">Loading…</main>;
-  }
-  if (!user) {
-    return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
-  }
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-  return <>{children}</>;
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary/10 via-background to-primary/10 px-4">
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-sm bg-card rounded-2xl shadow-trail border border-primary/10 p-8 text-center"
+      >
+        <img src={logo} alt="E2 Trails" className="w-14 h-14 rounded-full bg-white object-contain p-1 mx-auto mb-3 shadow-card" />
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Mountain className="w-5 h-5 text-primary" />
+          <h1 className="font-heading font-bold text-xl text-primary">E2 TRAILS Admin</h1>
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">Enter the admin password to continue.</p>
+        <input
+          type="password"
+          autoFocus
+          value={pwd}
+          onChange={(e) => setPwd(e.target.value)}
+          placeholder="Password"
+          className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent transition mb-4"
+        />
+        <button
+          type="submit"
+          className="w-full px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold shadow-glow hover:scale-[1.02] transition-transform"
+        >
+          Enter Admin
+        </button>
+      </form>
+    </main>
+  );
 }

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { label: "Home", href: "/#home", external: false },
@@ -17,7 +15,6 @@ const links = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const { user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -25,8 +22,6 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const signOut = () => supabase.auth.signOut();
 
   return (
     <header
@@ -71,18 +66,6 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          {user ? (
-            <button
-              onClick={signOut}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-charcoal-foreground/90 hover:text-accent text-sm font-medium transition"
-            >
-              <LogOut className="w-4 h-4" /> Sign out
-            </button>
-          ) : (
-            <Link to="/auth" className="text-charcoal-foreground/90 hover:text-accent text-sm font-medium transition">
-              Sign In
-            </Link>
-          )}
           <Link
             to="/booking"
             className="inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-orange text-accent-foreground font-semibold text-sm shadow-glow hover:scale-105 transition-transform"
@@ -145,22 +128,6 @@ export default function Navbar() {
               >
                 Book a Trek
               </Link>
-              {user ? (
-                <button
-                  onClick={() => { setOpen(false); signOut(); }}
-                  className="inline-flex justify-center px-6 py-3 rounded-full border border-accent/40 text-charcoal-foreground"
-                >
-                  Sign out
-                </button>
-              ) : (
-                <Link
-                  to="/auth"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex justify-center px-6 py-3 rounded-full border border-accent/40 text-charcoal-foreground"
-                >
-                  Sign In
-                </Link>
-              )}
             </nav>
           </aside>
         </div>
