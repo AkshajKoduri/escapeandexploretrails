@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
+import { adminApi, adminRemove, adminUpload } from "@/lib/adminApi";
 import { toast } from "sonner";
 import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 type Trek = {
   id: string;
