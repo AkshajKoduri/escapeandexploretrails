@@ -13,7 +13,8 @@ type Trek = {
   name: string;
   destination: string | null;
   location: string | null;
-  trek_date: string;
+  trek_date: string | null;
+  additional_dates: string[];
   trek_time: string | null;
   difficulty: "Easy" | "Moderate" | "Hard";
   duration: string | null;
@@ -21,6 +22,10 @@ type Trek = {
   image_url: string | null;
   description: string | null;
   price: number;
+  starting_price: number | null;
+  starting_price_label: string | null;
+  top_end_price: number | null;
+  top_end_price_label: string | null;
   max_seats: number;
   meeting_point: string | null;
   instructions: string | null;
@@ -48,14 +53,17 @@ type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_re
 type Booking = any;
 
 const empty: Partial<Trek> = {
-  name: "", destination: "", trek_date: "", trek_time: "", difficulty: "Easy",
-  duration: "", distance: "", description: "", price: 0, max_seats: 30,
+  name: "", destination: "", trek_date: "", additional_dates: [], trek_time: "", difficulty: "Easy",
+  duration: "", distance: "", description: "", price: 0,
+  starting_price: null, starting_price_label: "", top_end_price: null, top_end_price_label: "",
+  max_seats: 30,
   meeting_point: "", instructions: "", location: "",
   album_url: "", itinerary_url: "", itinerary_file_path: "", event_type: "Hike",
   trek_difficulty: "", trek_distance: "", altitude: "", region: "",
   elevation_gain: "", mountain_range: "", base_village: "",
   duration_text: "", stay_location: "", field_labels: {},
 };
+
 
 export const OUTSTATION_EXTRA_FIELDS: { key: keyof Trek; label: string; type?: "select"; options?: string[]; placeholder?: string }[] = [
   { key: "trek_difficulty", label: "Trek Difficulty", type: "select", options: ["", "Easy", "Moderate", "Hard", "Very Hard"] },
