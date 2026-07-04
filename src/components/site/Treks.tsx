@@ -353,15 +353,24 @@ export default function Treks() {
                       </a>
                     )}
                     {itineraryFileUrl && (
-                      <a
-                        href={itineraryFileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90"
-                      >
-                        📄 Download Itinerary (PDF)
-                      </a>
+                      <div className="w-full mt-2 space-y-2">
+                        <div className="w-full rounded-lg overflow-hidden border border-border bg-muted">
+                          <object data={`${itineraryFileUrl}#view=FitH`} type="application/pdf" className="w-full h-[500px]">
+                            <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(itineraryFileUrl)}&embedded=true`} className="w-full h-[500px]" title="Itinerary PDF" />
+                          </object>
+                        </div>
+                        <a
+                          href={itineraryFileUrl}
+                          download
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                        >
+                          ⬇ Download PDF
+                        </a>
+                      </div>
                     )}
+
                   </div>
                 </section>
               )}
