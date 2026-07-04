@@ -151,9 +151,10 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-xl">
+            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              <TabsTrigger value="callbacks">Callbacks</TabsTrigger>
               <TabsTrigger value="drafts">Drafts</TabsTrigger>
             </TabsList>
 
@@ -163,6 +164,10 @@ export default function Admin() {
 
             <TabsContent value="bookings" className="mt-6">
               <BookingsTab bookings={bookings} members={members} treks={treks} stats={stats} reload={loadAll} />
+            </TabsContent>
+
+            <TabsContent value="callbacks" className="mt-6">
+              <CallbacksTab />
             </TabsContent>
 
             <TabsContent value="drafts" className="mt-6">
@@ -903,4 +908,105 @@ function DraftsTab({ treks, reload }: { treks: Trek[]; reload: () => void }) {
     </div>
   );
 }
+
+/* ===================== Callbacks Tab ===================== */
+
+type CallbackRequest = {
+  id: string;
+  trip_id: string | null;
+  trip_name: string | null;
+  full_name: string;
+  email: string | null;
+  mobile_number: string;
+  preferred_time: string | null;
+  status: string;
+  created_at: string;
+};
+
+function CallbacksTab() {
+  const [rows, setRows] = useState<CallbackRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("callback_requests" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    setRows((data as any) ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const markContacted = async (id: string) => {
+    const { error } = await supabase.from("callback_requests" as any).update({ status: "contacted" }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Marked as contacted");
+    load();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this callback request?")) return;
+    const { error } = await supabase.from("callback_requests" as any).delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted");
+    load();
+  };
+
+  if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (rows.length === 0) return <div className="text-sm text-muted-foreground">No callback requests yet.</div>;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="text-left border-b border-border">
+            <th className="p-2">When</th>
+            <th className="p-2">Trip</th>
+            <th className="p-2">Name</th>
+            <th className="p-2">Mobile</th>
+            <th className="p-2">Email</th>
+            <th className="p-2">Preferred Time</th>
+            <th className="p-2">Status</th>
+            <th className="p-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id} className="border-b border-border/50 align-top">
+              <td className="p-2 whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
+              <td className="p-2">{r.trip_name ?? "—"}</td>
+              <td className="p-2">{r.full_name}</td>
+              <td className="p-2 whitespace-nowrap">
+                <a href={`tel:${r.mobile_number}`} className="text-primary hover:underline">{r.mobile_number}</a>
+              </td>
+              <td className="p-2">{r.email ?? "—"}</td>
+              <td className="p-2">{r.preferred_time ?? "—"}</td>
+              <td className="p-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.status === "contacted" ? "bg-green-500/15 text-green-700 dark:text-green-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}>
+                  {r.status}
+                </span>
+              </td>
+              <td className="p-2">
+                <div className="flex gap-2">
+                  {r.status !== "contacted" && (
+                    <button onClick={() => markContacted(r.id)} className="px-2 py-1 rounded-md bg-primary text-primary-foreground text-xs hover:opacity-90">
+                      Mark contacted
+                    </button>
+                  )}
+                  <button onClick={() => remove(r.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 
