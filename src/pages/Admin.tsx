@@ -281,12 +281,18 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
                     {taken >= max && <span className="px-2 py-0.5 text-xs rounded-full bg-destructive/15 text-destructive font-bold">FULL</span>}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {new Date(t.trek_date).toLocaleDateString()}{t.trek_time ? ` • ${t.trek_time}` : ""} • {t.difficulty}
-                    {t.destination ? ` • ${t.destination}` : ""}
+                    {(() => {
+                      const dates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
+                      const dateStr = dates.length ? dates.map((d) => new Date(d).toLocaleDateString()).join(", ") : "No date";
+                      return <>{dateStr}{t.trek_time ? ` • ${t.trek_time}` : ""} • {t.difficulty}{t.destination ? ` • ${t.destination}` : ""}</>;
+                    })()}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    💰 ₹{Number(t.price).toLocaleString("en-IN")} • 🪑 {taken}/{max} seats
+                    💰 {t.starting_price != null || t.top_end_price != null
+                      ? [t.starting_price, t.top_end_price].filter((x) => x != null).map((p) => `₹${Number(p).toLocaleString("en-IN")}`).join(" – ")
+                      : t.price > 0 ? `₹${Number(t.price).toLocaleString("en-IN")}` : "—"} • 🪑 {taken}/{max} seats
                   </div>
+
                 </div>
                 <div className="flex gap-1 self-end md:self-auto">
                   <button onClick={() => startEdit(t)} className="p-2 rounded-lg text-primary hover:bg-primary/10" title="Edit"><Pencil className="w-4 h-4" /></button>
