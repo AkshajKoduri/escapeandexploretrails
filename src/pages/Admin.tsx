@@ -115,19 +115,24 @@ export default function Admin() {
   const [members, setMembers] = useState<any[]>([]);
 
   const loadAll = async () => {
-    const [{ data: trekData }, { data: statsData }, { data: bData }, { data: mData }] = await Promise.all([
-      supabase.from("upcoming_treks").select("*").order("trek_date", { ascending: true }),
-      supabase.rpc("get_trek_seat_stats"),
-      supabase.from("bookings").select("*").order("created_at", { ascending: false }),
-      supabase.from("booking_members").select("*"),
-    ]);
-    if (trekData) setTreks(trekData as Trek[]);
-    const sm = new Map<string, Stats>();
-    (statsData ?? []).forEach((s: any) => sm.set(s.trek_id, s));
-    setStats(sm);
-    setBookings(bData ?? []);
-    setMembers(mData ?? []);
+    try {
+      const [{ data: trekData }, { data: statsData }, bRes, mRes] = await Promise.all([
+        supabase.from("upcoming_treks").select("*").order("trek_date", { ascending: true }),
+        supabase.rpc("get_trek_seat_stats"),
+        adminApi<{ data: Booking[] }>("listBookings"),
+        adminApi<{ data: any[] }>("listBookingMembers"),
+      ]);
+      if (trekData) setTreks(trekData as Trek[]);
+      const sm = new Map<string, Stats>();
+      (statsData ?? []).forEach((s: any) => sm.set(s.trek_id, s));
+      setStats(sm);
+      setBookings(bRes?.data ?? []);
+      setMembers(mRes?.data ?? []);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to load admin data");
+    }
   };
+
 
   useEffect(() => {
     document.title = "Admin — E2 Trails";
