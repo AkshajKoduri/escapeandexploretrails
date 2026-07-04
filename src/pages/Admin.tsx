@@ -313,11 +313,16 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   const removeItineraryFile = async () => {
     if (!f.itinerary_file_path) return;
     if (!confirm("Remove the uploaded itinerary PDF?")) return;
-    await supabase.storage.from("itineraries").remove([f.itinerary_file_path]);
-    if (isEdit) await supabase.from("upcoming_treks").update({ itinerary_file_path: null }).eq("id", f.id);
-    set({ itinerary_file_path: null });
-    toast.success("Itinerary removed");
+    try {
+      await adminRemove("itineraries", f.itinerary_file_path);
+      if (isEdit) await adminApi("updateTrek", { id: f.id, patch: { itinerary_file_path: null } });
+      set({ itinerary_file_path: null });
+      toast.success("Itinerary removed");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
