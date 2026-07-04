@@ -109,7 +109,6 @@ export default function BookingPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     const parsed = primarySchema.safeParse({ name, age, gender, phone, email, trekId });
     if (!parsed.success) {
@@ -142,7 +141,6 @@ export default function BookingPage() {
       const { data: booking, error: bErr } = await supabase
         .from("bookings")
         .insert({
-          user_id: user.id,
           trek_id: trekId,
           trek_name: selectedTrek.name,
           primary_name: parsed.data.name,
@@ -155,7 +153,7 @@ export default function BookingPage() {
           is_group: isGroup && members.length > 0,
           seats_booked: seatsNeeded,
           status: "confirmed",
-        })
+        } as any)
         .select()
         .single();
       if (bErr) throw bErr;
@@ -171,14 +169,6 @@ export default function BookingPage() {
         if (mErr) throw mErr;
       }
 
-      await supabase.from("profiles").update({
-        full_name: parsed.data.name,
-        phone: parsed.data.phone,
-        age: parsed.data.age,
-        gender: parsed.data.gender,
-        updated_at: new Date().toISOString(),
-      }).eq("id", user.id);
-
       setDone(true);
       toast.success("Booking confirmed!");
     } catch (err: any) {
@@ -188,13 +178,6 @@ export default function BookingPage() {
     }
   };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-  };
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user) return null;
 
   return (
     <main className="min-h-screen bg-secondary/5">
@@ -208,9 +191,6 @@ export default function BookingPage() {
             <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
               <ArrowLeft className="w-4 h-4" /> Back
             </Link>
-            <button onClick={signOut} className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 ml-3">
-              <LogOut className="w-4 h-4" /> Sign out
-            </button>
           </div>
         </div>
       </header>
@@ -219,7 +199,6 @@ export default function BookingPage() {
         <div className="text-center mb-10">
           <span className="font-script text-accent text-xl">— Reserve your spot</span>
           <h1 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">Book Your Adventure</h1>
-          <p className="mt-3 text-muted-foreground">Logged in as <span className="font-semibold text-primary">{user.email}</span></p>
         </div>
 
         {done ? (
