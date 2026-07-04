@@ -252,23 +252,13 @@ export default function Treks() {
                     <div className="text-lg font-bold text-accent mb-4">₹{t.price.toLocaleString("en-IN")}<span className="text-xs text-charcoal-foreground/70 font-normal"> / person</span></div>
                   ) : null}
 
-                  {t.isFull ? (
-                    <button
-                      disabled
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-muted text-muted-foreground text-sm font-semibold cursor-not-allowed"
-                    >
-                      Sold Out
-                    </button>
-                  ) : (
-                    <Link
-                      to={`/booking?trek=${t.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
-                    >
-                      Book Now →
-                    </Link>
-                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setOpenId(t.id); }}
+                    className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
+                  >
+                    View More Info →
+                  </button>
                 </div>
               </article>
             ))}
