@@ -746,11 +746,15 @@ function BookingsTab({ bookings, members, treks, stats, reload }: { bookings: Bo
 
   const cancelBooking = async (b: Booking) => {
     if (!confirm(`Cancel booking for ${b.primary_name}? Their ${b.seats_booked ?? 1} seat(s) will be freed.`)) return;
-    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id);
-    if (error) return toast.error(error.message);
-    toast.success("Booking cancelled");
-    reload();
+    try {
+      await adminApi("updateBooking", { id: b.id, patch: { status: "cancelled" } });
+      toast.success("Booking cancelled");
+      reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
+
 
   return (
     <div className="space-y-4">
