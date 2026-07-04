@@ -69,52 +69,64 @@ export default function Treks() {
         .select("*")
         .eq("is_archived", false)
         .eq("is_draft", false)
-        .gte("trek_date", today)
-        .order("trek_date", { ascending: true }),
+        .order("trek_date", { ascending: true, nullsFirst: false }),
       supabase.rpc("get_trek_seat_stats"),
     ]);
 
     const statsMap = new Map<string, { seats_remaining: number; max_seats: number }>();
     (stats ?? []).forEach((s: any) => statsMap.set(s.trek_id, s));
 
+    const fmt = (d: string) => new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+
     setTreks(
-      (trekData ?? []).map((t: any) => {
-        const s = statsMap.get(t.id);
-        const remaining = s?.seats_remaining ?? t.max_seats ?? 0;
-        return {
-          id: t.id,
-          name: t.name,
-          destination: t.destination,
-          img: t.image_url || fallbackImg,
-          diff: (t.difficulty as Difficulty) ?? "Easy",
-          dur: t.duration ?? "",
-          dist: t.distance ?? t.location ?? "",
-          price: Number(t.price ?? 0),
-          date: new Date(t.trek_date).toLocaleDateString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }),
-          trekTime: t.trek_time,
-          description: t.description ?? null,
-          instructions: t.instructions ?? null,
-          meetingPoint: t.meeting_point ?? null,
-          itineraryUrl: t.itinerary_url ?? null,
-          itineraryFilePath: t.itinerary_file_path ?? null,
-          seatsRemaining: remaining,
-          maxSeats: s?.max_seats ?? t.max_seats ?? 0,
-          isFull: remaining <= 0,
-          eventType: (t.event_type as EventType) ?? "Hike",
-          extras: OUTSTATION_FIELDS
-            .map((f) => ({
-              key: f.key,
-              label: (t.field_labels && t.field_labels[f.key]) || f.label,
-              value: (t[f.key] ?? "") as string,
-            }))
-            .filter((x) => x.value && String(x.value).trim() !== ""),
-        };
-      }),
+      (trekData ?? [])
+        .filter((t: any) => {
+          const all = [t.trek_date, ...((t.additional_dates ?? []) as string[])].filter(Boolean);
+          if (all.length === 0) return true;
+          return all.some((d: string) => d >= today);
+        })
+        .map((t: any) => {
+          const s = statsMap.get(t.id);
+          const remaining = s?.seats_remaining ?? t.max_seats ?? 0;
+          const dates = [t.trek_date, ...((t.additional_dates ?? []) as string[])]
+            .filter(Boolean)
+            .filter((d: string) => d >= today);
+          return {
+            id: t.id,
+            name: t.name,
+            destination: t.destination,
+            img: t.image_url || fallbackImg,
+            diff: (t.difficulty as Difficulty) ?? "Easy",
+            dur: t.duration ?? "",
+            dist: t.distance ?? t.location ?? "",
+            price: Number(t.price ?? 0),
+            startingPrice: t.starting_price != null ? Number(t.starting_price) : null,
+            startingPriceLabel: t.starting_price_label ?? null,
+            topEndPrice: t.top_end_price != null ? Number(t.top_end_price) : null,
+            topEndPriceLabel: t.top_end_price_label ?? null,
+            dates,
+            dateLabel: dates.length ? dates.map(fmt).join(", ") : "",
+            trekTime: t.trek_time,
+            description: t.description ?? null,
+            instructions: t.instructions ?? null,
+            meetingPoint: t.meeting_point ?? null,
+            itineraryUrl: t.itinerary_url ?? null,
+            itineraryFilePath: t.itinerary_file_path ?? null,
+            seatsRemaining: remaining,
+            maxSeats: s?.max_seats ?? t.max_seats ?? 0,
+            isFull: remaining <= 0,
+            eventType: (t.event_type as EventType) ?? "Hike",
+            extras: OUTSTATION_FIELDS
+              .map((f) => ({
+                key: f.key,
+                label: (t.field_labels && t.field_labels[f.key]) || f.label,
+                value: (t[f.key] ?? "") as string,
+              }))
+              .filter((x) => x.value && String(x.value).trim() !== ""),
+          };
+        }),
     );
+
   };
 
   useEffect(() => {
