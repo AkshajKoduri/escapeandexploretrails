@@ -3,27 +3,32 @@ import { useNavigate } from "react-router-dom";
 import { Mountain } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
-
-const ADMIN_PASSWORD = "e2trails2024admin";
-const SESSION_KEY = "e2_admin_ok";
+import { adminApi, clearAdminPassword, isAdminSession, setAdminPassword } from "@/lib/adminApi";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const [ok, setOk] = useState<boolean>(() => sessionStorage.getItem(SESSION_KEY) === "1");
+  const [ok, setOk] = useState<boolean>(() => isAdminSession());
   const [pwd, setPwd] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => { document.title = "Admin — E2 Trails"; }, []);
 
   if (ok) return <>{children}</>;
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (pwd === ADMIN_PASSWORD) {
-      sessionStorage.setItem(SESSION_KEY, "1");
+    if (busy) return;
+    setBusy(true);
+    try {
+      setAdminPassword(pwd);
+      await adminApi("verify");
       setOk(true);
-    } else {
+    } catch (err: any) {
+      clearAdminPassword();
       toast.error("Access denied.");
       navigate("/", { replace: true });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -49,9 +54,10 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
         />
         <button
           type="submit"
-          className="w-full px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold shadow-glow hover:scale-[1.02] transition-transform"
+          disabled={busy}
+          className="w-full px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-60"
         >
-          Enter Admin
+          {busy ? "Verifying…" : "Enter Admin"}
         </button>
       </form>
     </main>
