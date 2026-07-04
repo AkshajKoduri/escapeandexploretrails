@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ahobilam from "@/assets/trek-ahobilam.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
 type EventType = "Hike" | "Cycling Ride" | "Outstation Trek";
@@ -29,6 +30,7 @@ type TrekCard = {
   meetingPoint: string | null;
   itineraryUrl: string | null;
   itineraryFilePath: string | null;
+  itineraryDays: { title: string; description: string }[];
   seatsRemaining: number;
   maxSeats: number;
   isFull: boolean;
@@ -114,6 +116,7 @@ export default function Treks() {
             meetingPoint: t.meeting_point ?? null,
             itineraryUrl: t.itinerary_url ?? null,
             itineraryFilePath: t.itinerary_file_path ?? null,
+            itineraryDays: Array.isArray(t.itinerary_days) ? (t.itinerary_days as any) : [],
             seatsRemaining: remaining,
             maxSeats: s?.max_seats ?? t.max_seats ?? 0,
             isFull: remaining <= 0,
@@ -144,23 +147,8 @@ export default function Treks() {
   }, []);
 
   const openTrek = treks.find((t) => t.id === openId) || null;
-  const [itineraryFileUrl, setItineraryFileUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    setItineraryFileUrl(null);
-    if (!openTrek?.itineraryFilePath || !openTrek?.id) return;
-    supabase.functions
-      .invoke("itinerary-signed-url", { body: { trekId: openTrek.id } })
-      .then(({ data }) => {
-        if (!cancelled) setItineraryFileUrl((data as any)?.url ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setItineraryFileUrl(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [openTrek?.id, openTrek?.itineraryFilePath]);
+  const hasItinerary = !!(openTrek && (openTrek.itineraryDays.length > 0 || openTrek.itineraryFilePath || openTrek.itineraryUrl));
+
 
 
 
@@ -287,7 +275,7 @@ export default function Treks() {
       </div>
 
       <Dialog open={!!openTrek} onOpenChange={(o) => !o && setOpenId(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto">
           {openTrek && (
             <>
               <DialogHeader>
@@ -333,11 +321,29 @@ export default function Treks() {
               )}
 
 
-              {openTrek.description && (
-                <section>
-                  <h4 className="font-heading font-bold text-primary mb-1">Description</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.description}</p>
-                </section>
+              {(openTrek.description || openTrek.instructions) && (
+                <Accordion type="multiple" className="w-full">
+                  {openTrek.description && (
+                    <AccordionItem value="description">
+                      <AccordionTrigger className="font-heading font-bold text-primary hover:no-underline">
+                        Description
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {openTrek.description}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                  {openTrek.instructions && (
+                    <AccordionItem value="instructions">
+                      <AccordionTrigger className="font-heading font-bold text-primary hover:no-underline">
+                        Special Instructions
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {openTrek.instructions}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                </Accordion>
               )}
 
               {openTrek.meetingPoint && (
@@ -347,49 +353,18 @@ export default function Treks() {
                 </section>
               )}
 
-              {openTrek.instructions && (
-                <section>
-                  <h4 className="font-heading font-bold text-primary mb-1">Instructions</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.instructions}</p>
-                </section>
-              )}
-
-              {(openTrek.itineraryUrl || itineraryFileUrl) && (
+              {hasItinerary && (
                 <section>
                   <h4 className="font-heading font-bold text-primary mb-2">Itinerary</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {openTrek.itineraryUrl && (
-                      <a
-                        href={openTrek.itineraryUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold hover:opacity-90"
-                      >
-                        📋 View Itinerary
-                      </a>
-                    )}
-                    {itineraryFileUrl && (
-                      <div className="w-full mt-2 space-y-2">
-                        <div className="w-full rounded-lg overflow-hidden border border-border bg-muted">
-                          <object data={`${itineraryFileUrl}#view=FitH`} type="application/pdf" className="w-full h-[500px]">
-                            <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(itineraryFileUrl)}&embedded=true`} className="w-full h-[500px]" title="Itinerary PDF" />
-                          </object>
-                        </div>
-                        <a
-                          href={itineraryFileUrl}
-                          download
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                        >
-                          ⬇ Download PDF
-                        </a>
-                      </div>
-                    )}
-
-                  </div>
+                  <Link
+                    to={`/itinerary/${openTrek.id}`}
+                    className="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
+                  >
+                    📋 View Itinerary
+                  </Link>
                 </section>
               )}
+
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <a

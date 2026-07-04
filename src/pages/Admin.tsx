@@ -36,6 +36,7 @@ type Trek = {
   album_url: string | null;
   itinerary_url: string | null;
   itinerary_file_path: string | null;
+  itinerary_days: { title: string; description: string }[];
   event_type: "Hike" | "Cycling Ride" | "Outstation Trek";
   trek_difficulty: string | null;
   trek_distance: string | null;
@@ -59,7 +60,7 @@ const empty: Partial<Trek> = {
   starting_price: null, starting_price_label: "", top_end_price: null, top_end_price_label: "",
   max_seats: 30,
   meeting_point: "", instructions: "", location: "",
-  album_url: "", itinerary_url: "", itinerary_file_path: "", event_type: "Hike",
+  album_url: "", itinerary_url: "", itinerary_file_path: "", itinerary_days: [], event_type: "Hike",
   trek_difficulty: "", trek_distance: "", altitude: "", region: "",
   elevation_gain: "", mountain_range: "", base_village: "",
   duration_text: "", stay_location: "", field_labels: {},
@@ -122,7 +123,7 @@ export default function Admin() {
         adminApi<{ data: Booking[] }>("listBookings"),
         adminApi<{ data: any[] }>("listBookingMembers"),
       ]);
-      if (trekData) setTreks(trekData as Trek[]);
+      if (trekData) setTreks(trekData as unknown as Trek[]);
       const sm = new Map<string, Stats>();
       (statsData ?? []).forEach((s: any) => sm.set(s.trek_id, s));
       setStats(sm);
@@ -386,6 +387,9 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         album_url: normalizeUrl(f.album_url),
         itinerary_url: normalizeUrl(f.itinerary_url),
         itinerary_file_path: itineraryPath || null,
+        itinerary_days: (f.itinerary_days ?? [])
+          .map((d) => ({ title: (d.title ?? "").trim(), description: (d.description ?? "").trim() }))
+          .filter((d) => d.title || d.description),
         event_type: f.event_type || "Hike",
         trek_difficulty: f.trek_difficulty?.trim() || null,
         trek_distance: f.trek_distance?.trim() || null,
@@ -583,7 +587,55 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
             <FF label="Itinerary link (optional)" full>
               <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
             </FF>
-            <FF label="Or upload an itinerary PDF (max 10MB)" full>
+            <div>
+              <label className="block text-xs font-semibold mb-2 text-muted-foreground">Day-wise itinerary (structured)</label>
+              <div className="space-y-3">
+                {(f.itinerary_days ?? []).map((day, idx) => (
+                  <div key={idx} className="rounded-lg border border-border bg-background p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground">Day {idx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => set({ itinerary_days: (f.itinerary_days ?? []).filter((_, i) => i !== idx) })}
+                        className="ml-auto text-xs text-destructive hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      className={inp}
+                      placeholder="Day title (e.g. Day 1: Arrival & Trek Start)"
+                      value={day.title}
+                      onChange={(e) => {
+                        const next = [...(f.itinerary_days ?? [])];
+                        next[idx] = { ...next[idx], title: e.target.value };
+                        set({ itinerary_days: next });
+                      }}
+                    />
+                    <textarea
+                      className={`${inp} min-h-[80px]`}
+                      placeholder="Day description"
+                      value={day.description}
+                      onChange={(e) => {
+                        const next = [...(f.itinerary_days ?? [])];
+                        next[idx] = { ...next[idx], description: e.target.value };
+                        set({ itinerary_days: next });
+                      }}
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => set({ itinerary_days: [...(f.itinerary_days ?? []), { title: "", description: "" }] })}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border text-sm font-semibold hover:bg-muted"
+                >
+                  <Plus className="w-4 h-4" /> Add day
+                </button>
+              </div>
+            </div>
+
+            <FF label="Optional: upload a PDF fallback (max 10MB)" full>
               <input
                 type="file" accept="application/pdf"
                 onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
