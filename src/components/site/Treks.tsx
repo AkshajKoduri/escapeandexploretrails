@@ -144,9 +144,24 @@ export default function Treks() {
   }, []);
 
   const openTrek = treks.find((t) => t.id === openId) || null;
-  const itineraryFileUrl = openTrek?.itineraryFilePath
-    ? supabase.storage.from("itineraries").getPublicUrl(openTrek.itineraryFilePath).data.publicUrl
-    : null;
+  const [itineraryFileUrl, setItineraryFileUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!openTrek?.itineraryFilePath) {
+      setItineraryFileUrl(null);
+      return;
+    }
+    supabase.storage
+      .from("itineraries")
+      .createSignedUrl(openTrek.itineraryFilePath, 60 * 60)
+      .then(({ data }) => {
+        if (!cancelled) setItineraryFileUrl(data?.signedUrl ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openTrek?.itineraryFilePath]);
+
 
   return (
     <section id="treks" className="py-24 md:py-32 bg-background">
