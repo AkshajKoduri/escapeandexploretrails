@@ -216,9 +216,11 @@ export default function Treks() {
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${diffStyle[t.diff].bg}`}>
                     {diffStyle[t.diff].label}
                   </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground">
-                    📅 {t.date}
-                  </span>
+                  {t.dateLabel && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground">
+                      📅 Date: {t.dateLabel}
+                    </span>
+                  )}
                   {t.isFull ? (
                     <span className="px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md bg-destructive/80 text-destructive-foreground ml-auto">
                       Trip Full
@@ -233,13 +235,23 @@ export default function Treks() {
                 <div className="absolute inset-x-0 bottom-0 p-6 text-charcoal-foreground">
                   <h3 className="font-heading font-bold text-2xl mb-2">{t.name}</h3>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-3">
-                    {t.dur && <span>⏱ {t.dur}</span>}
-                    {t.trekTime && <span>🕒 {t.trekTime}</span>}
+                    {t.dur && <span>⏱ Duration: {t.dur}</span>}
+                    {t.trekTime && <span>🕒 Assembly: {t.trekTime}</span>}
                     {t.dist && <span>📍 {t.dist}</span>}
                   </div>
-                  {t.price > 0 && (
+                  {(t.startingPrice != null || t.topEndPrice != null) ? (
+                    <div className="text-sm font-bold text-accent mb-4 space-y-0.5">
+                      {t.startingPrice != null && (
+                        <div>₹{t.startingPrice.toLocaleString("en-IN")}{t.startingPriceLabel ? <span className="text-xs text-charcoal-foreground/80 font-normal"> ({t.startingPriceLabel})</span> : null}</div>
+                      )}
+                      {t.topEndPrice != null && (
+                        <div>₹{t.topEndPrice.toLocaleString("en-IN")}{t.topEndPriceLabel ? <span className="text-xs text-charcoal-foreground/80 font-normal"> ({t.topEndPriceLabel})</span> : null}</div>
+                      )}
+                    </div>
+                  ) : t.price > 0 ? (
                     <div className="text-lg font-bold text-accent mb-4">₹{t.price.toLocaleString("en-IN")}<span className="text-xs text-charcoal-foreground/70 font-normal"> / person</span></div>
-                  )}
+                  ) : null}
+
                   {t.isFull ? (
                     <button
                       disabled
