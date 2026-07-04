@@ -396,7 +396,7 @@ function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { init
         duration: f.duration?.trim() || null,
         distance: f.distance?.trim() || null,
         description: f.description?.trim() || null,
-        price: startPrice ?? Number(f.price) || 0,
+        price: startPrice ?? (Number(f.price) || 0),
         starting_price: startPrice,
         starting_price_label: f.starting_price_label?.trim() || null,
         top_end_price: topPrice,
