@@ -1,1 +1,7 @@
 project_id = "ciyvzklkslygizjnbjxw"
+
+[functions.admin-api]
+verify_jwt = false
+
+[functions.itinerary-signed-url]
+verify_jwt = false
