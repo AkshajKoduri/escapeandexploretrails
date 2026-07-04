@@ -60,7 +60,7 @@ const empty: Partial<Trek> = {
   starting_price: null, starting_price_label: "", top_end_price: null, top_end_price_label: "",
   max_seats: 30,
   meeting_point: "", instructions: "", location: "",
-  album_url: "", itinerary_url: "", itinerary_file_path: "", event_type: "Hike",
+  album_url: "", itinerary_url: "", itinerary_file_path: "", itinerary_days: [], event_type: "Hike",
   trek_difficulty: "", trek_distance: "", altitude: "", region: "",
   elevation_gain: "", mountain_range: "", base_village: "",
   duration_text: "", stay_location: "", field_labels: {},
