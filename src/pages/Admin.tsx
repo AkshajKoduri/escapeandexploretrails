@@ -90,10 +90,14 @@ function deriveStatus(t: Trek): "Upcoming" | "Ongoing" | "Completed" | "Archived
   if (t.is_draft) return "Draft";
   if (t.status_override) return t.status_override as any;
   const today = new Date().toISOString().slice(0, 10);
-  if (t.trek_date > today) return "Upcoming";
-  if (t.trek_date === today) return "Ongoing";
+  const allDates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
+  if (allDates.length === 0) return "Upcoming";
+  const latest = allDates.reduce((a, b) => (a > b ? a : b));
+  if (latest > today) return "Upcoming";
+  if (allDates.includes(today)) return "Ongoing";
   return "Completed";
 }
+
 
 const statusColor: Record<string, string> = {
   Upcoming: "bg-green-500/15 text-green-700 dark:text-green-300",
