@@ -30,6 +30,7 @@ type TrekCard = {
   meetingPoint: string | null;
   itineraryUrl: string | null;
   itineraryFilePath: string | null;
+  itineraryDays: { title: string; description: string }[];
   seatsRemaining: number;
   maxSeats: number;
   isFull: boolean;
