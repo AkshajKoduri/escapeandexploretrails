@@ -66,14 +66,17 @@ export type Database = {
       }
       bookings: {
         Row: {
+          booking_source: string
           created_at: string
           id: string
           is_group: boolean
-          primary_aadhaar: string
-          primary_aadhaar_photo: string
-          primary_age: number
+          notes: string | null
+          payment_status: string
+          primary_aadhaar: string | null
+          primary_aadhaar_photo: string | null
+          primary_age: number | null
           primary_email: string | null
-          primary_gender: string
+          primary_gender: string | null
           primary_name: string
           primary_phone: string
           seats_booked: number
@@ -83,14 +86,17 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          booking_source?: string
           created_at?: string
           id?: string
           is_group?: boolean
-          primary_aadhaar: string
-          primary_aadhaar_photo: string
-          primary_age: number
+          notes?: string | null
+          payment_status?: string
+          primary_aadhaar?: string | null
+          primary_aadhaar_photo?: string | null
+          primary_age?: number | null
           primary_email?: string | null
-          primary_gender: string
+          primary_gender?: string | null
           primary_name: string
           primary_phone: string
           seats_booked?: number
@@ -100,14 +106,17 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          booking_source?: string
           created_at?: string
           id?: string
           is_group?: boolean
-          primary_aadhaar?: string
-          primary_aadhaar_photo?: string
-          primary_age?: number
+          notes?: string | null
+          payment_status?: string
+          primary_aadhaar?: string | null
+          primary_aadhaar_photo?: string | null
+          primary_age?: number | null
           primary_email?: string | null
-          primary_gender?: string
+          primary_gender?: string | null
           primary_name?: string
           primary_phone?: string
           seats_booked?: number
