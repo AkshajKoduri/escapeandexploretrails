@@ -147,23 +147,8 @@ export default function Treks() {
   }, []);
 
   const openTrek = treks.find((t) => t.id === openId) || null;
-  const [itineraryFileUrl, setItineraryFileUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    setItineraryFileUrl(null);
-    if (!openTrek?.itineraryFilePath || !openTrek?.id) return;
-    supabase.functions
-      .invoke("itinerary-signed-url", { body: { trekId: openTrek.id } })
-      .then(({ data }) => {
-        if (!cancelled) setItineraryFileUrl((data as any)?.url ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setItineraryFileUrl(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [openTrek?.id, openTrek?.itineraryFilePath]);
+  const hasItinerary = !!(openTrek && (openTrek.itineraryDays.length > 0 || openTrek.itineraryFilePath || openTrek.itineraryUrl));
+
 
 
 
