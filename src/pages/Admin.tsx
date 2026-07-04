@@ -952,31 +952,36 @@ function CallbacksTab() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("callback_requests" as any)
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setRows((data as any) ?? []);
-    setLoading(false);
+    try {
+      const res = await adminApi<{ data: CallbackRequest[] }>("listCallbackRequests");
+      setRows(res?.data ?? []);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
 
   const markContacted = async (id: string) => {
-    const { error } = await supabase.from("callback_requests" as any).update({ status: "contacted" }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Marked as contacted");
-    load();
+    try {
+      await adminApi("updateCallback", { id, patch: { status: "contacted" } });
+      toast.success("Marked as contacted");
+      load();
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this callback request?")) return;
-    const { error } = await supabase.from("callback_requests" as any).delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Deleted");
-    load();
+    try {
+      await adminApi("deleteCallback", { id });
+      toast.success("Deleted");
+      load();
+    } catch (err: any) { toast.error(err.message); }
   };
+
+
 
   if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   if (rows.length === 0) return <div className="text-sm text-muted-foreground">No callback requests yet.</div>;
