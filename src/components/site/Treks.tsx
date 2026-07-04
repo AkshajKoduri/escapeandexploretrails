@@ -16,7 +16,12 @@ type TrekCard = {
   dur: string;
   dist: string;
   price: number;
-  date: string;
+  startingPrice: number | null;
+  startingPriceLabel: string | null;
+  topEndPrice: number | null;
+  topEndPriceLabel: string | null;
+  dates: string[];
+  dateLabel: string;
   trekTime: string | null;
   description: string | null;
   instructions: string | null;
@@ -29,6 +34,7 @@ type TrekCard = {
   eventType: EventType;
   extras: { key: string; label: string; value: string }[];
 };
+
 
 const OUTSTATION_FIELDS: { key: string; label: string }[] = [
   { key: "trek_difficulty", label: "Trek Difficulty" },
