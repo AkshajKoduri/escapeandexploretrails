@@ -118,6 +118,42 @@ export type Database = {
         }
         Relationships: []
       }
+      callback_requests: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          mobile_number: string
+          preferred_time: string | null
+          status: string
+          trip_id: string | null
+          trip_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          mobile_number: string
+          preferred_time?: string | null
+          status?: string
+          trip_id?: string | null
+          trip_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          mobile_number?: string
+          preferred_time?: string | null
+          status?: string
+          trip_id?: string | null
+          trip_name?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           aadhaar_number: string | null
