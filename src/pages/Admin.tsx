@@ -401,14 +401,13 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
 
 
       if (isEdit) {
-        const { error } = await supabase.from("upcoming_treks").update(payload).eq("id", f.id);
-        if (error) throw error;
+        await adminApi("updateTrek", { id: f.id, patch: payload });
         toast.success("Trip updated");
       } else {
-        const { error } = await supabase.from("upcoming_treks").insert(payload);
-        if (error) throw error;
+        await adminApi("insertTrek", { row: payload });
         toast.success("Trip added");
       }
+
       onDone();
     } catch (err: any) {
       toast.error(err.message ?? "Failed to save");
