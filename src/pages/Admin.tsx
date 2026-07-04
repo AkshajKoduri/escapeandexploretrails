@@ -387,6 +387,9 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         album_url: normalizeUrl(f.album_url),
         itinerary_url: normalizeUrl(f.itinerary_url),
         itinerary_file_path: itineraryPath || null,
+        itinerary_days: (f.itinerary_days ?? [])
+          .map((d) => ({ title: (d.title ?? "").trim(), description: (d.description ?? "").trim() }))
+          .filter((d) => d.title || d.description),
         event_type: f.event_type || "Hike",
         trek_difficulty: f.trek_difficulty?.trim() || null,
         trek_distance: f.trek_distance?.trim() || null,
