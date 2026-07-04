@@ -252,6 +252,7 @@ export type Database = {
           instructions: string | null
           is_archived: boolean
           is_draft: boolean
+          itinerary_days: Json
           itinerary_file_path: string | null
           itinerary_url: string | null
           location: string | null
@@ -293,6 +294,7 @@ export type Database = {
           instructions?: string | null
           is_archived?: boolean
           is_draft?: boolean
+          itinerary_days?: Json
           itinerary_file_path?: string | null
           itinerary_url?: string | null
           location?: string | null
@@ -334,6 +336,7 @@ export type Database = {
           instructions?: string | null
           is_archived?: boolean
           is_draft?: boolean
+          itinerary_days?: Json
           itinerary_file_path?: string | null
           itinerary_url?: string | null
           location?: string | null

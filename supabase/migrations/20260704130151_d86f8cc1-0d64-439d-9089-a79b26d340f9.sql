@@ -1,0 +1,1 @@
+ALTER TABLE public.upcoming_treks ADD COLUMN IF NOT EXISTS itinerary_days jsonb NOT NULL DEFAULT '[]'::jsonb;
