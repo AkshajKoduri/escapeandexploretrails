@@ -177,7 +177,7 @@ export default function Admin() {
 
 /* ===================== Trips Tab ===================== */
 
-function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<string, Stats>; reload: () => void; userId: string }) {
+function TripsTab({ treks, stats, reload }: { treks: Trek[]; stats: Map<string, Stats>; reload: () => void }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Trek | null>(null);
 
@@ -269,7 +269,7 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
           <TripForm
             initial={editing ?? (empty as Trek)}
             isEdit={!!editing}
-            userId={userId}
+            
             currentSeatsTaken={editing ? stats.get(editing.id)?.seats_taken ?? 0 : 0}
             onDone={() => { setOpen(false); reload(); }}
           />
@@ -279,7 +279,7 @@ function TripsTab({ treks, stats, reload, userId }: { treks: Trek[]; stats: Map<
   );
 }
 
-function TripForm({ initial, isEdit, userId, currentSeatsTaken, onDone }: { initial: Trek; isEdit: boolean; userId: string; currentSeatsTaken: number; onDone: () => void }) {
+function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Trek; isEdit: boolean; currentSeatsTaken: number; onDone: () => void }) {
   const [f, setF] = useState<Trek>(initial);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [itineraryFile, setItineraryFile] = useState<File | null>(null);
