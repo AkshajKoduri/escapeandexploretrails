@@ -227,11 +227,6 @@ export default function Treks() {
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${diffStyle[t.diff].bg}`}>
                     {diffStyle[t.diff].label}
                   </span>
-                  {t.dates.length > 0 && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground whitespace-nowrap">
-                      📅 {t.dates.length === 1 ? t.dateLabel : `${t.dates.length} dates available`}
-                    </span>
-                  )}
                   {t.isFull && (
                     <span className="px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md bg-destructive/80 text-destructive-foreground ml-auto">
                       Trip Full
@@ -276,7 +271,7 @@ export default function Treks() {
               <DialogHeader>
                 <DialogTitle className="font-heading text-2xl text-primary">{openTrek.name}</DialogTitle>
                 <DialogDescription className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  {openTrek.dateLabel && <span>📅 Date: {openTrek.dateLabel}</span>}
+                  
                   {openTrek.trekTime && <span>🕒 Assembly: {openTrek.trekTime}</span>}
                   {openTrek.dur && <span>⏱ Duration: {openTrek.dur}</span>}
                   {openTrek.dist && <span>📍 {openTrek.dist}</span>}
