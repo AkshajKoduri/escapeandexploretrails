@@ -10,6 +10,7 @@ import BookingPage from "./pages/BookingPage.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Itinerary from "./pages/Itinerary.tsx";
+import TrailLog from "./pages/TrailLog.tsx";
 
 const queryClient = new QueryClient();
 
