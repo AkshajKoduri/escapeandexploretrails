@@ -159,12 +159,13 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 max-w-3xl">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 max-w-4xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="callbacks">Callbacks</TabsTrigger>
               <TabsTrigger value="drafts">Drafts</TabsTrigger>
               <TabsTrigger value="gallery">Gallery</TabsTrigger>
+              <TabsTrigger value="trail-log">Trail Log</TabsTrigger>
             </TabsList>
 
             <TabsContent value="trips" className="mt-6">
@@ -185,6 +186,10 @@ export default function Admin() {
 
             <TabsContent value="gallery" className="mt-6">
               <GalleryTab />
+            </TabsContent>
+
+            <TabsContent value="trail-log" className="mt-6">
+              <TrailLogTab />
             </TabsContent>
           </Tabs>
         </div>
