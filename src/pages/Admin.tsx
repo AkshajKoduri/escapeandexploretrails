@@ -1304,7 +1304,7 @@ type GalleryImage = {
   alt_text: string | null;
 };
 
-const GALLERY_CATEGORIES: GalleryImage["category"][] = ["Hike", "Cycling Ride", "Bike Ride", "Outstation Trek", "General"];
+const GALLERY_CATEGORIES: GalleryImage["category"][] = ["Hike", "Cycling Ride", "Bike Ride", "Monsoon Trek", "General"];
 
 function GalleryTab() {
   const [items, setItems] = useState<GalleryImage[]>([]);
