@@ -307,7 +307,7 @@ export default function Treks() {
               ) : null}
 
 
-              {openTrek.eventType === "Outstation Trek" && openTrek.extras.length > 0 && (
+              {openTrek.eventType === "Monsoon Trek" && openTrek.extras.length > 0 && (
                 <section>
                   <h4 className="font-heading font-bold text-primary mb-2">Trek Details</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
