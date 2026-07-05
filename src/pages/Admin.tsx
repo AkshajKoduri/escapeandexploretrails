@@ -526,17 +526,8 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         <input type="number" min={1} className={inp} value={f.max_seats ?? 30} onChange={(e) => set({ max_seats: Number(e.target.value) })} required={!isOutstation} />
       </FF>
 
-      <FF label="Starting Price (₹)" full>
-        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
-          <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="6999" />
-          <input className={inp} value={f.starting_price_label ?? ""} onChange={(e) => set({ starting_price_label: e.target.value })} placeholder="e.g. 6,999 - Non-AC Sleeper Train" />
-        </div>
-      </FF>
-      <FF label="Top End Price (₹)" full>
-        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
-          <input type="number" min={0} className={inp} value={f.top_end_price ?? ""} onChange={(e) => set({ top_end_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="8500" />
-          <input className={inp} value={f.top_end_price_label ?? ""} onChange={(e) => set({ top_end_price_label: e.target.value })} placeholder="e.g. 8,500 - 3AC Sleeper Train" />
-        </div>
+      <FF label="Starting Price (₹)">
+        <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="15800" />
       </FF>
 
       <FF label={isOutstation ? "Description" : "Description *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
