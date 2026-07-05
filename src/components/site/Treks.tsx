@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
-type EventType = "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride";
+type EventType = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
 type FilterType = "All" | EventType;
 type TrekCard = {
   id: string;
