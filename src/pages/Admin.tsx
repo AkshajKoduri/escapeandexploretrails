@@ -386,9 +386,9 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         description: f.description?.trim() || null,
         price: startPrice ?? (Number(f.price) || 0),
         starting_price: startPrice,
-        starting_price_label: f.starting_price_label?.trim() || null,
-        top_end_price: topPrice,
-        top_end_price_label: f.top_end_price_label?.trim() || null,
+        starting_price_label: null,
+        top_end_price: null,
+        top_end_price_label: null,
         max_seats: Number(f.max_seats) || 1,
         meeting_point: f.meeting_point?.trim() || null,
         instructions: f.instructions?.trim() || null,
@@ -526,17 +526,8 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         <input type="number" min={1} className={inp} value={f.max_seats ?? 30} onChange={(e) => set({ max_seats: Number(e.target.value) })} required={!isOutstation} />
       </FF>
 
-      <FF label="Starting Price (₹)" full>
-        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
-          <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="6999" />
-          <input className={inp} value={f.starting_price_label ?? ""} onChange={(e) => set({ starting_price_label: e.target.value })} placeholder="e.g. 6,999 - Non-AC Sleeper Train" />
-        </div>
-      </FF>
-      <FF label="Top End Price (₹)" full>
-        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
-          <input type="number" min={0} className={inp} value={f.top_end_price ?? ""} onChange={(e) => set({ top_end_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="8500" />
-          <input className={inp} value={f.top_end_price_label ?? ""} onChange={(e) => set({ top_end_price_label: e.target.value })} placeholder="e.g. 8,500 - 3AC Sleeper Train" />
-        </div>
+      <FF label="Starting Price (₹)">
+        <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="15800" />
       </FF>
 
       <FF label={isOutstation ? "Description" : "Description *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
