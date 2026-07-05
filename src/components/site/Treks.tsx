@@ -317,7 +317,7 @@ export default function Treks() {
                   {openTrek.dates.length > 0 && (
                     <AccordionItem value="dates">
                       <AccordionTrigger className="font-heading font-bold text-primary hover:no-underline">
-                        Dates
+                        Dates Available
                       </AccordionTrigger>
                       <AccordionContent className="text-sm text-muted-foreground">
                         {openTrek.dates.map((d) => (
