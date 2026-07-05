@@ -36,7 +36,6 @@ const Index = () => {
       <CursorDot />
       <Navbar />
       <Hero />
-      <Marquee />
       <About />
       <Stats />
       <Treks />
