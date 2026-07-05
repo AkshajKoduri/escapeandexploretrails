@@ -1,11 +1,11 @@
 const experiences = [
-  { icon: "🏕️", title: "Night Camping", desc: "Sleep under the stars with bonfire setups in Telangana's forests." },
+  { icon: "🏕️", title: "Night Camping", desc: "Sleep under the stars with bonfire setups in India's forests." },
   { icon: "⛰️", title: "Summit Hikes", desc: "Conquer fort hills and rocky ridges across Deccan terrain." },
   { icon: "🌊", title: "Waterfall Trails", desc: "Trek through dense forests to hidden cascades." },
   { icon: "🚴", title: "City Cycling Rides", desc: "Explore Hyderabad's streets, heritage sites and hidden corners on two wheels — every weekend." },
   { icon: "🧗", title: "Rock Climbing & Rappelling", desc: "Face vertical challenges with trained guides." },
   { icon: "🌄", title: "Sunrise Treks", desc: "Pre-dawn starts to catch golden light from the summit." },
-  { icon: "🌿", title: "Heritage Fort Treks", desc: "History meets adventure at ancient Telangana fortresses." },
+  { icon: "🌿", title: "Heritage Fort Treks", desc: "History meets adventure at ancient fortresses across India." },
 ];
 
 export default function Experiences() {
