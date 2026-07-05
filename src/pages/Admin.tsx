@@ -37,7 +37,7 @@ type Trek = {
   itinerary_url: string | null;
   itinerary_file_path: string | null;
   itinerary_days: { title: string; description: string }[];
-  event_type: "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride";
+  event_type: "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
   trek_difficulty: string | null;
   trek_distance: string | null;
   altitude: string | null;
@@ -433,7 +433,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   const et = f.event_type ?? "Hike";
   const isCycling = et === "Cycling Ride";
   const isHike = et === "Hike";
-  const isOutstation = et === "Outstation Trek";
+  const isOutstation = et === "Monsoon Trek";
   const isBikeRide = et === "Bike Ride";
 
   return (
@@ -443,7 +443,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
           <option value="Hike">Hike</option>
           <option value="Cycling Ride">Cycling Ride</option>
           <option value="Bike Ride">Bike Ride</option>
-          <option value="Outstation Trek">Outstation Trek</option>
+          <option value="Monsoon Trek">Monsoon Trek</option>
         </select>
       </FF>
 
@@ -545,7 +545,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
 
       {isOutstation && (
         <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-          <div className="text-sm font-semibold text-primary">Outstation trek details (optional)</div>
+          <div className="text-sm font-semibold text-primary">Monsoon trek details (optional)</div>
           <p className="text-xs text-muted-foreground">Click the pencil next to any label to rename it. Leave a field blank to hide it from the public trip page.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {OUTSTATION_EXTRA_FIELDS.map((field) => {
@@ -1299,12 +1299,12 @@ type GalleryImage = {
   id: string;
   image_url: string;
   storage_path: string | null;
-  category: "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride" | "General";
+  category: "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride" | "General";
   display_order: number;
   alt_text: string | null;
 };
 
-const GALLERY_CATEGORIES: GalleryImage["category"][] = ["Hike", "Cycling Ride", "Bike Ride", "Outstation Trek", "General"];
+const GALLERY_CATEGORIES: GalleryImage["category"][] = ["Hike", "Cycling Ride", "Bike Ride", "Monsoon Trek", "General"];
 
 function GalleryTab() {
   const [items, setItems] = useState<GalleryImage[]>([]);

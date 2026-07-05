@@ -3,7 +3,7 @@ import { Instagram, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
-type Category = "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride" | "General";
+type Category = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride" | "General";
 type FilterType = "All" | Category;
 
 type GalleryItem = {
@@ -18,7 +18,7 @@ const FILTERS: { key: FilterType; label: string }[] = [
   { key: "Hike", label: "Hikes" },
   { key: "Cycling Ride", label: "Cycling Rides" },
   { key: "Bike Ride", label: "Bike Rides" },
-  { key: "Outstation Trek", label: "Outstation Treks" },
+  { key: "Monsoon Trek", label: "Monsoon Treks" },
 ];
 
 export default function Gallery() {

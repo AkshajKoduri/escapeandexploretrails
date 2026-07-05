@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
-type EventType = "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride";
+type EventType = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
 type FilterType = "All" | EventType;
 type TrekCard = {
   id: string;
@@ -166,12 +166,12 @@ export default function Treks() {
         </div>
 
         <div className="mt-10 flex flex-wrap justify-center gap-2 reveal">
-          {(["All", "Hike", "Cycling Ride", "Bike Ride", "Outstation Trek"] as FilterType[]).map((f) => {
+          {(["All", "Hike", "Cycling Ride", "Bike Ride", "Monsoon Trek"] as FilterType[]).map((f) => {
             const label =
               f === "Hike" ? "Hikes"
               : f === "Cycling Ride" ? "Cycling Rides"
               : f === "Bike Ride" ? "Bike Rides"
-              : f === "Outstation Trek" ? "Outstation Treks"
+              : f === "Monsoon Trek" ? "Monsoon Treks"
               : "All";
             const active = filter === f;
             return (
@@ -232,13 +232,9 @@ export default function Treks() {
                       📅 {t.dates.length === 1 ? t.dateLabel : `${t.dates.length} dates available`}
                     </span>
                   )}
-                  {t.isFull ? (
+                  {t.isFull && (
                     <span className="px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md bg-destructive/80 text-destructive-foreground ml-auto">
                       Trip Full
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-green-600/80 text-white ml-auto">
-                      {t.seatsRemaining} seats left
                     </span>
                   )}
                 </div>
@@ -311,7 +307,7 @@ export default function Treks() {
               ) : null}
 
 
-              {openTrek.eventType === "Outstation Trek" && openTrek.extras.length > 0 && (
+              {openTrek.eventType === "Monsoon Trek" && openTrek.extras.length > 0 && (
                 <section>
                   <h4 className="font-heading font-bold text-primary mb-2">Trek Details</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
