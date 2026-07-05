@@ -1,4 +1,28 @@
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+
 export default function FloatingWhatsApp() {
+  const location = useLocation();
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      setDialogOpen(!!document.querySelector('[role="dialog"][data-state="open"]'));
+    };
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-state"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  if (location.pathname.startsWith("/booking")) return null;
+  if (dialogOpen) return null;
+
   return (
     <a
       href="https://wa.me/916303682022"

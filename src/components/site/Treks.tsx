@@ -222,9 +222,9 @@ export default function Treks() {
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${diffStyle[t.diff].bg}`}>
                     {diffStyle[t.diff].label}
                   </span>
-                  {t.dateLabel && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground">
-                      📅 Date: {t.dateLabel}
+                  {t.dates.length > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-accent/30 text-charcoal-foreground whitespace-nowrap">
+                      📅 {t.dates.length === 1 ? t.dateLabel : `${t.dates.length} dates available`}
                     </span>
                   )}
                   {t.isFull ? (
