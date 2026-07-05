@@ -163,6 +163,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_images: {
+        Row: {
+          alt_text: string | null
+          category: string
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          storage_path: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          category?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          storage_path?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          category?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          storage_path?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           aadhaar_number: string | null
