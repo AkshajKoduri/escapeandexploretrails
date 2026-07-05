@@ -335,7 +335,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   };
 
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!f.name?.trim()) return toast.error("Trip name is required");
     if (f.max_seats < currentSeatsTaken) {
@@ -1018,7 +1018,7 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!trekId) return toast.error("Please select a trip");
     if (!fullName.trim()) return toast.error("Full name is required");
@@ -1510,7 +1510,7 @@ function TrailLogTab() {
     setSourceType("pdf"); setPdfFile(null); setInstagramUrl("");
   };
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       return toast.error("Title and description are required");
