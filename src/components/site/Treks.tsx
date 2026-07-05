@@ -232,13 +232,9 @@ export default function Treks() {
                       📅 {t.dates.length === 1 ? t.dateLabel : `${t.dates.length} dates available`}
                     </span>
                   )}
-                  {t.isFull ? (
+                  {t.isFull && (
                     <span className="px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md bg-destructive/80 text-destructive-foreground ml-auto">
                       Trip Full
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-green-600/80 text-white ml-auto">
-                      {t.seatsRemaining} seats left
                     </span>
                   )}
                 </div>
