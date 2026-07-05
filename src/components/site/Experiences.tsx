@@ -1,5 +1,5 @@
 const experiences = [
-  { icon: "🏕️", title: "Night Camping", desc: "Sleep under the stars with bonfire setups in Telangana's forests." },
+  { icon: "🏕️", title: "Night Camping", desc: "Sleep under the stars with bonfire setups in India's forests." },
   { icon: "⛰️", title: "Summit Hikes", desc: "Conquer fort hills and rocky ridges across Deccan terrain." },
   { icon: "🌊", title: "Waterfall Trails", desc: "Trek through dense forests to hidden cascades." },
   { icon: "🚴", title: "City Cycling Rides", desc: "Explore Hyderabad's streets, heritage sites and hidden corners on two wheels — every weekend." },
