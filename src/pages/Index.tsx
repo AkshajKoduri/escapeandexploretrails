@@ -39,8 +39,8 @@ const Index = () => {
       <Marquee />
       <About />
       <Stats />
-            <Treks />
-            <TrailLogPreview />
+      <Treks />
+      <TrailLogPreview />
       <Experiences />
       <Community />
       <Gallery />
