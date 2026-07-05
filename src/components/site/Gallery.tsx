@@ -18,7 +18,7 @@ const FILTERS: { key: FilterType; label: string }[] = [
   { key: "Hike", label: "Hikes" },
   { key: "Cycling Ride", label: "Cycling Rides" },
   { key: "Bike Ride", label: "Bike Rides" },
-  { key: "Outstation Trek", label: "Outstation Treks" },
+  { key: "Monsoon Trek", label: "Monsoon Treks" },
 ];
 
 export default function Gallery() {
