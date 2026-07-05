@@ -259,7 +259,7 @@ export default function BookingPage() {
                     {selectedTrek.trek_time ? ` • 🕒 ${selectedTrek.trek_time}` : ""}
                     {selectedTrek.destination ? ` • 📍 ${selectedTrek.destination}` : ""}
                   </div>
-                  <div className="text-muted-foreground">🪑 {selectedTrek.seats_remaining} of {selectedTrek.max_seats} seats remaining</div>
+                  
                   {selectedTrek.meeting_point && (
                     <div className="text-muted-foreground"><strong className="text-primary">Meeting point:</strong> {selectedTrek.meeting_point}</div>
                   )}
