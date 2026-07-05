@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Mail, Instagram, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const contactSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name").max(100, "Name too long"),
@@ -14,7 +15,7 @@ const contactSchema = z.object({
 export default function Contact() {
   const [sending, setSending] = useState(false);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const fd = new FormData(form);
@@ -30,12 +31,24 @@ export default function Contact() {
       return;
     }
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
-      form.reset();
-      toast.success("Enquiry sent! We'll reach out within 24 hours.");
-    }, 800);
+    const { name, email, phone, trek, message } = parsed.data;
+    const { error } = await supabase.from("callback_requests" as any).insert({
+      full_name: name,
+      email: email || null,
+      mobile_number: phone,
+      trip_name: trek || null,
+      preferred_time: message ? `Message: ${message}` : null,
+    });
+    setSending(false);
+    if (error) {
+      toast.error("Could not send enquiry. Please try again or email hello@e2trails.in");
+      return;
+    }
+    form.reset();
+    toast.success("Enquiry sent! We'll reach out within 24 hours.");
   };
+
+
 
 
   return (
