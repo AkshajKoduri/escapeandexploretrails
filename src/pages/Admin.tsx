@@ -443,7 +443,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
           <option value="Hike">Hike</option>
           <option value="Cycling Ride">Cycling Ride</option>
           <option value="Bike Ride">Bike Ride</option>
-          <option value="Outstation Trek">Outstation Trek</option>
+          <option value="Monsoon Trek">Monsoon Trek</option>
         </select>
       </FF>
 
