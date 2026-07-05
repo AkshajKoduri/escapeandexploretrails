@@ -284,21 +284,12 @@ export default function Treks() {
                 </DialogDescription>
               </DialogHeader>
               <img src={openTrek.img} alt={openTrek.name} className="w-full h-56 object-cover rounded-lg" />
-              {(openTrek.startingPrice != null || openTrek.topEndPrice != null) ? (
-                <div className="text-base font-bold text-accent space-y-0.5">
-                  {openTrek.startingPrice != null && (
-                    <div>₹{openTrek.startingPrice.toLocaleString("en-IN")}{openTrek.startingPriceLabel ? <span className="text-xs text-muted-foreground font-normal"> ({openTrek.startingPriceLabel})</span> : null}</div>
-                  )}
-                  {openTrek.topEndPrice != null && (
-                    <div>₹{openTrek.topEndPrice.toLocaleString("en-IN")}{openTrek.topEndPriceLabel ? <span className="text-xs text-muted-foreground font-normal"> ({openTrek.topEndPriceLabel})</span> : null}</div>
-                  )}
-                </div>
-              ) : openTrek.price > 0 ? (
-                <div className="text-lg font-bold text-accent">
-                  ₹{openTrek.price.toLocaleString("en-IN")}
-                  <span className="text-xs text-muted-foreground font-normal"> / person</span>
-                </div>
-              ) : null}
+              {(() => {
+                const p = openTrek.startingPrice ?? (openTrek.price > 0 ? openTrek.price : null);
+                return p != null ? (
+                  <div className="text-base font-bold text-accent">Starting Price Rs. {p.toLocaleString("en-IN")}/-</div>
+                ) : null;
+              })()}
 
 
               {openTrek.eventType === "Monsoon Trek" && openTrek.extras.length > 0 && (
