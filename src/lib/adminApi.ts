@@ -50,8 +50,10 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
+export type AdminBucket = "trek-images" | "itineraries" | "gallery-images" | "trail-log-pdfs";
+
 export async function adminUpload(
-  bucket: "trek-images" | "itineraries" | "gallery-images",
+  bucket: AdminBucket,
   path: string,
   file: File,
   upsert = false,
@@ -66,6 +68,6 @@ export async function adminUpload(
   });
 }
 
-export async function adminRemove(bucket: "trek-images" | "itineraries" | "gallery-images", path: string) {
+export async function adminRemove(bucket: AdminBucket, path: string) {
   return adminApi("removeFile", { bucket, path });
 }
