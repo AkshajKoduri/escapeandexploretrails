@@ -37,7 +37,7 @@ type Trek = {
   itinerary_url: string | null;
   itinerary_file_path: string | null;
   itinerary_days: { title: string; description: string }[];
-  event_type: "Hike" | "Cycling Ride" | "Outstation Trek";
+  event_type: "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride";
   trek_difficulty: string | null;
   trek_distance: string | null;
   altitude: string | null;
@@ -424,6 +424,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   const isCycling = et === "Cycling Ride";
   const isHike = et === "Hike";
   const isOutstation = et === "Outstation Trek";
+  const isBikeRide = et === "Bike Ride";
 
   return (
     <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -431,6 +432,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         <select className={inp} value={et} onChange={(e) => set({ event_type: e.target.value as any })}>
           <option value="Hike">Hike</option>
           <option value="Cycling Ride">Cycling Ride</option>
+          <option value="Bike Ride">Bike Ride</option>
           <option value="Outstation Trek">Outstation Trek</option>
         </select>
       </FF>
@@ -491,7 +493,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         <FF label="Trail name / Location *" full><input className={inp} value={f.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="Ananthagiri Hills Trail" required /></FF>
       )}
 
-      {(isCycling || isHike) && (
+      {(isCycling || isHike || isBikeRide) && (
         <>
           <FF label="Distance (km) *"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="25 km" required /></FF>
           <FF label="Duration (hours) *"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="4 hours" required /></FF>
