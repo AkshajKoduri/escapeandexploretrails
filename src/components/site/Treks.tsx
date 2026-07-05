@@ -307,7 +307,7 @@ export default function Treks() {
               )}
 
 
-              {(openTrek.description || openTrek.instructions) && (
+              {(openTrek.description || openTrek.dates.length > 0) && (
                 <Accordion type="multiple" className="w-full">
                   {openTrek.description && (
                     <AccordionItem value="description">
@@ -319,13 +319,15 @@ export default function Treks() {
                       </AccordionContent>
                     </AccordionItem>
                   )}
-                  {openTrek.instructions && (
-                    <AccordionItem value="instructions">
+                  {openTrek.dates.length > 0 && (
+                    <AccordionItem value="dates">
                       <AccordionTrigger className="font-heading font-bold text-primary hover:no-underline">
-                        Special Instructions
+                        Dates
                       </AccordionTrigger>
-                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {openTrek.instructions}
+                      <AccordionContent className="text-sm text-muted-foreground">
+                        {openTrek.dates.map((d) => (
+                          <div key={d}>{fmt(d)}</div>
+                        ))}
                       </AccordionContent>
                     </AccordionItem>
                   )}
