@@ -326,7 +326,7 @@ export default function Treks() {
                       </AccordionTrigger>
                       <AccordionContent className="text-sm text-muted-foreground">
                         {openTrek.dates.map((d) => (
-                          <div key={d}>{fmt(d)}</div>
+                          <div key={d}>{new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</div>
                         ))}
                       </AccordionContent>
                     </AccordionItem>
