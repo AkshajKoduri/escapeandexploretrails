@@ -21,7 +21,7 @@ const Index = () => {
 
   useEffect(() => {
     document.title = "E2 Trails — Guided Treks & Adventures from Hyderabad";
-    const desc = "Join E2 Trails for safe, organized weekend treks, night camps & summit hikes across Telangana and Andhra Pradesh. Built for every adventurer.";
+    const desc = "Join E2 Trails for safe, organized weekend treks, night camps & summit hikes across India. Built for every adventurer.";
     let m = document.querySelector('meta[name="description"]');
     if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
     m.setAttribute("content", desc);
