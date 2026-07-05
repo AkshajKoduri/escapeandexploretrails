@@ -1299,7 +1299,7 @@ type GalleryImage = {
   id: string;
   image_url: string;
   storage_path: string | null;
-  category: "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride" | "General";
+  category: "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride" | "General";
   display_order: number;
   alt_text: string | null;
 };
