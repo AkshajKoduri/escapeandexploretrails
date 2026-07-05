@@ -229,6 +229,39 @@ export type Database = {
         }
         Relationships: []
       }
+      trail_log: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          instagram_url: string | null
+          pdf_storage_path: string | null
+          pdf_url: string | null
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          instagram_url?: string | null
+          pdf_storage_path?: string | null
+          pdf_url?: string | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          instagram_url?: string | null
+          pdf_storage_path?: string | null
+          pdf_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       trip_album_images: {
         Row: {
           caption: string | null
