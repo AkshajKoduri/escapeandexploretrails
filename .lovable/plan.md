@@ -1,54 +1,55 @@
+# The Trail Log — Implementation Plan
 
-## Trip "View More Info" improvements
+## 1. Database (migration)
+Create `public.trail_log`:
+- `id uuid pk default gen_random_uuid()`
+- `title text not null`
+- `category text not null` — CHECK in (`Trail Guide`, `Trek Journal`, `Tips & Advice`, `Event Recap`)
+- `description text not null`
+- `pdf_url text` (nullable), `pdf_storage_path text` (nullable, for deletion)
+- `instagram_url text` (nullable)
+- CHECK: exactly one of `pdf_url` / `instagram_url` is set
+- `created_at timestamptz default now()`
 
-### 1. Wider desktop modal
-In `src/components/site/Treks.tsx`, change the trip info `DialogContent` from `max-w-2xl` to a responsive wider size (e.g. `sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl`). Mobile stays as-is (full width with margins from shadcn defaults).
+Grants: `SELECT` to `anon, authenticated`; `ALL` to `service_role`.
+RLS: enable; policy "Anyone can view" for SELECT to anon+authenticated. Inserts/deletes go through the existing `admin-api` edge function using the service-role client (so no public write policies needed — matches how gallery works).
 
-### 2. Structured itinerary — database
-New migration to add a column to `upcoming_treks`:
-- `itinerary_days jsonb NOT NULL DEFAULT '[]'::jsonb` — array of `{ title: string, description: string }`.
+Storage: new **private** bucket `trail-log-pdfs`. Add `storage.objects` RLS allowing service_role only; public page uses 6-hour signed URLs (same pattern as `gallery-images`).
 
-Keep `itinerary_file_path` and `itinerary_url` columns as-is (PDF fallback).
+## 2. Admin API (edge function + `src/lib/adminApi.ts`)
+Add actions: `listTrailLog`, `insertTrailLog` (accepts title, category, description, and either `pdf_storage_path` or `instagram_url`), `deleteTrailLog` (also removes PDF from storage when present).
 
-### 3. Admin upload UI (`src/pages/Admin.tsx`)
-In the trek create/edit form add an "Itinerary (structured)" section:
-- Repeating rows of `Day Title` (input) + `Day Description` (textarea) with Add day / Remove day buttons, drag-free simple ordering.
-- Existing PDF upload stays below, labeled "Optional: Upload PDF fallback".
-- On save, send `itinerary_days` array via the existing admin-api `updateTrek` / trek insert path (extend the edge function whitelist to include `itinerary_days`).
+Frontend helper `adminUploadFile` already supports arbitrary buckets — reuse it for `trail-log-pdfs`.
 
-### 4. Full-screen itinerary view
-New route `src/pages/Itinerary.tsx` at path `/itinerary/:trekId` (registered in `src/App.tsx`):
-- Loads the trek row (public `upcoming_treks` already readable).
-- Header with trek name, back button, and Share button.
-- If `itinerary_days` non-empty → render each day as a shadcn `Accordion` item (single-collapsible, collapsed by default), using existing font/colors (`font-heading text-primary`, muted description).
-  - If a PDF also exists, show a small "View as PDF" link that swaps to the embedded PDF viewer (or opens signed URL in new tab).
-- Else if only PDF exists → full-screen embedded viewer using signed URL from `itinerary-signed-url` edge function, with a "Download PDF" link.
-- Else → "Itinerary coming soon" message.
+## 3. Admin UI — new "The Trail Log" tab in `src/pages/Admin.tsx`
+- Form: Title, Category dropdown, Description textarea, radio toggle between "Upload PDF" (file input) and "Instagram URL" (text). Validation: one of the two required.
+- List view: title, category chip, date, source badge (PDF/IG), Delete button with confirm.
 
-Share button:
-- If `navigator.share` exists → call it with `{ title, url: window.location.href }`.
-- Else → `navigator.clipboard.writeText(...)` + sonner `toast.success("Link copied!")`.
-- Minimum 44px height (`h-11`), styled with `bg-accent text-accent-foreground` to match site.
+## 4. Public page `/trail-log` (`src/pages/TrailLog.tsx`)
+- Register route in `src/App.tsx`.
+- Layout: reuse site background, `Navbar`, `Footer`.
+- Header: script-font subheading "— Adventures, guides & stories" + `<h1>` "The Trail Log" (match existing section header style used in Treks/Gallery).
+- Filter pills: All / Trail Guides / Trek Journals / Tips & Advice / Event Recaps — same styling as Treks/Gallery pills, client-side filter.
+- Cards grid (responsive 1/2/3 cols): category tag, title, description, formatted date, and either:
+  - **PDF post** → "View PDF" button opening signed URL in new tab.
+  - **Instagram post** → embedded preview via Instagram's `blockquote` embed + `//www.instagram.com/embed.js` script (loaded once per page); falls back to a "View on Instagram" link.
+- Empty state (no posts at all): "Stories from the trail are coming soon. Check back after our next adventure!"
 
-### 5. Trip info modal changes (`Treks.tsx`)
-- Remove the embedded `<object>`/`<iframe>` PDF block.
-- Replace with a single primary button "View Itinerary" (min `h-11`, accent styling, full-width on mobile) that navigates via react-router `Link` to `/itinerary/:trekId`. Only shown when `itinerary_days.length > 0` OR `itineraryFilePath` OR `itineraryUrl` exists.
-- Drop the `itinerary-signed-url` fetch from this modal (moved to the new page).
+## 5. Homepage preview — new `src/components/site/TrailLogPreview.tsx`
+- Inserted in `src/pages/Index.tsx` immediately after the `Treks` (Upcoming Treks) section.
+- Subheading "— From the community", heading "The Trail Log".
+- Shows the 3 most recent posts as the same card component used on the full page.
+- "View All" pill button → `/trail-log`.
+- Same empty-state copy when no posts exist.
 
-### 6. Collapsible Description & Instructions
-In the trip info modal, wrap the Description and Special Instructions sections in shadcn `Accordion` (type="single", collapsible, `defaultValue={undefined}` so collapsed by default). Chevron rotation comes built-in with `AccordionTrigger`. Keep heading text style (`font-heading font-bold text-primary`) inside the trigger.
+## 6. Navbar
+Add `{ label: "The Trail Log", href: "/trail-log", external: true }` between "About Us" and "Gallery" in `src/components/site/Navbar.tsx` (uses `Link` because `external: true` in that file means "react-router link").
 
-### 7. Data mapping
-Extend `TrekCard` type in `Treks.tsx` with `itineraryDays: Array<{title:string; description:string}>` and populate from `t.itinerary_days`. Pass through to the "View Itinerary" button visibility check.
+## 7. Styling
+All new UI uses existing tokens: `bg-charcoal`, `text-accent`, `font-heading`, `font-script`, gradient-orange buttons, `shadow-card`. No new colors or fonts.
 
-### Files touched
-- New migration: add `itinerary_days` column.
-- `supabase/functions/admin-api/index.ts` — allow `itinerary_days` in trek payload.
-- `src/pages/Admin.tsx` — structured itinerary editor UI.
-- `src/components/site/Treks.tsx` — wider modal, remove embedded PDF, add "View Itinerary" link, collapsible Description/Instructions.
-- New `src/pages/Itinerary.tsx` — full-screen view with accordion + share + PDF fallback.
-- `src/App.tsx` — register `/itinerary/:trekId` route.
-- `src/integrations/supabase/types.ts` — regenerated after migration.
-
-### Out of scope
-No changes to booking flow, other admin tabs, styling tokens, or unrelated pages.
+## Judgment calls / notes
+- PDFs stored in a **private** bucket with signed URLs (matches gallery pattern imposed by workspace policy). Signed URLs are refreshed on each page load.
+- Instagram embeds rely on Instagram's public embed script; if the user is offline or IG blocks the embed, the card degrades to a link.
+- Category values stored in singular form ("Trail Guide") but displayed as plural in filter pills ("Trail Guides"), matching the request.
+- Writes go through the existing admin edge function (service-role) — no public insert/delete policies, consistent with gallery & treks admin flow.

@@ -8,6 +8,7 @@ import Treks from "@/components/site/Treks";
 import Experiences from "@/components/site/Experiences";
 import Community from "@/components/site/Community";
 import Gallery from "@/components/site/Gallery";
+import TrailLogPreview from "@/components/site/TrailLogPreview";
 
 import WhyUs from "@/components/site/WhyUs";
 import Contact from "@/components/site/Contact";
@@ -39,6 +40,7 @@ const Index = () => {
       <About />
       <Stats />
       <Treks />
+      <TrailLogPreview />
       <Experiences />
       <Community />
       <Gallery />

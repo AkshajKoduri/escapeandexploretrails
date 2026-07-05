@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,12 +159,13 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 max-w-3xl">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 max-w-4xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="callbacks">Callbacks</TabsTrigger>
               <TabsTrigger value="drafts">Drafts</TabsTrigger>
               <TabsTrigger value="gallery">Gallery</TabsTrigger>
+              <TabsTrigger value="trail-log">Trail Log</TabsTrigger>
             </TabsList>
 
             <TabsContent value="trips" className="mt-6">
@@ -185,6 +186,10 @@ export default function Admin() {
 
             <TabsContent value="gallery" className="mt-6">
               <GalleryTab />
+            </TabsContent>
+
+            <TabsContent value="trail-log" className="mt-6">
+              <TrailLogTab />
             </TabsContent>
           </Tabs>
         </div>
@@ -330,7 +335,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   };
 
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!f.name?.trim()) return toast.error("Trip name is required");
     if (f.max_seats < currentSeatsTaken) {
@@ -1013,7 +1018,7 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!trekId) return toast.error("Please select a trip");
     if (!fullName.trim()) return toast.error("Full name is required");
@@ -1459,5 +1464,198 @@ function GalleryTab() {
   );
 }
 
+/* ===================== Trail Log Tab ===================== */
 
+type TrailLogRow = {
+  id: string;
+  title: string;
+  category: "Trail Guide" | "Trek Journal" | "Tips & Advice" | "Event Recap";
+  description: string;
+  pdf_url: string | null;
+  pdf_storage_path: string | null;
+  instagram_url: string | null;
+  created_at: string;
+};
+
+const TRAIL_LOG_CATEGORIES: TrailLogRow["category"][] = [
+  "Trail Guide",
+  "Trek Journal",
+  "Tips & Advice",
+  "Event Recap",
+];
+
+function TrailLogTab() {
+  const [items, setItems] = useState<TrailLogRow[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<TrailLogRow["category"]>("Trail Guide");
+  const [description, setDescription] = useState("");
+  const [sourceType, setSourceType] = useState<"pdf" | "instagram">("pdf");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [instagramUrl, setInstagramUrl] = useState("");
+
+  const load = async () => {
+    try {
+      const res = await adminApi<{ data: TrailLogRow[] }>("listTrailLog");
+      setItems(res?.data ?? []);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to load trail log");
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const reset = () => {
+    setTitle(""); setCategory("Trail Guide"); setDescription("");
+    setSourceType("pdf"); setPdfFile(null); setInstagramUrl("");
+  };
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !description.trim()) {
+      return toast.error("Title and description are required");
+    }
+    if (sourceType === "pdf" && !pdfFile) return toast.error("Please choose a PDF file");
+    if (sourceType === "instagram" && !instagramUrl.trim()) return toast.error("Please paste an Instagram URL");
+
+    setBusy(true);
+    try {
+      let pdf_storage_path: string | null = null;
+      if (sourceType === "pdf" && pdfFile) {
+        if (pdfFile.type !== "application/pdf") throw new Error("File must be a PDF");
+        const path = `posts/${crypto.randomUUID()}.pdf`;
+        await adminUpload("trail-log-pdfs", path, pdfFile);
+        pdf_storage_path = path;
+      }
+      await adminApi("insertTrailLog", {
+        row: {
+          title: title.trim(),
+          category,
+          description: description.trim(),
+          pdf_storage_path,
+          instagram_url: sourceType === "instagram" ? instagramUrl.trim() : null,
+        },
+      });
+      toast.success("Post added");
+      reset();
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to add post");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onDelete = async (row: TrailLogRow) => {
+    if (!confirm(`Delete "${row.title}"?`)) return;
+    try {
+      await adminApi("deleteTrailLog", { id: row.id });
+      toast.success("Deleted");
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Delete failed");
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <form onSubmit={onSubmit} className="rounded-2xl border border-primary/10 bg-background p-5 md:p-6 space-y-4">
+        <h2 className="font-heading font-bold text-lg text-primary">Add a new Trail Log post</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="block">
+            <span className="text-xs font-semibold text-muted-foreground">Title</span>
+            <input className={inp} value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-muted-foreground">Category</span>
+            <select className={inp} value={category} onChange={(e) => setCategory(e.target.value as TrailLogRow["category"])}>
+              {TRAIL_LOG_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
+            </select>
+          </label>
+        </div>
+
+        <label className="block">
+          <span className="text-xs font-semibold text-muted-foreground">Short description</span>
+          <textarea className={inp} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} required />
+        </label>
+
+        <div className="flex gap-4 flex-wrap">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="radio" checked={sourceType === "pdf"} onChange={() => setSourceType("pdf")} />
+            Upload PDF
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="radio" checked={sourceType === "instagram"} onChange={() => setSourceType("instagram")} />
+            Instagram URL
+          </label>
+        </div>
+
+        {sourceType === "pdf" ? (
+          <label className="block">
+            <span className="text-xs font-semibold text-muted-foreground">PDF file</span>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+              className="block mt-1 text-sm"
+            />
+            {pdfFile && <span className="text-xs text-muted-foreground mt-1 block">{pdfFile.name}</span>}
+          </label>
+        ) : (
+          <label className="block">
+            <span className="text-xs font-semibold text-muted-foreground">Instagram post URL</span>
+            <input
+              className={inp}
+              type="url"
+              placeholder="https://www.instagram.com/p/..."
+              value={instagramUrl}
+              onChange={(e) => setInstagramUrl(e.target.value)}
+            />
+          </label>
+        )}
+
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-secondary transition disabled:opacity-60"
+        >
+          <Plus className="w-4 h-4" /> {busy ? "Saving…" : "Add post"}
+        </button>
+      </form>
+
+      <div>
+        <h2 className="font-heading font-bold text-lg text-primary mb-3">All posts ({items.length})</h2>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No posts yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {items.map((row) => (
+              <div key={row.id} className="flex items-start gap-3 rounded-xl border border-border bg-background p-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[11px] font-semibold">{row.category}</span>
+                    <span className="text-[11px] text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {row.pdf_storage_path ? "PDF" : row.instagram_url ? "Instagram" : "—"}
+                    </span>
+                  </div>
+                  <div className="font-heading font-semibold text-sm text-primary mt-1 truncate">{row.title}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-2">{row.description}</div>
+                </div>
+                <button
+                  onClick={() => onDelete(row)}
+                  className="p-2 rounded text-destructive hover:bg-destructive/10 shrink-0"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 

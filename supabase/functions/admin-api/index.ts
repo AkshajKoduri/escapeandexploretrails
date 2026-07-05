@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
       case "uploadFile": {
         const { bucket, path, base64, contentType, upsert = false } = payload;
         if (!bucket || !path || !base64) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries", "gallery-images"].includes(bucket)) {
+        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs"].includes(bucket)) {
           return json({ error: "Bucket not allowed" }, 400);
         }
         const bytes = b64ToBytes(base64);
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       case "removeFile": {
         const { bucket, path } = payload;
         if (!bucket || !path) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries", "gallery-images"].includes(bucket)) {
+        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs"].includes(bucket)) {
           return json({ error: "Bucket not allowed" }, 400);
         }
         const { error } = await supabase.storage.from(bucket).remove([path]);
@@ -197,6 +197,53 @@ Deno.serve(async (req) => {
             .eq("id", u.id);
           if (error) throw error;
         }
+        return json({ ok: true });
+      }
+
+      // ---- Trail Log ----
+      case "listTrailLog": {
+        const { data, error } = await supabase
+          .from("trail_log")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return json({ data });
+      }
+      case "insertTrailLog": {
+        const { row } = payload;
+        if (!row?.title || !row?.category || !row?.description) {
+          return json({ error: "Missing required fields" }, 400);
+        }
+        const hasPdf = !!row.pdf_storage_path;
+        const hasIg = !!row.instagram_url;
+        if (hasPdf === hasIg) {
+          return json({ error: "Provide either a PDF or an Instagram URL" }, 400);
+        }
+        const insertRow: Record<string, unknown> = {
+          title: row.title,
+          category: row.category,
+          description: row.description,
+        };
+        if (hasPdf) {
+          insertRow.pdf_storage_path = row.pdf_storage_path;
+          insertRow.pdf_url = row.pdf_storage_path; // stored for reference; signed URL generated at read time
+        } else {
+          insertRow.instagram_url = row.instagram_url;
+        }
+        const { data, error } = await supabase.from("trail_log").insert(insertRow).select().single();
+        if (error) throw error;
+        return json({ data });
+      }
+      case "deleteTrailLog": {
+        const { id } = payload;
+        const { data: existing, error: fetchErr } = await supabase
+          .from("trail_log").select("pdf_storage_path").eq("id", id).maybeSingle();
+        if (fetchErr) throw fetchErr;
+        if (existing?.pdf_storage_path) {
+          await supabase.storage.from("trail-log-pdfs").remove([existing.pdf_storage_path]);
+        }
+        const { error } = await supabase.from("trail_log").delete().eq("id", id);
+        if (error) throw error;
         return json({ ok: true });
       }
 

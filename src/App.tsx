@@ -10,6 +10,7 @@ import BookingPage from "./pages/BookingPage.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Itinerary from "./pages/Itinerary.tsx";
+import TrailLog from "./pages/TrailLog.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           <Route path="/itinerary/:trekId" element={<Itinerary />} />
+          <Route path="/trail-log" element={<TrailLog />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

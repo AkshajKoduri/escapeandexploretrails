@@ -7,7 +7,7 @@ const links = [
   { label: "Home", href: "/#home", external: false },
   { label: "Upcoming Treks", href: "/#treks", external: false },
   { label: "About Us", href: "/#about", external: false },
-  
+  { label: "The Trail Log", href: "/trail-log", external: true },
   { label: "Gallery", href: "/#gallery", external: false },
   { label: "Contact", href: "/#contact", external: false },
 ];
