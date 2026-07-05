@@ -239,7 +239,7 @@ export default function BookingPage() {
                     <option value="">Choose your adventure...</option>
                     {trekOptions.map((t) => (
                       <option key={t.id} value={t.id} disabled={t.seats_remaining <= 0}>
-                        {t.name} — {new Date(t.trek_date).toLocaleDateString()} {t.seats_remaining <= 0 ? "(FULL)" : `(${t.seats_remaining} left)`}
+                        {t.name} — {new Date(t.trek_date).toLocaleDateString()} {t.seats_remaining <= 0 ? "(FULL)" : ""}
                       </option>
                     ))}
                   </select>
