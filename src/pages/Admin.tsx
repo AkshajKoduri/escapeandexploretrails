@@ -37,7 +37,7 @@ type Trek = {
   itinerary_url: string | null;
   itinerary_file_path: string | null;
   itinerary_days: { title: string; description: string }[];
-  event_type: "Hike" | "Cycling Ride" | "Outstation Trek";
+  event_type: "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride";
   trek_difficulty: string | null;
   trek_distance: string | null;
   altitude: string | null;
@@ -159,11 +159,12 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 max-w-3xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="callbacks">Callbacks</TabsTrigger>
               <TabsTrigger value="drafts">Drafts</TabsTrigger>
+              <TabsTrigger value="gallery">Gallery</TabsTrigger>
             </TabsList>
 
             <TabsContent value="trips" className="mt-6">
@@ -180,6 +181,10 @@ export default function Admin() {
 
             <TabsContent value="drafts" className="mt-6">
               <DraftsTab treks={draftTreks} reload={loadAll} />
+            </TabsContent>
+
+            <TabsContent value="gallery" className="mt-6">
+              <GalleryTab />
             </TabsContent>
           </Tabs>
         </div>
@@ -424,6 +429,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   const isCycling = et === "Cycling Ride";
   const isHike = et === "Hike";
   const isOutstation = et === "Outstation Trek";
+  const isBikeRide = et === "Bike Ride";
 
   return (
     <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -431,6 +437,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         <select className={inp} value={et} onChange={(e) => set({ event_type: e.target.value as any })}>
           <option value="Hike">Hike</option>
           <option value="Cycling Ride">Cycling Ride</option>
+          <option value="Bike Ride">Bike Ride</option>
           <option value="Outstation Trek">Outstation Trek</option>
         </select>
       </FF>
@@ -491,7 +498,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
         <FF label="Trail name / Location *" full><input className={inp} value={f.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="Ananthagiri Hills Trail" required /></FF>
       )}
 
-      {(isCycling || isHike) && (
+      {(isCycling || isHike || isBikeRide) && (
         <>
           <FF label="Distance (km) *"><input className={inp} value={f.distance ?? ""} onChange={(e) => set({ distance: e.target.value })} placeholder="25 km" required /></FF>
           <FF label="Duration (hours) *"><input className={inp} value={f.duration ?? ""} onChange={(e) => set({ duration: e.target.value })} placeholder="4 hours" required /></FF>
@@ -1280,5 +1287,177 @@ function CallbacksTab() {
     </div>
   );
 }
+
+/* ===================== Gallery Tab ===================== */
+
+type GalleryImage = {
+  id: string;
+  image_url: string;
+  storage_path: string | null;
+  category: "Hike" | "Cycling Ride" | "Outstation Trek" | "Bike Ride" | "General";
+  display_order: number;
+  alt_text: string | null;
+};
+
+const GALLERY_CATEGORIES: GalleryImage["category"][] = ["Hike", "Cycling Ride", "Bike Ride", "Outstation Trek", "General"];
+
+function GalleryTab() {
+  const [items, setItems] = useState<GalleryImage[]>([]);
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    try {
+      const res = await adminApi<{ data: GalleryImage[] }>("listGalleryImages");
+      const rows = res?.data ?? [];
+      setItems(rows);
+      // Sign URLs for private bucket display
+      const paths = rows.map((r) => r.storage_path).filter(Boolean) as string[];
+      if (paths.length) {
+        const { data } = await supabase.storage.from("gallery-images").createSignedUrls(paths, 60 * 60);
+        const map: Record<string, string> = {};
+        (data ?? []).forEach((s: any) => { if (s.path && s.signedUrl) map[s.path] = s.signedUrl; });
+        setUrls(map);
+      } else {
+        setUrls({});
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to load gallery");
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const onUpload = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please select an image file");
+    setBusy(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `gallery/${crypto.randomUUID()}.${ext}`;
+      await adminUpload("gallery-images", path, file);
+      const nextOrder = items.length ? Math.max(...items.map((i) => i.display_order)) + 1 : 1;
+      await adminApi("insertGalleryImage", {
+        row: { image_url: "", storage_path: path, category: "General", display_order: nextOrder, alt_text: file.name },
+      });
+      toast.success("Image uploaded");
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Upload failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onDelete = async (img: GalleryImage) => {
+    if (!confirm("Delete this gallery image?")) return;
+    try {
+      if (img.storage_path) {
+        try { await adminRemove("gallery-images", img.storage_path); } catch { /* ignore */ }
+      }
+      await adminApi("deleteGalleryImage", { id: img.id });
+      toast.success("Deleted");
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Delete failed");
+    }
+  };
+
+  const onCategory = async (img: GalleryImage, category: GalleryImage["category"]) => {
+    try {
+      await adminApi("updateGalleryImage", { id: img.id, patch: { category } });
+      setItems((prev) => prev.map((p) => (p.id === img.id ? { ...p, category } : p)));
+    } catch (err: any) {
+      toast.error(err?.message ?? "Update failed");
+    }
+  };
+
+  const swap = async (i: number, j: number) => {
+    if (i < 0 || j < 0 || i >= items.length || j >= items.length) return;
+    const a = items[i], b = items[j];
+    try {
+      await adminApi("reorderGalleryImages", {
+        updates: [{ id: a.id, display_order: b.display_order }, { id: b.id, display_order: a.display_order }],
+      });
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Reorder failed");
+    }
+  };
+
+  const sorted = [...items].sort((a, b) => a.display_order - b.display_order);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="font-heading font-bold text-lg text-primary">Gallery images ({items.length})</h2>
+        <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-secondary transition cursor-pointer">
+          <Plus className="w-4 h-4" /> {busy ? "Uploading…" : "Upload image"}
+          <input
+            type="file"
+            accept="image/*"
+            disabled={busy}
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUpload(file);
+              e.currentTarget.value = "";
+            }}
+          />
+        </label>
+      </div>
+
+      {sorted.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No gallery images yet. Upload one to get started.</p>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {sorted.map((img, idx) => (
+            <div key={img.id} className="rounded-xl border border-border bg-background overflow-hidden flex flex-col">
+              <div className="aspect-square bg-muted">
+                {urls[img.storage_path ?? ""] ? (
+                  <img src={urls[img.storage_path ?? ""]} alt={img.alt_text ?? ""} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-muted-foreground text-xs">Loading…</div>
+                )}
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => swap(idx, idx - 1)}
+                    disabled={idx === 0}
+                    className="px-2 py-1 rounded text-xs border border-border hover:bg-muted disabled:opacity-40"
+                    title="Move up"
+                  >↑</button>
+                  <button
+                    onClick={() => swap(idx, idx + 1)}
+                    disabled={idx === sorted.length - 1}
+                    className="px-2 py-1 rounded text-xs border border-border hover:bg-muted disabled:opacity-40"
+                    title="Move down"
+                  >↓</button>
+                  <span className="text-xs text-muted-foreground ml-1">#{img.display_order}</span>
+                  <button
+                    onClick={() => onDelete(img)}
+                    className="ml-auto p-1.5 rounded text-destructive hover:bg-destructive/10"
+                    title="Delete"
+                  ><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+                <select
+                  className={inp}
+                  value={img.category}
+                  onChange={(e) => onCategory(img, e.target.value as GalleryImage["category"])}
+                >
+                  {GALLERY_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 

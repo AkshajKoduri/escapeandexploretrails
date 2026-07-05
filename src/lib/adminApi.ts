@@ -51,7 +51,7 @@ export function fileToBase64(file: File): Promise<string> {
 }
 
 export async function adminUpload(
-  bucket: "trek-images" | "itineraries",
+  bucket: "trek-images" | "itineraries" | "gallery-images",
   path: string,
   file: File,
   upsert = false,
@@ -66,6 +66,6 @@ export async function adminUpload(
   });
 }
 
-export async function adminRemove(bucket: "trek-images" | "itineraries", path: string) {
+export async function adminRemove(bucket: "trek-images" | "itineraries" | "gallery-images", path: string) {
   return adminApi("removeFile", { bucket, path });
 }
