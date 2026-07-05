@@ -246,18 +246,12 @@ export default function Treks() {
                     {t.trekTime && <span>🕒 Assembly: {t.trekTime}</span>}
                     {t.dist && <span>📍 {t.dist}</span>}
                   </div>
-                  {(t.startingPrice != null || t.topEndPrice != null) ? (
-                    <div className="text-sm font-bold text-accent mb-4 space-y-0.5">
-                      {t.startingPrice != null && (
-                        <div>₹{t.startingPrice.toLocaleString("en-IN")}{t.startingPriceLabel ? <span className="text-xs text-charcoal-foreground/80 font-normal"> ({t.startingPriceLabel})</span> : null}</div>
-                      )}
-                      {t.topEndPrice != null && (
-                        <div>₹{t.topEndPrice.toLocaleString("en-IN")}{t.topEndPriceLabel ? <span className="text-xs text-charcoal-foreground/80 font-normal"> ({t.topEndPriceLabel})</span> : null}</div>
-                      )}
-                    </div>
-                  ) : t.price > 0 ? (
-                    <div className="text-lg font-bold text-accent mb-4">₹{t.price.toLocaleString("en-IN")}<span className="text-xs text-charcoal-foreground/70 font-normal"> / person</span></div>
-                  ) : null}
+                  {(() => {
+                    const p = t.startingPrice ?? (t.price > 0 ? t.price : null);
+                    return p != null ? (
+                      <div className="text-sm font-bold text-accent mb-4">Starting Price Rs. {p.toLocaleString("en-IN")}/-</div>
+                    ) : null;
+                  })()}
 
                   <button
                     type="button"
