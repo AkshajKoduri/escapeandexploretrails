@@ -166,12 +166,12 @@ export default function Treks() {
         </div>
 
         <div className="mt-10 flex flex-wrap justify-center gap-2 reveal">
-          {(["All", "Hike", "Cycling Ride", "Bike Ride", "Outstation Trek"] as FilterType[]).map((f) => {
+          {(["All", "Hike", "Cycling Ride", "Bike Ride", "Monsoon Trek"] as FilterType[]).map((f) => {
             const label =
               f === "Hike" ? "Hikes"
               : f === "Cycling Ride" ? "Cycling Rides"
               : f === "Bike Ride" ? "Bike Rides"
-              : f === "Outstation Trek" ? "Outstation Treks"
+              : f === "Monsoon Trek" ? "Monsoon Treks"
               : "All";
             const active = filter === f;
             return (
