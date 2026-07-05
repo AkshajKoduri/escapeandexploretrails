@@ -545,7 +545,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
 
       {isOutstation && (
         <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-          <div className="text-sm font-semibold text-primary">Outstation trek details (optional)</div>
+          <div className="text-sm font-semibold text-primary">Monsoon trek details (optional)</div>
           <p className="text-xs text-muted-foreground">Click the pencil next to any label to rename it. Leave a field blank to hide it from the public trip page.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {OUTSTATION_EXTRA_FIELDS.map((field) => {
