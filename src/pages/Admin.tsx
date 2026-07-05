@@ -433,7 +433,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
   const et = f.event_type ?? "Hike";
   const isCycling = et === "Cycling Ride";
   const isHike = et === "Hike";
-  const isOutstation = et === "Outstation Trek";
+  const isOutstation = et === "Monsoon Trek";
   const isBikeRide = et === "Bike Ride";
 
   return (
