@@ -271,7 +271,7 @@ export default function Treks() {
               <DialogHeader>
                 <DialogTitle className="font-heading text-2xl text-primary">{openTrek.name}</DialogTitle>
                 <DialogDescription className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  {openTrek.dateLabel && <span>📅 Date: {openTrek.dateLabel}</span>}
+                  
                   {openTrek.trekTime && <span>🕒 Assembly: {openTrek.trekTime}</span>}
                   {openTrek.dur && <span>⏱ Duration: {openTrek.dur}</span>}
                   {openTrek.dist && <span>📍 {openTrek.dist}</span>}
