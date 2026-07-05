@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
       case "uploadFile": {
         const { bucket, path, base64, contentType, upsert = false } = payload;
         if (!bucket || !path || !base64) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries"].includes(bucket)) {
+        if (!["trek-images", "itineraries", "gallery-images"].includes(bucket)) {
           return json({ error: "Bucket not allowed" }, 400);
         }
         const bytes = b64ToBytes(base64);
@@ -149,11 +149,54 @@ Deno.serve(async (req) => {
       case "removeFile": {
         const { bucket, path } = payload;
         if (!bucket || !path) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries"].includes(bucket)) {
+        if (!["trek-images", "itineraries", "gallery-images"].includes(bucket)) {
           return json({ error: "Bucket not allowed" }, 400);
         }
         const { error } = await supabase.storage.from(bucket).remove([path]);
         if (error) throw error;
+        return json({ ok: true });
+      }
+
+      // ---- Gallery ----
+      case "listGalleryImages": {
+        const { data, error } = await supabase
+          .from("gallery_images")
+          .select("*")
+          .order("display_order", { ascending: true });
+        if (error) throw error;
+        return json({ data });
+      }
+      case "insertGalleryImage": {
+        const { data, error } = await supabase
+          .from("gallery_images")
+          .insert(payload.row)
+          .select()
+          .single();
+        if (error) throw error;
+        return json({ data });
+      }
+      case "updateGalleryImage": {
+        const { id, patch } = payload;
+        const { error } = await supabase.from("gallery_images").update(patch).eq("id", id);
+        if (error) throw error;
+        return json({ ok: true });
+      }
+      case "deleteGalleryImage": {
+        const { id } = payload;
+        const { error } = await supabase.from("gallery_images").delete().eq("id", id);
+        if (error) throw error;
+        return json({ ok: true });
+      }
+      case "reorderGalleryImages": {
+        const { updates } = payload;
+        if (!Array.isArray(updates)) return json({ error: "updates must be array" }, 400);
+        for (const u of updates) {
+          const { error } = await supabase
+            .from("gallery_images")
+            .update({ display_order: u.display_order })
+            .eq("id", u.id);
+          if (error) throw error;
+        }
         return json({ ok: true });
       }
 
