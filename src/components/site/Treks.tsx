@@ -169,7 +169,7 @@ export default function Treks() {
           {(["All", "Hike", "Cycling Ride", "Bike Ride", "Monsoon Trek"] as FilterType[]).map((f) => {
             const label =
               f === "Hike" ? "Hikes"
-              : f === "Cycling Ride" ? "Cycling Rides"
+              : f === "Cycling Ride" ? "Cycling"
               : f === "Bike Ride" ? "Bike Rides"
               : f === "Monsoon Trek" ? "Monsoon Treks"
               : "All";
