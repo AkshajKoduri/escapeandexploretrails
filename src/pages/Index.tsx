@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import Navbar from "@/components/site/Navbar";
 import Hero from "@/components/site/Hero";
-import Marquee from "@/components/site/Marquee";
 import About from "@/components/site/About";
 import Stats from "@/components/site/Stats";
 import Treks from "@/components/site/Treks";
