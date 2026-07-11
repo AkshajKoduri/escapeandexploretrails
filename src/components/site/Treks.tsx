@@ -306,6 +306,17 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
           );
         })()}
 
+        {preview && pool.length > 0 && (
+          <div className="mt-10 flex justify-center reveal">
+            <Link
+              to={viewAllHref}
+              className="inline-flex items-center px-7 py-3 rounded-full bg-primary text-primary-foreground font-semibold font-heading text-sm hover:opacity-90 transition-opacity"
+            >
+              View All {isOutstation ? "Upcoming Treks" : "Hyderabad Trails"} →
+            </Link>
+          </div>
+        )}
+
       </div>
 
       <Dialog open={!!openTrek} onOpenChange={(o) => !o && setOpenId(null)}>
