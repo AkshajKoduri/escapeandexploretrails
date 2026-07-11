@@ -64,11 +64,12 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
   Hard: { bg: "bg-destructive/20 text-red-200", label: "🔴 Hard" },
 };
 
-export default function Treks() {
+export default function Treks({ mode = "outstation", preview = false }: { mode?: "outstation" | "hyderabad"; preview?: boolean } = {}) {
   const [treks, setTreks] = useState<TrekCard[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [callbackForId, setCallbackForId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>("All");
+  const [outstationFilter, setOutstationFilter] = useState<OutstationFilter>("All");
+  const [hyderabadFilter, setHyderabadFilter] = useState<HyderabadFilter>("All");
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
