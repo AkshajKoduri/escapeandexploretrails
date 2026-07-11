@@ -8,7 +8,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
 type EventType = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
-type FilterType = "All" | EventType;
+export const OUTSTATION_CATEGORIES = ["Monsoon/Waterfall Trek", "Himalayan Trek", "Winter Trek"] as const;
+type OutstationCategory = typeof OUTSTATION_CATEGORIES[number];
+type OutstationFilter = "All" | OutstationCategory;
+type HyderabadFilter = "All" | "Hike" | "Cycling Ride" | "Bike Ride";
+
 type TrekCard = {
   id: string;
   name: string;
@@ -35,6 +39,7 @@ type TrekCard = {
   maxSeats: number;
   isFull: boolean;
   eventType: EventType;
+  trekCategory: string | null;
   extras: { key: string; label: string; value: string }[];
 };
 
