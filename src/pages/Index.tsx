@@ -37,7 +37,8 @@ const Index = () => {
       <Hero />
       <About />
       <Stats />
-      <Treks />
+      <Treks mode="outstation" preview />
+      <Treks mode="hyderabad" preview />
       <TrailLogPreview />
       <Experiences />
       <Community />
