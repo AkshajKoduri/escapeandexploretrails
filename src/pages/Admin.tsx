@@ -38,6 +38,7 @@ type Trek = {
   itinerary_file_path: string | null;
   itinerary_days: { title: string; description: string }[];
   event_type: "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
+  trek_category: string | null;
   trek_difficulty: string | null;
   trek_distance: string | null;
   altitude: string | null;
@@ -49,6 +50,8 @@ type Trek = {
   stay_location: string | null;
   field_labels: Record<string, string> | null;
 };
+
+export const TREK_CATEGORIES = ["Monsoon/Waterfall Trek", "Himalayan Trek", "Winter Trek"] as const;
 
 type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
 
