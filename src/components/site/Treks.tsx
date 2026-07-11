@@ -127,6 +127,7 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
             maxSeats: s?.max_seats ?? t.max_seats ?? 0,
             isFull: remaining <= 0,
             eventType: (t.event_type as EventType) ?? "Hike",
+            trekCategory: t.trek_category ?? null,
             extras: OUTSTATION_FIELDS
               .map((f) => ({
                 key: f.key,
