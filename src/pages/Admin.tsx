@@ -454,7 +454,15 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
       <FF label="Trip name *" full><input className={inp} value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} required /></FF>
 
       {isOutstation ? (
-        <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
+        <>
+          <FF label="Trek Category">
+            <select className={inp} value={f.trek_category ?? ""} onChange={(e) => set({ trek_category: e.target.value })}>
+              <option value="">— none —</option>
+              {TREK_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </FF>
+          <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
+        </>
       ) : null}
 
       <FF label={isOutstation ? "Dates" : "Date *"} full>
