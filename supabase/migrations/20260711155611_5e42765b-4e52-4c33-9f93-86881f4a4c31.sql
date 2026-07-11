@@ -1,0 +1,1 @@
+ALTER TABLE public.upcoming_treks ADD COLUMN IF NOT EXISTS trek_category text;

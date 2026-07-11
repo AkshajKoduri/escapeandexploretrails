@@ -11,6 +11,8 @@ import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Itinerary from "./pages/Itinerary.tsx";
 import TrailLog from "./pages/TrailLog.tsx";
+import UpcomingTreks from "./pages/UpcomingTreks.tsx";
+import HyderabadTrails from "./pages/HyderabadTrails.tsx";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           <Route path="/itinerary/:trekId" element={<Itinerary />} />
           <Route path="/trail-log" element={<TrailLog />} />
+          <Route path="/upcoming-treks" element={<UpcomingTreks />} />
+          <Route path="/hyderabad-trails" element={<HyderabadTrails />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

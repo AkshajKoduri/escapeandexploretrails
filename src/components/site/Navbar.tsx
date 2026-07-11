@@ -5,7 +5,8 @@ import logo from "@/assets/logo.png";
 
 const links = [
   { label: "Home", href: "/#home", external: false },
-  { label: "Upcoming Treks", href: "/#treks", external: false },
+  { label: "Upcoming Treks", href: "/upcoming-treks", external: true },
+  { label: "Hyderabad Trails", href: "/hyderabad-trails", external: true },
   { label: "About Us", href: "/#about", external: false },
   { label: "The Trail Log", href: "/trail-log", external: true },
   { label: "Gallery", href: "/#gallery", external: false },

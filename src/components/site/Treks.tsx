@@ -8,7 +8,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
 type EventType = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
-type FilterType = "All" | EventType;
+export const OUTSTATION_CATEGORIES = ["Monsoon/Waterfall Trek", "Himalayan Trek", "Winter Trek"] as const;
+type OutstationCategory = typeof OUTSTATION_CATEGORIES[number];
+type OutstationFilter = "All" | OutstationCategory;
+type HyderabadFilter = "All" | "Hike" | "Cycling Ride" | "Bike Ride";
+
 type TrekCard = {
   id: string;
   name: string;
@@ -35,6 +39,7 @@ type TrekCard = {
   maxSeats: number;
   isFull: boolean;
   eventType: EventType;
+  trekCategory: string | null;
   extras: { key: string; label: string; value: string }[];
 };
 
@@ -59,11 +64,12 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
   Hard: { bg: "bg-destructive/20 text-red-200", label: "🔴 Hard" },
 };
 
-export default function Treks() {
+export default function Treks({ mode = "outstation", preview = false }: { mode?: "outstation" | "hyderabad"; preview?: boolean } = {}) {
   const [treks, setTreks] = useState<TrekCard[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [callbackForId, setCallbackForId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>("All");
+  const [outstationFilter, setOutstationFilter] = useState<OutstationFilter>("All");
+  const [hyderabadFilter, setHyderabadFilter] = useState<HyderabadFilter>("All");
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -121,6 +127,7 @@ export default function Treks() {
             maxSeats: s?.max_seats ?? t.max_seats ?? 0,
             isFull: remaining <= 0,
             eventType: (t.event_type as EventType) ?? "Hike",
+            trekCategory: t.trek_category ?? null,
             extras: OUTSTATION_FIELDS
               .map((f) => ({
                 key: f.key,
@@ -152,50 +159,87 @@ export default function Treks() {
 
 
 
+  const isOutstation = mode === "outstation";
+  const sectionId = isOutstation ? "treks" : "hyderabad-trails";
+  const headerScript = isOutstation ? "— Upcoming treks" : "— Hyderabad Trails";
+  const headerTitle = isOutstation ? "Your Next Adventure Awaits" : "Explore the Trails Near Home";
+  const headerBlurb = isOutstation
+    ? "Handpicked getaways across India — book your spot before they sell out."
+    : "Weekend hikes, cycling rides & bike rides around Hyderabad — perfect for a quick escape.";
+  const viewAllHref = isOutstation ? "/upcoming-treks" : "/hyderabad-trails";
+
+  // Base pool by mode
+  const pool = isOutstation
+    ? treks.filter((t) => t.eventType === "Monsoon Trek")
+    : treks.filter((t) => t.eventType === "Hike" || t.eventType === "Cycling Ride" || t.eventType === "Bike Ride");
+
   return (
-    <section id="treks" className="py-24 md:py-32 bg-background">
+    <section id={sectionId} className="py-24 md:py-32 bg-background">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto reveal">
-          <span className="font-script text-accent text-xl">— Upcoming treks</span>
+          <span className="font-script text-accent text-xl">{headerScript}</span>
           <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">
-            Your Next Adventure Awaits
+            {headerTitle}
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            Handpicked weekend escapes across India — book your spot before they sell out.
-          </p>
+          <p className="mt-4 text-muted-foreground">{headerBlurb}</p>
         </div>
 
-        <div className="mt-10 flex flex-wrap justify-center gap-2 reveal">
-          {(["All", "Hike", "Cycling Ride", "Bike Ride", "Monsoon Trek"] as FilterType[]).map((f) => {
-            const label =
-              f === "Hike" ? "Hikes"
-              : f === "Cycling Ride" ? "Cycling"
-              : f === "Bike Ride" ? "Bike Rides"
-              : f === "Monsoon Trek" ? "Monsoon Treks"
-              : "All";
-            const active = filter === f;
-            return (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold font-heading transition-colors border ${
-                  active
-                    ? "bg-accent text-accent-foreground border-accent shadow-card"
-                    : "bg-background text-primary border-border hover:bg-accent/10 hover:border-accent"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+        {!preview && isOutstation && (
+          <div className="mt-10 flex justify-center reveal">
+            <select
+              value={outstationFilter}
+              onChange={(e) => setOutstationFilter(e.target.value as OutstationFilter)}
+              className="h-11 min-w-[260px] rounded-full border border-border bg-background px-5 text-sm font-semibold font-heading text-primary shadow-card hover:border-accent focus:outline-none focus:border-accent"
+            >
+              <option value="All">All Categories</option>
+              {OUTSTATION_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c === "Monsoon/Waterfall Trek" ? "Monsoon/Waterfall Treks" : `${c}s`}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {!preview && !isOutstation && (
+          <div className="mt-10 flex flex-wrap justify-center gap-2 reveal">
+            {(["All", "Hike", "Cycling Ride", "Bike Ride"] as HyderabadFilter[]).map((f) => {
+              const label =
+                f === "Hike" ? "Hikes"
+                : f === "Cycling Ride" ? "Cycling Rides"
+                : f === "Bike Ride" ? "Bike Rides"
+                : "All";
+              const active = hyderabadFilter === f;
+              return (
+                <button
+                  key={f}
+                  onClick={() => setHyderabadFilter(f)}
+                  className={`px-5 py-2 rounded-full text-sm font-semibold font-heading transition-colors border ${
+                    active
+                      ? "bg-accent text-accent-foreground border-accent shadow-card"
+                      : "bg-background text-primary border-border hover:bg-accent/10 hover:border-accent"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {(() => {
-          const visible = filter === "All" ? treks : treks.filter((t) => t.eventType === filter);
-          if (treks.length === 0) {
+          let filtered = pool;
+          if (!preview) {
+            if (isOutstation && outstationFilter !== "All") {
+              filtered = pool.filter((t) => t.trekCategory === outstationFilter);
+            } else if (!isOutstation && hyderabadFilter !== "All") {
+              filtered = pool.filter((t) => t.eventType === hyderabadFilter);
+            }
+          }
+          const visible = preview ? filtered.slice(0, 3) : filtered;
+
+          if (pool.length === 0) {
             return (
               <p className="mt-14 text-center text-muted-foreground">
-                No upcoming treks right now — check back soon!
+                {isOutstation ? "No upcoming treks right now — check back soon!" : "No trails scheduled right now — check back soon!"}
               </p>
             );
           }
@@ -261,6 +305,17 @@ export default function Treks() {
           </div>
           );
         })()}
+
+        {preview && pool.length > 0 && (
+          <div className="mt-10 flex justify-center reveal">
+            <Link
+              to={viewAllHref}
+              className="inline-flex items-center px-7 py-3 rounded-full bg-primary text-primary-foreground font-semibold font-heading text-sm hover:opacity-90 transition-opacity"
+            >
+              View All {isOutstation ? "Upcoming Treks" : "Hyderabad Trails"} →
+            </Link>
+          </div>
+        )}
 
       </div>
 

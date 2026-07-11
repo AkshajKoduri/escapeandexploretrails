@@ -38,6 +38,7 @@ type Trek = {
   itinerary_file_path: string | null;
   itinerary_days: { title: string; description: string }[];
   event_type: "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
+  trek_category: string | null;
   trek_difficulty: string | null;
   trek_distance: string | null;
   altitude: string | null;
@@ -50,6 +51,8 @@ type Trek = {
   field_labels: Record<string, string> | null;
 };
 
+export const TREK_CATEGORIES = ["Monsoon/Waterfall Trek", "Himalayan Trek", "Winter Trek"] as const;
+
 type Stats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
 
 type Booking = any;
@@ -61,7 +64,7 @@ const empty: Partial<Trek> = {
   max_seats: 30,
   meeting_point: "", instructions: "", location: "",
   album_url: "", itinerary_url: "", itinerary_file_path: "", itinerary_days: [], event_type: "Hike",
-  trek_difficulty: "", trek_distance: "", altitude: "", region: "",
+  trek_category: "", trek_difficulty: "", trek_distance: "", altitude: "", region: "",
   elevation_gain: "", mountain_range: "", base_village: "",
   duration_text: "", stay_location: "", field_labels: {},
 };
@@ -401,6 +404,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
           .map((d) => ({ title: (d.title ?? "").trim(), description: (d.description ?? "").trim() }))
           .filter((d) => d.title || d.description),
         event_type: f.event_type || "Hike",
+        trek_category: f.trek_category?.trim() || null,
         trek_difficulty: f.trek_difficulty?.trim() || null,
         trek_distance: f.trek_distance?.trim() || null,
         altitude: f.altitude?.trim() || null,
@@ -450,7 +454,15 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
       <FF label="Trip name *" full><input className={inp} value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} required /></FF>
 
       {isOutstation ? (
-        <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
+        <>
+          <FF label="Trek Category">
+            <select className={inp} value={f.trek_category ?? ""} onChange={(e) => set({ trek_category: e.target.value })}>
+              <option value="">— none —</option>
+              {TREK_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </FF>
+          <FF label="Destination"><input className={inp} value={f.destination ?? ""} onChange={(e) => set({ destination: e.target.value })} placeholder="Bhongir, Telangana" /></FF>
+        </>
       ) : null}
 
       <FF label={isOutstation ? "Dates" : "Date *"} full>
