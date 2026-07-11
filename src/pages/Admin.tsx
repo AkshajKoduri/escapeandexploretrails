@@ -404,6 +404,7 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
           .map((d) => ({ title: (d.title ?? "").trim(), description: (d.description ?? "").trim() }))
           .filter((d) => d.title || d.description),
         event_type: f.event_type || "Hike",
+        trek_category: f.trek_category?.trim() || null,
         trek_difficulty: f.trek_difficulty?.trim() || null,
         trek_distance: f.trek_distance?.trim() || null,
         altitude: f.altitude?.trim() || null,
