@@ -332,6 +332,7 @@ export type Database = {
           stay_location: string | null
           top_end_price: number | null
           top_end_price_label: string | null
+          trek_category: string | null
           trek_date: string | null
           trek_difficulty: string | null
           trek_distance: string | null
@@ -374,6 +375,7 @@ export type Database = {
           stay_location?: string | null
           top_end_price?: number | null
           top_end_price_label?: string | null
+          trek_category?: string | null
           trek_date?: string | null
           trek_difficulty?: string | null
           trek_distance?: string | null
@@ -416,6 +418,7 @@ export type Database = {
           stay_location?: string | null
           top_end_price?: number | null
           top_end_price_label?: string | null
+          trek_category?: string | null
           trek_date?: string | null
           trek_difficulty?: string | null
           trek_distance?: string | null
