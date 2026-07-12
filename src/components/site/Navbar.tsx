@@ -129,13 +129,14 @@ export default function Navbar() {
                   </a>
                 )
               ))}
-              <Link
-                to="/booking"
+              <a
+                href="tel:+916303682022"
                 onClick={() => setOpen(false)}
-                className="mt-4 inline-flex justify-center px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold"
+                className="mt-4 inline-flex justify-center items-center gap-2 px-6 py-3 rounded-full border-2 border-primary text-primary font-semibold"
               >
-                Book a Trek
-              </Link>
+                <Phone className="w-4 h-4" />
+                +91 63036 82022
+              </a>
             </nav>
           </aside>
         </div>
