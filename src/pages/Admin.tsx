@@ -162,13 +162,14 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="trips" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 max-w-4xl">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-7 max-w-5xl">
               <TabsTrigger value="trips">Trips</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="callbacks">Callbacks</TabsTrigger>
               <TabsTrigger value="drafts">Drafts</TabsTrigger>
               <TabsTrigger value="gallery">Gallery</TabsTrigger>
               <TabsTrigger value="trail-log">Trail Log</TabsTrigger>
+              <TabsTrigger value="team">Team</TabsTrigger>
             </TabsList>
 
             <TabsContent value="trips" className="mt-6">
@@ -193,6 +194,10 @@ export default function Admin() {
 
             <TabsContent value="trail-log" className="mt-6">
               <TrailLogTab />
+            </TabsContent>
+
+            <TabsContent value="team" className="mt-6">
+              <TeamTab />
             </TabsContent>
           </Tabs>
         </div>
@@ -1661,4 +1666,295 @@ function TrailLogTab() {
     </div>
   );
 }
+
+/* ===================== Team Tab ===================== */
+
+type Badge = { icon?: string; label: string };
+type TeamMember = {
+  id: string;
+  full_name: string;
+  role_title: string;
+  bio: string;
+  photo_url: string | null;
+  badges: Badge[];
+  display_order: number;
+  is_founder: boolean;
+};
+
+function TeamTab() {
+  const [items, setItems] = useState<TeamMember[]>([]);
+  const [signed, setSigned] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<TeamMember | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const load = async () => {
+    try {
+      const res = await adminApi<{ data: TeamMember[] }>("listTeamMembers");
+      const rows = res?.data ?? [];
+      setItems(rows);
+      const paths = rows.map((r) => r.photo_url).filter(Boolean) as string[];
+      if (paths.length) {
+        const { data } = await supabase.storage.from("team-photos").createSignedUrls(paths, 60 * 60);
+        const map: Record<string, string> = {};
+        (data ?? []).forEach((s: any) => { if (s.path && s.signedUrl) map[s.path] = s.signedUrl; });
+        setSigned(map);
+      } else {
+        setSigned({});
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to load team");
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const onDelete = async (m: TeamMember) => {
+    if (m.is_founder) return toast.error("Founder cannot be deleted");
+    if (!confirm(`Delete ${m.full_name}?`)) return;
+    try {
+      await adminApi("deleteTeamMember", { id: m.id });
+      toast.success("Deleted");
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Delete failed");
+    }
+  };
+
+  const swap = async (i: number, j: number) => {
+    if (i < 0 || j < 0 || i >= items.length || j >= items.length) return;
+    const a = items[i], b = items[j];
+    if (a.is_founder || b.is_founder) return toast.error("Founder is locked to position 1");
+    try {
+      await adminApi("reorderTeamMembers", {
+        updates: [{ id: a.id, display_order: b.display_order }, { id: b.id, display_order: a.display_order }],
+      });
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Reorder failed");
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="font-heading font-bold text-lg text-primary">Team members ({items.length})</h2>
+        <button
+          onClick={() => setCreating(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-secondary transition"
+        >
+          <Plus className="w-4 h-4" /> Add team member
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No team members yet.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((m, idx) => (
+            <div key={m.id} className="rounded-xl border border-border bg-background overflow-hidden">
+              <div className="aspect-square bg-muted">
+                {m.photo_url && signed[m.photo_url] ? (
+                  <img src={signed[m.photo_url]} alt={m.full_name} className="w-full h-full object-cover object-top" />
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-muted-foreground text-xs">
+                    {m.is_founder ? "Founder photo (from app assets)" : "No photo"}
+                  </div>
+                )}
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-heading font-semibold text-primary text-sm">
+                      {m.full_name} {m.is_founder && <span className="text-xs text-accent">★ Founder</span>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{m.role_title}</div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">#{m.display_order}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => swap(idx, idx - 1)}
+                    disabled={idx === 0 || m.is_founder || items[idx - 1]?.is_founder}
+                    className="px-2 py-1 rounded text-xs border border-border hover:bg-muted disabled:opacity-40"
+                    title="Move up"
+                  >↑</button>
+                  <button
+                    onClick={() => swap(idx, idx + 1)}
+                    disabled={idx === items.length - 1 || m.is_founder}
+                    className="px-2 py-1 rounded text-xs border border-border hover:bg-muted disabled:opacity-40"
+                    title="Move down"
+                  >↓</button>
+                  <button
+                    onClick={() => setEditing(m)}
+                    className="ml-auto px-2 py-1 rounded text-xs border border-border hover:bg-muted inline-flex items-center gap-1"
+                  ><Pencil className="w-3 h-3" /> Edit</button>
+                  {!m.is_founder && (
+                    <button
+                      onClick={() => onDelete(m)}
+                      className="p-1.5 rounded text-destructive hover:bg-destructive/10"
+                      title="Delete"
+                    ><Trash2 className="w-3.5 h-3.5" /></button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(creating || editing) && (
+        <TeamMemberDialog
+          member={editing}
+          onClose={() => { setCreating(false); setEditing(null); }}
+          onSaved={async () => { setCreating(false); setEditing(null); await load(); }}
+          nextOrder={items.length ? Math.max(...items.map((i) => i.display_order)) + 1 : 2}
+        />
+      )}
+    </div>
+  );
+}
+
+function TeamMemberDialog({
+  member, onClose, onSaved, nextOrder,
+}: {
+  member: TeamMember | null;
+  onClose: () => void;
+  onSaved: () => void;
+  nextOrder: number;
+}) {
+  const isEdit = !!member;
+  const [fullName, setFullName] = useState(member?.full_name ?? "");
+  const [roleTitle, setRoleTitle] = useState(member?.role_title ?? "");
+  const [bio, setBio] = useState(member?.bio ?? "");
+  const [badges, setBadges] = useState<Badge[]>(
+    (member?.badges && member.badges.length ? member.badges : [{ icon: "", label: "" }]).slice(0, 3)
+  );
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const setBadgeAt = (i: number, patch: Partial<Badge>) => {
+    setBadges((b) => b.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
+  };
+  const addBadge = () => setBadges((b) => (b.length < 3 ? [...b, { icon: "", label: "" }] : b));
+  const removeBadge = (i: number) => setBadges((b) => b.filter((_, idx) => idx !== i));
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim() || !roleTitle.trim()) return toast.error("Name and role are required");
+    setSaving(true);
+    try {
+      let photo_url = member?.photo_url ?? null;
+      if (photoFile) {
+        const ext = photoFile.name.split(".").pop() || "jpg";
+        const path = `team/${crypto.randomUUID()}.${ext}`;
+        await adminUpload("team-photos", path, photoFile);
+        if (photo_url) { try { await adminRemove("team-photos", photo_url); } catch { /* ignore */ } }
+        photo_url = path;
+      }
+      const cleanBadges = badges
+        .map((b) => ({ icon: (b.icon || "").trim(), label: (b.label || "").trim() }))
+        .filter((b) => b.label)
+        .slice(0, 3);
+
+      if (isEdit) {
+        await adminApi("updateTeamMember", {
+          id: member!.id,
+          patch: { full_name: fullName.trim(), role_title: roleTitle.trim(), bio, photo_url, badges: cleanBadges },
+        });
+        toast.success("Updated");
+      } else {
+        await adminApi("insertTeamMember", {
+          row: {
+            full_name: fullName.trim(),
+            role_title: roleTitle.trim(),
+            bio,
+            photo_url,
+            badges: cleanBadges,
+            display_order: nextOrder,
+            is_founder: false,
+          },
+        });
+        toast.success("Added");
+      }
+      onSaved();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit team member" : "Add team member"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">Full Name *</label>
+              <input className={inp} value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">Role / Title *</label>
+              <input className={inp} value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="Trek Lead" required />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">Bio (1–2 paragraphs, blank line between)</label>
+            <textarea className={inp + " min-h-32"} value={bio} onChange={(e) => setBio(e.target.value)} rows={6} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">Photo</label>
+            <input type="file" accept="image/*" onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)} className="block text-sm" />
+            {member?.photo_url && !photoFile && (
+              <p className="text-xs text-muted-foreground mt-1">Existing photo will be kept unless replaced.</p>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-muted-foreground">Badges (up to 3)</label>
+              {badges.length < 3 && (
+                <button type="button" onClick={addBadge} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Add badge
+                </button>
+              )}
+            </div>
+            <div className="space-y-2 mt-1">
+              {badges.map((b, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    className={inp + " w-20"}
+                    placeholder="🧭"
+                    value={b.icon ?? ""}
+                    onChange={(e) => setBadgeAt(i, { icon: e.target.value })}
+                    maxLength={4}
+                  />
+                  <input
+                    className={inp + " flex-1"}
+                    placeholder="Lead Guide"
+                    value={b.label}
+                    onChange={(e) => setBadgeAt(i, { label: e.target.value })}
+                  />
+                  <button type="button" onClick={() => removeBadge(i)} className="p-1.5 rounded text-destructive hover:bg-destructive/10">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-full text-sm border border-border hover:bg-muted">Cancel</button>
+            <button type="submit" disabled={saving} className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-secondary transition disabled:opacity-60">
+              {saving ? "Saving…" : (isEdit ? "Save changes" : "Add member")}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 

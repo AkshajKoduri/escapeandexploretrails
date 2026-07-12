@@ -1,7 +1,66 @@
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import about from "@/assets/about.jpg";
 import founderAshok from "@/assets/founder-ashok.png";
+import { supabase } from "@/integrations/supabase/client";
+
+type Badge = { icon?: string; label: string };
+type TeamMember = {
+  id: string;
+  full_name: string;
+  role_title: string;
+  bio: string;
+  photo_url: string | null;
+  badges: Badge[];
+  display_order: number;
+  is_founder: boolean;
+};
 
 export default function About() {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [signed, setSigned] = useState<Record<string, string>>({});
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("team_members")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (cancelled) return;
+      const rows = (data ?? []) as any as TeamMember[];
+      // Ensure founder is always first
+      rows.sort((a, b) => {
+        if (a.is_founder && !b.is_founder) return -1;
+        if (!a.is_founder && b.is_founder) return 1;
+        return a.display_order - b.display_order;
+      });
+      setMembers(rows);
+
+      const paths = rows.map((r) => r.photo_url).filter(Boolean) as string[];
+      if (paths.length) {
+        const { data: s } = await supabase.storage.from("team-photos").createSignedUrls(paths, 60 * 60);
+        const map: Record<string, string> = {};
+        (s ?? []).forEach((it: any) => { if (it.path && it.signedUrl) map[it.path] = it.signedUrl; });
+        if (!cancelled) setSigned(map);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const current = members[index];
+  const total = members.length;
+  const prev = () => setIndex((i) => (total ? (i - 1 + total) % total : 0));
+  const next = () => setIndex((i) => (total ? (i + 1) % total : 0));
+
+  const photoSrc = useMemo(() => {
+    if (!current) return founderAshok;
+    if (current.photo_url && signed[current.photo_url]) return signed[current.photo_url];
+    if (current.is_founder) return founderAshok;
+    return "";
+  }, [current, signed]);
+
   return (
     <section id="about" className="py-24 md:py-32 bg-background">
       <div className="container grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -45,42 +104,91 @@ export default function About() {
         </div>
       </div>
 
-      <div className="container mt-20 md:mt-28">
-        <div className="reveal max-w-5xl mx-auto bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center">
-          <div className="relative mx-auto md:mx-0">
-            <div className="absolute -inset-3 bg-gradient-orange rounded-full opacity-25 blur-2xl" />
-            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden ring-4 ring-accent/30 shadow-trail">
-              <img
-                src={founderAshok}
-                alt="Ashok, founder and lead trek guide of E2 Trails"
-                loading="lazy"
-                className="w-full h-full object-cover object-top"
-              />
-            </div>
-          </div>
+      {/* ============ Team Carousel ============ */}
+      {current && (
+        <div className="container mt-20 md:mt-28">
+          <div className="reveal max-w-5xl mx-auto relative">
+            {total > 1 && (
+              <>
+                <button
+                  onClick={prev}
+                  aria-label="Previous team member"
+                  className="absolute left-0 md:-left-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={next}
+                  aria-label="Next team member"
+                  className="absolute right-0 md:-right-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
 
-          <div>
-            <span className="font-script text-accent text-xl">— Meet our founder</span>
-            <h3 className="font-heading font-extrabold text-2xl md:text-4xl mt-2 leading-tight text-primary">
-              Ashok — Founder & Lead Trek Guide
-            </h3>
-            <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
-              Ashok is the heart and soul of E2 Trails. An experienced trek leader, he has guided countless safe and secure expeditions across India — earning the trust of adventurers from all walks of life.
-            </p>
-            <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed">
-              He once built a successful career in the software industry, but his unwavering love for the outdoors pulled him toward the trails. Choosing passion over a desk job, Ashok resigned to dedicate himself fully to trekking and to mentoring young adventurers — sharing not just routes, but a way of life rooted in nature, safety, and camaraderie.
-            </p>
+            <div
+              key={current.id}
+              className="bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center animate-in fade-in duration-500 mx-6 md:mx-10"
+            >
+              <div className="relative mx-auto md:mx-0">
+                <div className="absolute -inset-3 bg-gradient-orange rounded-full opacity-25 blur-2xl" />
+                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden ring-4 ring-accent/30 shadow-trail bg-muted">
+                  {photoSrc ? (
+                    <img
+                      src={photoSrc}
+                      alt={`${current.full_name}, ${current.role_title} at E2 Trails`}
+                      loading="lazy"
+                      className="w-full h-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center text-muted-foreground text-sm">
+                      {current.full_name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              {["🧭 Lead Guide", "🛡️ Safety Certified", "💚 Mentor to Young Trekkers"].map((p) => (
-                <span key={p} className="px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold text-sm border border-accent">
-                  {p}
+              <div>
+                <span className="font-script text-accent text-xl">
+                  — Meet our {current.is_founder ? "founder" : current.role_title.toLowerCase()}
                 </span>
-              ))}
+                <h3 className="font-heading font-extrabold text-2xl md:text-4xl mt-2 leading-tight text-primary">
+                  {current.full_name} — {current.role_title}
+                </h3>
+                {current.bio.split(/\n\s*\n/).map((para, i) => (
+                  <p key={i} className={`${i === 0 ? "mt-6" : "mt-4"} text-base md:text-lg text-muted-foreground leading-relaxed whitespace-pre-line`}>
+                    {para}
+                  </p>
+                ))}
+
+                {current.badges?.length > 0 && (
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    {current.badges.slice(0, 3).map((b, i) => (
+                      <span key={i} className="px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold text-sm border border-accent">
+                        {b.icon ? `${b.icon} ` : ""}{b.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {total > 1 && (
+              <div className="mt-6 flex justify-center gap-2">
+                {members.map((m, i) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setIndex(i)}
+                    aria-label={`Show ${m.full_name}`}
+                    className={`h-2 rounded-full transition-all ${i === index ? "w-8 bg-primary" : "w-2 bg-primary/30"}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

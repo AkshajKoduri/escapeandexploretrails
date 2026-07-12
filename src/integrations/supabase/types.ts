@@ -229,6 +229,45 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          badges: Json
+          bio: string
+          created_at: string
+          display_order: number
+          full_name: string
+          id: string
+          is_founder: boolean
+          photo_url: string | null
+          role_title: string
+          updated_at: string
+        }
+        Insert: {
+          badges?: Json
+          bio?: string
+          created_at?: string
+          display_order?: number
+          full_name: string
+          id?: string
+          is_founder?: boolean
+          photo_url?: string | null
+          role_title: string
+          updated_at?: string
+        }
+        Update: {
+          badges?: Json
+          bio?: string
+          created_at?: string
+          display_order?: number
+          full_name?: string
+          id?: string
+          is_founder?: boolean
+          photo_url?: string | null
+          role_title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trail_log: {
         Row: {
           category: string

@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
       case "uploadFile": {
         const { bucket, path, base64, contentType, upsert = false } = payload;
         if (!bucket || !path || !base64) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs"].includes(bucket)) {
+        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs", "team-photos"].includes(bucket)) {
           return json({ error: "Bucket not allowed" }, 400);
         }
         const bytes = b64ToBytes(base64);
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       case "removeFile": {
         const { bucket, path } = payload;
         if (!bucket || !path) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs"].includes(bucket)) {
+        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs", "team-photos"].includes(bucket)) {
           return json({ error: "Bucket not allowed" }, 400);
         }
         const { error } = await supabase.storage.from(bucket).remove([path]);
@@ -244,6 +244,57 @@ Deno.serve(async (req) => {
         }
         const { error } = await supabase.from("trail_log").delete().eq("id", id);
         if (error) throw error;
+        return json({ ok: true });
+      }
+
+      // ---- Team Members ----
+      case "listTeamMembers": {
+        const { data, error } = await supabase
+          .from("team_members")
+          .select("*")
+          .order("display_order", { ascending: true });
+        if (error) throw error;
+        return json({ data });
+      }
+      case "insertTeamMember": {
+        const { row } = payload;
+        if (!row?.full_name || !row?.role_title) return json({ error: "Missing required fields" }, 400);
+        const { data, error } = await supabase.from("team_members").insert(row).select().single();
+        if (error) throw error;
+        return json({ data });
+      }
+      case "updateTeamMember": {
+        const { id, patch } = payload;
+        // Prevent unlocking / removing founder flag on the seeded founder
+        const safePatch = { ...patch };
+        delete safePatch.is_founder;
+        const { error } = await supabase.from("team_members").update(safePatch).eq("id", id);
+        if (error) throw error;
+        return json({ ok: true });
+      }
+      case "deleteTeamMember": {
+        const { id } = payload;
+        const { data: existing, error: fetchErr } = await supabase
+          .from("team_members").select("is_founder, photo_url").eq("id", id).maybeSingle();
+        if (fetchErr) throw fetchErr;
+        if (existing?.is_founder) return json({ error: "Cannot delete the founder" }, 400);
+        if (existing?.photo_url) {
+          try { await supabase.storage.from("team-photos").remove([existing.photo_url]); } catch { /* ignore */ }
+        }
+        const { error } = await supabase.from("team_members").delete().eq("id", id);
+        if (error) throw error;
+        return json({ ok: true });
+      }
+      case "reorderTeamMembers": {
+        const { updates } = payload;
+        if (!Array.isArray(updates)) return json({ error: "updates must be array" }, 400);
+        for (const u of updates) {
+          const { error } = await supabase
+            .from("team_members")
+            .update({ display_order: u.display_order })
+            .eq("id", u.id);
+          if (error) throw error;
+        }
         return json({ ok: true });
       }
 
