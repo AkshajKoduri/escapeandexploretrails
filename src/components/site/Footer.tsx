@@ -102,10 +102,14 @@ export default function Footer() {
           <h4 className="font-heading font-bold text-lg mb-4 uppercase tracking-wider">Quick Links</h4>
           <ul className="space-y-2">
             {links.map((l) => (
-              <li key={l.href}>
-                <a href={l.href} className="text-charcoal-foreground/70 hover:text-accent transition-colors">
-                  {l.label}
-                </a>
+              <li key={l.label}>
+                {l.dropdown ? (
+                  <ExploreAdventuresFooter />
+                ) : (
+                  <a href={l.href} className="text-charcoal-foreground/70 hover:text-accent transition-colors">
+                    {l.label}
+                  </a>
+                )}
               </li>
             ))}
           </ul>
