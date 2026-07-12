@@ -108,28 +108,28 @@ export default function About() {
       {current && (
         <div className="container mt-20 md:mt-28">
           <div className="max-w-5xl mx-auto relative">
+            {total > 1 && index > 0 && (
+              <button
+                onClick={prev}
+                aria-label="Previous team member"
+                className="absolute left-0 md:-left-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
             {total > 1 && (
-              <>
-                <button
-                  onClick={prev}
-                  aria-label="Previous team member"
-                  className="absolute left-0 md:-left-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={next}
-                  aria-label="Next team member"
-                  className="absolute right-0 md:-right-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </>
+              <button
+                onClick={next}
+                aria-label="Next team member"
+                className="absolute right-0 md:-right-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             )}
 
             <div
               key={current.id}
-              className="bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center animate-in fade-in duration-500 mx-6 md:mx-10"
+              className="bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center animate-in fade-in duration-500"
             >
               <div className="relative mx-auto md:mx-0">
                 <div className="absolute -inset-3 bg-gradient-orange rounded-full opacity-25 blur-2xl" />
