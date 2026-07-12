@@ -70,7 +70,7 @@ function ExploreAdventuresFooter() {
 const thumbs = [g1, g2, g3, g4, g5, g7];
 const links = [
   { label: "Home", href: "#home" },
-  { label: "Upcoming Treks", href: "#treks" },
+  { label: "Explore Adventures", href: "#", dropdown: true },
   { label: "About", href: "#about" },
   { label: "Gallery", href: "#gallery" },
   { label: "Contact", href: "#contact" },
