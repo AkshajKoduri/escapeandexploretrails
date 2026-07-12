@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
       case "uploadFile": {
         const { bucket, path, base64, contentType, upsert = false } = payload;
         if (!bucket || !path || !base64) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs"].includes(bucket)) {
+        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs", "team-photos"].includes(bucket)) {
           return json({ error: "Bucket not allowed" }, 400);
         }
         const bytes = b64ToBytes(base64);
