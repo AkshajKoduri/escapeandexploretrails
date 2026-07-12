@@ -28,36 +28,37 @@ function ExploreAdventuresFooter() {
   }, [open]);
 
   return (
-    <div
-      ref={ref}
-      className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="text-charcoal-foreground/70 hover:text-accent transition-colors inline-flex items-center gap-1"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="text-charcoal-foreground/70 hover:text-accent transition-colors inline-flex items-center gap-1 min-h-[44px]"
       >
         Explore Adventures
         <span className={cn("text-xs transition-transform duration-200", open && "rotate-180")}>▾</span>
       </button>
       <div
+        role="menu"
         className={cn(
-          "absolute top-full left-0 mt-2 min-w-[11rem] rounded-lg border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
+          "absolute top-full left-0 mt-2 min-w-[12rem] rounded-lg border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
           open ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
         )}
       >
         <Link
           to="/hyderabad-trails"
-          className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          role="menuitem"
+          className="flex items-center min-h-[44px] px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
           onClick={() => setOpen(false)}
         >
           Hyderabad Trails
         </Link>
+        <div className="h-px bg-white/10" />
         <Link
           to="/upcoming-treks"
-          className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          role="menuitem"
+          className="flex items-center min-h-[44px] px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
           onClick={() => setOpen(false)}
         >
           Outstation Treks
@@ -66,6 +67,7 @@ function ExploreAdventuresFooter() {
     </div>
   );
 }
+
 
 const thumbs = [g1, g2, g3, g4, g5, g7];
 const links = [

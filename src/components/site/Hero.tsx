@@ -21,36 +21,37 @@ function ExploreAdventuresDropdown() {
   }, [open]);
 
   return (
-    <div
-      ref={ref}
-      className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="px-8 py-4 rounded-full bg-gradient-orange text-accent-foreground font-semibold tracking-wide shadow-glow hover:scale-105 transition-transform inline-flex items-center justify-center gap-2"
       >
         Explore Adventures
         <span className={cn("text-sm transition-transform duration-200", open && "rotate-180")}>▾</span>
       </button>
       <div
+        role="menu"
         className={cn(
-          "absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-[13rem] rounded-xl border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
+          "absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-[14rem] rounded-xl border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
           open ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
         )}
       >
         <Link
           to="/hyderabad-trails"
-          className="block px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          role="menuitem"
+          className="flex items-center min-h-[44px] px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
           onClick={() => setOpen(false)}
         >
           Hyderabad Trails
         </Link>
+        <div className="h-px bg-white/10" />
         <Link
           to="/upcoming-treks"
-          className="block px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          role="menuitem"
+          className="flex items-center min-h-[44px] px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
           onClick={() => setOpen(false)}
         >
           Outstation Treks
@@ -59,6 +60,7 @@ function ExploreAdventuresDropdown() {
     </div>
   );
 }
+
 
 const FULL = "Where Every Trail Tells a Story";
 
