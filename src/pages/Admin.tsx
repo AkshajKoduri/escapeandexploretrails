@@ -595,84 +595,83 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
 
 
       {isOutstation && (
-        <>
-          <FF label="Photo album link (Google Drive / any URL)" full>
-            <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
-          </FF>
+        <FF label="Photo album link (Google Drive / any URL)" full>
+          <input type="url" className={inp} value={f.album_url ?? ""} onChange={(e) => set({ album_url: e.target.value })} placeholder="https://drive.google.com/drive/folders/..." />
+        </FF>
+      )}
 
-          <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-              <FileText className="w-4 h-4" /> Itinerary (shown on the booking page)
-            </div>
-            <FF label="Itinerary link (optional)" full>
-              <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
-            </FF>
-            <div>
-              <label className="block text-xs font-semibold mb-2 text-muted-foreground">Day-wise itinerary (structured)</label>
-              <div className="space-y-3">
-                {(f.itinerary_days ?? []).map((day, idx) => (
-                  <div key={idx} className="rounded-lg border border-border bg-background p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-muted-foreground">Day {idx + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => set({ itinerary_days: (f.itinerary_days ?? []).filter((_, i) => i !== idx) })}
-                        className="ml-auto text-xs text-destructive hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      className={inp}
-                      placeholder="Day title (e.g. Day 1: Arrival & Trek Start)"
-                      value={day.title}
-                      onChange={(e) => {
-                        const next = [...(f.itinerary_days ?? [])];
-                        next[idx] = { ...next[idx], title: e.target.value };
-                        set({ itinerary_days: next });
-                      }}
-                    />
-                    <textarea
-                      className={`${inp} min-h-[80px]`}
-                      placeholder="Day description"
-                      value={day.description}
-                      onChange={(e) => {
-                        const next = [...(f.itinerary_days ?? [])];
-                        next[idx] = { ...next[idx], description: e.target.value };
-                        set({ itinerary_days: next });
-                      }}
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => set({ itinerary_days: [...(f.itinerary_days ?? []), { title: "", description: "" }] })}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border text-sm font-semibold hover:bg-muted"
-                >
-                  <Plus className="w-4 h-4" /> Add day
-                </button>
-              </div>
-            </div>
-
-            <FF label="Optional: upload a PDF fallback (max 10MB)" full>
-              <input
-                type="file" accept="application/pdf"
-                onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent file:text-accent-foreground file:font-semibold hover:file:bg-gold"
-              />
-              {f.itinerary_file_path && !itineraryFile && (
-                <div className="mt-2 flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground truncate flex-1">📄 Current: {f.itinerary_file_path.split("/").pop()}</span>
-                  <button type="button" onClick={removeItineraryFile} className="px-2 py-1 rounded-md text-destructive hover:bg-destructive/10">
+      <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+          <FileText className="w-4 h-4" /> Itinerary (shown on the booking page)
+        </div>
+        <FF label="Itinerary link (optional)" full>
+          <input type="url" className={inp} value={f.itinerary_url ?? ""} onChange={(e) => set({ itinerary_url: e.target.value })} placeholder="https://drive.google.com/file/d/..." />
+        </FF>
+        <div>
+          <label className="block text-xs font-semibold mb-2 text-muted-foreground">Day-wise itinerary (structured)</label>
+          <div className="space-y-3">
+            {(f.itinerary_days ?? []).map((day, idx) => (
+              <div key={idx} className="rounded-lg border border-border bg-background p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground">Day {idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => set({ itinerary_days: (f.itinerary_days ?? []).filter((_, i) => i !== idx) })}
+                    className="ml-auto text-xs text-destructive hover:underline"
+                  >
                     Remove
                   </button>
                 </div>
-              )}
-            </FF>
+                <input
+                  type="text"
+                  className={inp}
+                  placeholder="Day title (e.g. Day 1: Arrival & Trek Start)"
+                  value={day.title}
+                  onChange={(e) => {
+                    const next = [...(f.itinerary_days ?? [])];
+                    next[idx] = { ...next[idx], title: e.target.value };
+                    set({ itinerary_days: next });
+                  }}
+                />
+                <textarea
+                  className={`${inp} min-h-[80px]`}
+                  placeholder="Day description"
+                  value={day.description}
+                  onChange={(e) => {
+                    const next = [...(f.itinerary_days ?? [])];
+                    next[idx] = { ...next[idx], description: e.target.value };
+                    set({ itinerary_days: next });
+                  }}
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => set({ itinerary_days: [...(f.itinerary_days ?? []), { title: "", description: "" }] })}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border text-sm font-semibold hover:bg-muted"
+            >
+              <Plus className="w-4 h-4" /> Add day
+            </button>
           </div>
-        </>
-      )}
+        </div>
+
+        <FF label="Optional: upload a PDF fallback (max 10MB)" full>
+          <input
+            type="file" accept="application/pdf"
+            onChange={(e) => setItineraryFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent file:text-accent-foreground file:font-semibold hover:file:bg-gold"
+          />
+          {f.itinerary_file_path && !itineraryFile && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground truncate flex-1">📄 Current: {f.itinerary_file_path.split("/").pop()}</span>
+              <button type="button" onClick={removeItineraryFile} className="px-2 py-1 rounded-md text-destructive hover:bg-destructive/10">
+                Remove
+              </button>
+            </div>
+          )}
+        </FF>
+      </div>
+
 
       <FF label="Cover image (optional)" full>
         <input
