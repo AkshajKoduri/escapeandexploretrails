@@ -50,7 +50,7 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export type AdminBucket = "trek-images" | "itineraries" | "gallery-images" | "trail-log-pdfs";
+export type AdminBucket = "trek-images" | "itineraries" | "gallery-images" | "trail-log-pdfs" | "team-photos";
 
 export async function adminUpload(
   bucket: AdminBucket,
