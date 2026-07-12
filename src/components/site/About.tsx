@@ -112,7 +112,7 @@ export default function About() {
               <button
                 onClick={prev}
                 aria-label="Previous team member"
-                className="absolute left-3 md:-left-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg grid place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+                className="hidden md:grid absolute left-3 md:-left-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
               >
                 <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
               </button>
@@ -121,7 +121,7 @@ export default function About() {
               <button
                 onClick={next}
                 aria-label="Next team member"
-                className="absolute right-3 md:-right-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg grid place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+                className="hidden md:grid absolute right-3 md:-right-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
               >
                 <ChevronRight className="w-6 h-6" strokeWidth={2.5} />
               </button>
@@ -129,7 +129,15 @@ export default function About() {
 
             <div
               key={current.id}
-              className="bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center animate-in fade-in duration-500"
+              onTouchStart={(e) => { (window as any).__teamTouchX = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                const startX = (window as any).__teamTouchX;
+                if (typeof startX !== "number") return;
+                const dx = e.changedTouches[0].clientX - startX;
+                if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+                (window as any).__teamTouchX = undefined;
+              }}
+              className="bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center animate-in fade-in duration-500 touch-pan-y select-none"
             >
               <div className="relative mx-auto md:mx-0">
                 <div className="absolute -inset-3 bg-gradient-orange rounded-full opacity-25 blur-2xl" />
