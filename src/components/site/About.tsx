@@ -112,18 +112,18 @@ export default function About() {
               <button
                 onClick={prev}
                 aria-label="Previous team member"
-                className="absolute left-0 md:-left-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
+                className="absolute left-3 md:-left-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg grid place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
               </button>
             )}
             {total > 1 && (
               <button
                 onClick={next}
                 aria-label="Next team member"
-                className="absolute right-0 md:-right-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 md:w-12 md:h-12 rounded-full bg-primary text-primary-foreground shadow-card grid place-items-center hover:bg-secondary transition"
+                className="absolute right-3 md:-right-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg grid place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-6 h-6" strokeWidth={2.5} />
               </button>
             )}
 
