@@ -75,7 +75,11 @@ export default function Navbar() {
         <div className="hidden lg:flex items-center gap-3">
           <a
             href="tel:+916303682022"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-white transition-colors"
+            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border-2 font-semibold text-sm transition-colors ${
+              solid
+                ? "border-primary text-primary hover:bg-primary hover:text-white"
+                : "border-white text-white hover:bg-white hover:text-charcoal"
+            }`}
           >
             <Phone className="w-4 h-4" />
             +91 63036 82022
