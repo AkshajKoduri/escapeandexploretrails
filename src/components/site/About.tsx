@@ -107,7 +107,7 @@ export default function About() {
       {/* ============ Team Carousel ============ */}
       {current && (
         <div className="container mt-20 md:mt-28">
-          <div className="reveal max-w-5xl mx-auto relative">
+          <div className="max-w-5xl mx-auto relative">
             {total > 1 && (
               <>
                 <button
