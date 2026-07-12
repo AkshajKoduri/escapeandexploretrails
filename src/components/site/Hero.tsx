@@ -113,10 +113,6 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-hero" />
 
       <div className="relative z-10 h-full container flex flex-col items-center justify-center text-center text-charcoal-foreground">
-        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-charcoal-foreground/30 bg-black/20 backdrop-blur-sm text-xs md:text-sm tracking-[0.2em] uppercase mb-6 reveal">
-          🥾 BASED IN HYDERABAD · EXPLORING INDIA!
-        </span>
-
         <h1 className="sr-only">Where Every Trail Tells a Story</h1>
 
         <h1 aria-hidden="true" className="font-heading font-black text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05] max-w-5xl text-shadow-strong">
