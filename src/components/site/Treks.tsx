@@ -144,7 +144,7 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
   useEffect(() => {
     load();
     const ch = supabase
-      .channel("treks-public")
+      .channel(`treks-public-${mode}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "upcoming_treks" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, load)
       .subscribe();
