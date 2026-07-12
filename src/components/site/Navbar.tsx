@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Phone } from "lucide-react";
 
 import logo from "@/assets/logo.png";
 
@@ -73,12 +73,13 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          <Link
-            to="/booking"
-            className="inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-orange text-accent-foreground font-semibold text-sm shadow-glow hover:scale-105 transition-transform"
+          <a
+            href="tel:+916303682022"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-white transition-colors"
           >
-            Book a Trek
-          </Link>
+            <Phone className="w-4 h-4" />
+            +91 63036 82022
+          </a>
         </div>
 
         <button
@@ -128,13 +129,14 @@ export default function Navbar() {
                   </a>
                 )
               ))}
-              <Link
-                to="/booking"
+              <a
+                href="tel:+916303682022"
                 onClick={() => setOpen(false)}
-                className="mt-4 inline-flex justify-center px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold"
+                className="mt-4 inline-flex justify-center items-center gap-2 px-6 py-3 rounded-full border-2 border-primary text-primary font-semibold"
               >
-                Book a Trek
-              </Link>
+                <Phone className="w-4 h-4" />
+                +91 63036 82022
+              </a>
             </nav>
           </aside>
         </div>
