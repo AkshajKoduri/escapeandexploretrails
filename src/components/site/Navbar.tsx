@@ -136,7 +136,11 @@ export default function Navbar() {
               <a
                 href="tel:+916303682022"
                 onClick={() => setOpen(false)}
-                className="mt-4 inline-flex justify-center items-center gap-2 px-6 py-3 rounded-full border-2 border-primary text-primary font-semibold"
+                className={`mt-4 inline-flex justify-center items-center gap-2 px-6 py-3 rounded-full border-2 font-semibold ${
+                  solid
+                    ? "border-primary text-primary hover:bg-primary hover:text-white"
+                    : "border-white text-white hover:bg-white hover:text-charcoal"
+                }`}
               >
                 <Phone className="w-4 h-4" />
                 +91 63036 82022
