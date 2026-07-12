@@ -127,12 +127,7 @@ export default function Hero() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 reveal">
-          <a
-            href="#treks"
-            className="px-8 py-4 rounded-full bg-gradient-orange text-accent-foreground font-semibold tracking-wide shadow-glow hover:scale-105 transition-transform"
-          >
-            Explore Upcoming Treks
-          </a>
+          <ExploreAdventuresDropdown />
           <a
             href="#about"
             className="px-8 py-4 rounded-full border-2 border-charcoal-foreground/80 text-charcoal-foreground font-semibold tracking-wide hover:bg-charcoal-foreground hover:text-charcoal transition-colors"
