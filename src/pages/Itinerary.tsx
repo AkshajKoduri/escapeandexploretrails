@@ -75,26 +75,27 @@ export default function Itinerary() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+      <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-card">
         <div className="container flex items-center justify-between gap-3 py-3">
           <Link
             to="/#treks"
-            className="inline-flex items-center gap-2 h-11 px-3 rounded-full text-sm font-semibold text-primary hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 text-sm font-semibold text-primary-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <h1 className="font-heading font-bold text-base sm:text-lg text-primary truncate">
+          <h1 className="font-heading font-bold text-base sm:text-lg text-primary-foreground truncate">
             {trek?.name ?? "Itinerary"}
           </h1>
           <button
             type="button"
             onClick={share}
-            className="inline-flex items-center gap-2 h-11 px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
+            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
           >
             <Share2 className="w-4 h-4" /> Share
           </button>
         </div>
       </header>
+
 
       <main className="container py-8 max-w-4xl">
         {loading ? (
