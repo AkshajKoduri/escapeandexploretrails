@@ -298,6 +298,7 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
 
+      default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }
   } catch (err: any) {
