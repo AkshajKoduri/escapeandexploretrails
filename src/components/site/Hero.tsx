@@ -1,6 +1,64 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import hero from "@/assets/hero.jpg";
+
+function ExploreAdventuresDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener("mousedown", handleClick);
+    }
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="px-8 py-4 rounded-full bg-gradient-orange text-accent-foreground font-semibold tracking-wide shadow-glow hover:scale-105 transition-transform inline-flex items-center justify-center gap-2"
+      >
+        Explore Adventures
+        <span className={cn("text-sm transition-transform duration-200", open && "rotate-180")}>▾</span>
+      </button>
+      <div
+        className={cn(
+          "absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-[13rem] rounded-xl border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
+          open ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
+        )}
+      >
+        <Link
+          to="/hyderabad-trails"
+          className="block px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          onClick={() => setOpen(false)}
+        >
+          Hyderabad Trails
+        </Link>
+        <Link
+          to="/upcoming-treks"
+          className="block px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          onClick={() => setOpen(false)}
+        >
+          Outstation Treks
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 const FULL = "Where Every Trail Tells a Story";
 
