@@ -4,8 +4,6 @@ import Hero from "@/components/site/Hero";
 import About from "@/components/site/About";
 import Stats from "@/components/site/Stats";
 import Treks from "@/components/site/Treks";
-import Experiences from "@/components/site/Experiences";
-import Community from "@/components/site/Community";
 import Gallery from "@/components/site/Gallery";
 import TrailLogPreview from "@/components/site/TrailLogPreview";
 
@@ -40,10 +38,7 @@ const Index = () => {
       <Treks mode="outstation" preview />
       <Treks mode="hyderabad" preview />
       <TrailLogPreview />
-      <Experiences />
-      <Community />
       <Gallery />
-      
       <WhyUs />
       <Contact />
       <Footer />
