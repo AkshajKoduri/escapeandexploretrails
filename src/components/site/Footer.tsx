@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Instagram } from "lucide-react";
+import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import g1 from "@/assets/gallery-1.jpg";
 import g2 from "@/assets/gallery-2.jpg";
@@ -8,10 +11,66 @@ import g5 from "@/assets/gallery-5.jpg";
 import g6 from "@/assets/gallery-6.jpg";
 import g7 from "@/assets/gallery-7.jpg";
 
+function ExploreAdventuresFooter() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener("mousedown", handleClick);
+    }
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-charcoal-foreground/70 hover:text-accent transition-colors inline-flex items-center gap-1"
+      >
+        Explore Adventures
+        <span className={cn("text-xs transition-transform duration-200", open && "rotate-180")}>▾</span>
+      </button>
+      <div
+        className={cn(
+          "absolute top-full left-0 mt-2 min-w-[11rem] rounded-lg border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
+          open ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
+        )}
+      >
+        <Link
+          to="/hyderabad-trails"
+          className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          onClick={() => setOpen(false)}
+        >
+          Hyderabad Trails
+        </Link>
+        <Link
+          to="/upcoming-treks"
+          className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          onClick={() => setOpen(false)}
+        >
+          Outstation Treks
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 const thumbs = [g1, g2, g3, g4, g5, g7];
 const links = [
   { label: "Home", href: "#home" },
-  { label: "Upcoming Treks", href: "#treks" },
+  { label: "Explore Adventures", href: "#", dropdown: true },
   { label: "About", href: "#about" },
   { label: "Gallery", href: "#gallery" },
   { label: "Contact", href: "#contact" },
@@ -43,10 +102,14 @@ export default function Footer() {
           <h4 className="font-heading font-bold text-lg mb-4 uppercase tracking-wider">Quick Links</h4>
           <ul className="space-y-2">
             {links.map((l) => (
-              <li key={l.href}>
-                <a href={l.href} className="text-charcoal-foreground/70 hover:text-accent transition-colors">
-                  {l.label}
-                </a>
+              <li key={l.label}>
+                {l.dropdown ? (
+                  <ExploreAdventuresFooter />
+                ) : (
+                  <a href={l.href} className="text-charcoal-foreground/70 hover:text-accent transition-colors">
+                    {l.label}
+                  </a>
+                )}
               </li>
             ))}
           </ul>
