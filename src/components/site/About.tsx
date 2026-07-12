@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import about from "@/assets/about.jpg";
 import founderAshok from "@/assets/founder-ashok.png";
@@ -20,6 +20,8 @@ export default function About() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [signed, setSigned] = useState<Record<string, string>>({});
   const [index, setIndex] = useState(0);
+  const [hasNudged, setHasNudged] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +51,27 @@ export default function About() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (members.length <= 1 || hasNudged) return;
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && window.innerWidth < 768) {
+            setHasNudged(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { threshold: 0.25 }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [members.length, hasNudged]);
+
   const current = members[index];
   const total = members.length;
   const prev = () => setIndex((i) => (total ? (i - 1 + total) % total : 0));
@@ -61,148 +84,204 @@ export default function About() {
     return "";
   }, [current, signed]);
 
-  return (
-    <section id="about" className="py-24 md:py-32 bg-background">
-      <div className="container grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-        <div className="reveal-left relative">
-          <div className="absolute -inset-4 bg-gradient-orange rounded-2xl opacity-20 blur-2xl" />
-          <div className="relative overflow-hidden rounded-2xl shadow-trail">
-            <img
-              src={about}
-              alt="Trekkers laughing on a forest trail"
-              loading="lazy"
-              width={1280}
-              height={1280}
-              className="w-full h-[500px] object-cover hover:scale-105 transition-transform duration-700"
-              style={{ filter: "saturate(1.05) contrast(1.05)" }}
-            />
-          </div>
-          <div className="absolute -bottom-6 -right-6 bg-accent text-accent-foreground px-6 py-4 rounded-xl font-heading font-bold shadow-card hidden md:block">
-            Since Day One
+  const renderTeamCard = (member: TeamMember) => {
+    const src = member.photo_url && signed[member.photo_url]
+      ? signed[member.photo_url]
+      : member.is_founder
+        ? founderAshok
+        : "";
+
+    return (
+      <div
+        onTouchStart={(e) => { (window as any).__teamTouchX = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          const startX = (window as any).__teamTouchX;
+          if (typeof startX !== "number") return;
+          const dx = e.changedTouches[0].clientX - startX;
+          if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+          (window as any).__teamTouchX = undefined;
+        }}
+        className="bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center animate-in fade-in duration-500 touch-pan-y select-none"
+      >
+        <div className="relative mx-auto md:mx-0">
+          <div className="absolute -inset-3 bg-gradient-orange rounded-full opacity-25 blur-2xl" />
+          <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden ring-4 ring-accent/30 shadow-trail bg-muted">
+            {src ? (
+              <img
+                src={src}
+                alt={`${member.full_name}, ${member.role_title} at E2 Trails`}
+                loading="lazy"
+                className="w-full h-full object-cover object-top"
+              />
+            ) : (
+              <div className="w-full h-full grid place-items-center text-muted-foreground text-sm">
+                {member.full_name.charAt(0)}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="reveal-right">
-          <span className="font-script text-accent text-xl">— Our story</span>
-          <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 leading-tight text-primary">
-            From One Climb to a Community
-          </h2>
-          <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
-            E2 Trails was born on a trail — not in a boardroom. On one of my first climbs, legs burning and lungs struggling, it wasn't the view that kept me going. It was the people beside me — strangers who cheered, encouraged and refused to let me quit. That moment made one thing clear: the right community can make you capable of things you never imagined.
-          </p>
-          <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed">
-            So we built one. E2 Trails started in Hyderabad as a weekend escape for people who wanted more than a desk and a screen. Two years and hundreds of adventurers later, it has grown into something far bigger — a tribe of cyclists, hikers and explorers who show up every weekend not just for the trail, but for each other. Whether you're stepping onto your first trail or chasing your next summit — you belong here.
-          </p>
+        <div>
+          <span className="font-script text-accent text-xl">
+            — Meet our {member.is_founder ? "founder" : member.role_title.toLowerCase()}
+          </span>
+          <h3 className="font-heading font-extrabold text-2xl md:text-4xl mt-2 leading-tight text-primary">
+            {member.full_name} — {member.role_title}
+          </h3>
+          {member.bio.split(/\n\s*\n/).map((para, i) => (
+            <p key={i} className={`${i === 0 ? "mt-6" : "mt-4"} text-base md:text-lg text-muted-foreground leading-relaxed whitespace-pre-line`}>
+              {para}
+            </p>
+          ))}
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            {["✅ Safety First", "🌱 Eco-Conscious", "🤝 Community Driven"].map((p) => (
-              <span key={p} className="px-5 py-2.5 rounded-full bg-primary/10 text-primary font-semibold text-sm border border-primary/20">
-                {p}
-              </span>
-            ))}
-          </div>
+          {member.badges?.length > 0 && (
+            <div className="mt-6 flex flex-wrap gap-3">
+              {member.badges.slice(0, 3).map((b, i) => (
+                <span key={i} className="px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold text-sm border border-accent">
+                  {b.icon ? `${b.icon} ` : ""}{b.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+    );
+  };
 
-      {/* ============ Team Carousel ============ */}
-      {current && (
-        <div className="container mt-20 md:mt-28">
-          <div className="text-center mb-10 md:mb-14">
-            <span className="font-script text-accent text-xl">— The people behind E2 Trails</span>
-            <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 leading-tight text-primary">
-              Our Team
-            </h2>
-          </div>
-          <div className="max-w-5xl mx-auto relative">
-            {total > 1 && index > 0 && (
-              <button
-                onClick={prev}
-                aria-label="Previous team member"
-                className="hidden md:grid absolute left-3 md:-left-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
-              >
-                <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
-              </button>
-            )}
-            {total > 1 && (
-              <button
-                onClick={next}
-                aria-label="Next team member"
-                className="hidden md:grid absolute right-3 md:-right-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
-              >
-                <ChevronRight className="w-6 h-6" strokeWidth={2.5} />
-              </button>
-            )}
-
-            <div
-              key={current.id}
-              onTouchStart={(e) => { (window as any).__teamTouchX = e.touches[0].clientX; }}
-              onTouchEnd={(e) => {
-                const startX = (window as any).__teamTouchX;
-                if (typeof startX !== "number") return;
-                const dx = e.changedTouches[0].clientX - startX;
-                if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
-                (window as any).__teamTouchX = undefined;
-              }}
-              className="bg-card border border-border rounded-2xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center animate-in fade-in duration-500 touch-pan-y select-none"
-            >
-              <div className="relative mx-auto md:mx-0">
-                <div className="absolute -inset-3 bg-gradient-orange rounded-full opacity-25 blur-2xl" />
-                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden ring-4 ring-accent/30 shadow-trail bg-muted">
-                  {photoSrc ? (
-                    <img
-                      src={photoSrc}
-                      alt={`${current.full_name}, ${current.role_title} at E2 Trails`}
-                      loading="lazy"
-                      className="w-full h-full object-cover object-top"
-                    />
-                  ) : (
-                    <div className="w-full h-full grid place-items-center text-muted-foreground text-sm">
-                      {current.full_name.charAt(0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <span className="font-script text-accent text-xl">
-                  — Meet our {current.is_founder ? "founder" : current.role_title.toLowerCase()}
-                </span>
-                <h3 className="font-heading font-extrabold text-2xl md:text-4xl mt-2 leading-tight text-primary">
-                  {current.full_name} — {current.role_title}
-                </h3>
-                {current.bio.split(/\n\s*\n/).map((para, i) => (
-                  <p key={i} className={`${i === 0 ? "mt-6" : "mt-4"} text-base md:text-lg text-muted-foreground leading-relaxed whitespace-pre-line`}>
-                    {para}
-                  </p>
-                ))}
-
-                {current.badges?.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    {current.badges.slice(0, 3).map((b, i) => (
-                      <span key={i} className="px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold text-sm border border-accent">
-                        {b.icon ? `${b.icon} ` : ""}{b.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+  return (
+    <>
+      <style>{`
+        @keyframes team-nudge {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-20px); }
+          50% { transform: translateX(0); }
+          75% { transform: translateX(-10px); }
+          100% { transform: translateX(0); }
+        }
+      `}</style>
+      <section id="about" className="py-24 md:py-32 bg-background">
+        <div className="container grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="reveal-left relative">
+            <div className="absolute -inset-4 bg-gradient-orange rounded-2xl opacity-20 blur-2xl" />
+            <div className="relative overflow-hidden rounded-2xl shadow-trail">
+              <img
+                src={about}
+                alt="Trekkers laughing on a forest trail"
+                loading="lazy"
+                width={1280}
+                height={1280}
+                className="w-full h-[500px] object-cover hover:scale-105 transition-transform duration-700"
+                style={{ filter: "saturate(1.05) contrast(1.05)" }}
+              />
             </div>
+            <div className="absolute -bottom-6 -right-6 bg-accent text-accent-foreground px-6 py-4 rounded-xl font-heading font-bold shadow-card hidden md:block">
+              Since Day One
+            </div>
+          </div>
 
-            {total > 1 && (
-              <div className="mt-6 flex justify-center gap-2">
-                {members.map((m, i) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setIndex(i)}
-                    aria-label={`Show ${m.full_name}`}
-                    className={`h-2 rounded-full transition-all ${i === index ? "w-8 bg-primary" : "w-2 bg-primary/30"}`}
-                  />
-                ))}
-              </div>
-            )}
+          <div className="reveal-right">
+            <span className="font-script text-accent text-xl">— Our story</span>
+            <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 leading-tight text-primary">
+              From One Climb to a Community
+            </h2>
+            <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
+              E2 Trails was born on a trail — not in a boardroom. On one of my first climbs, legs burning and lungs struggling, it wasn't the view that kept me going. It was the people beside me — strangers who cheered, encouraged and refused to let me quit. That moment made one thing clear: the right community can make you capable of things you never imagined.
+            </p>
+            <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed">
+              So we built one. E2 Trails started in Hyderabad as a weekend escape for people who wanted more than a desk and a screen. Two years and hundreds of adventurers later, it has grown into something far bigger — a tribe of cyclists, hikers and explorers who show up every weekend not just for the trail, but for each other. Whether you're stepping onto your first trail or chasing your next summit — you belong here.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              {["✅ Safety First", "🌱 Eco-Conscious", "🤝 Community Driven"].map((p) => (
+                <span key={p} className="px-5 py-2.5 rounded-full bg-primary/10 text-primary font-semibold text-sm border border-primary/20">
+                  {p}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      )}
-    </section>
+
+        {/* ============ Team Carousel ============ */}
+        {current && (
+          <div className="container mt-20 md:mt-28" ref={sectionRef}>
+            <div className="text-center mb-10 md:mb-14">
+              <span className="font-script text-accent text-xl">— The people behind E2 Trails</span>
+              <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 leading-tight text-primary">
+                Our Team
+              </h2>
+            </div>
+            <div className="max-w-5xl mx-auto relative">
+              {total > 1 && index > 0 && (
+                <button
+                  onClick={prev}
+                  aria-label="Previous team member"
+                  className="hidden md:grid absolute left-3 md:-left-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+                >
+                  <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
+                </button>
+              )}
+              {total > 1 && (
+                <button
+                  onClick={next}
+                  aria-label="Next team member"
+                  className="hidden md:grid absolute right-3 md:-right-16 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black text-white shadow-lg place-items-center transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+                >
+                  <ChevronRight className="w-6 h-6" strokeWidth={2.5} />
+                </button>
+              )}
+
+              {/* Desktop card */}
+              <div className="hidden md:block">
+                {renderTeamCard(current)}
+              </div>
+
+              {/* Mobile track with peek */}
+              {total > 1 && (
+                <div className="md:hidden overflow-visible">
+                  <div
+                    className="flex gap-5 transition-transform duration-300 ease-out"
+                    style={{ transform: `translateX(calc(${-index} * (100% - 20px)))` }}
+                  >
+                    {members.map((m, i) => (
+                      <div
+                        key={m.id}
+                        className={`w-[calc(100%-40px)] flex-shrink-0 ${hasNudged && i === 0 ? "animate-[team-nudge_0.7s_ease-in-out]" : ""}`}
+                      >
+                        {renderTeamCard(m)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Single member on mobile */}
+              {total === 1 && (
+                <div className="md:hidden">
+                  {renderTeamCard(current)}
+                </div>
+              )}
+
+              {total > 1 && (
+                <>
+                  <div className="mt-6 flex justify-center gap-2">
+                    {members.map((m, i) => (
+                      <button
+                        key={m.id}
+                        onClick={() => setIndex(i)}
+                        aria-label={`Show ${m.full_name}`}
+                        className={`h-2 rounded-full transition-all ${i === index ? "w-8 bg-primary" : "w-2 bg-primary/30"}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-3 md:hidden text-center text-sm text-muted-foreground font-medium">
+                    ← Swipe to meet the team →
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+    </>
   );
 }
