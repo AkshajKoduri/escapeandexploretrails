@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+
 import logo from "@/assets/logo.png";
 
 const links = [
@@ -16,6 +17,8 @@ const links = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -24,14 +27,17 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const solid = !isHome || scrolled;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "bg-charcoal/80 backdrop-blur-md border-b border-accent/40 py-3"
+        solid
+          ? "bg-charcoal/90 backdrop-blur-md border-b border-accent/40 py-3"
           : "bg-transparent py-5"
       }`}
     >
+
       <div className="container flex items-center justify-between">
         <a href="#home" className="flex items-center gap-3 text-charcoal-foreground">
           <img

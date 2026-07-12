@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
+import BackButton from "@/components/site/BackButton";
 import TrailLogCard, { type TrailLogPost } from "@/components/site/TrailLogCard";
 import { fetchTrailLogPosts } from "@/lib/trailLog";
 import { BookOpen } from "lucide-react";
 import { useReveal } from "@/hooks/useReveal";
+
 
 type FilterKey = "All" | "Trail Guide" | "Trek Journal" | "Tips & Advice" | "Event Recap";
 
@@ -42,9 +44,11 @@ export default function TrailLog() {
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
+      <BackButton to="/" label="Back to Home" />
 
-      <section className="pt-32 md:pt-40 pb-24 md:pb-32">
+      <section className="pt-8 md:pt-12 pb-24 md:pb-32">
         <div className="container">
+
           <div className="text-center max-w-2xl mx-auto reveal">
             <span className="font-script text-accent text-xl">— Adventures, guides & stories</span>
             <h1 className="font-heading font-extrabold text-4xl md:text-6xl mt-2 text-primary">
