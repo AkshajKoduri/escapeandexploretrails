@@ -107,6 +107,12 @@ export default function About() {
       {/* ============ Team Carousel ============ */}
       {current && (
         <div className="container mt-20 md:mt-28">
+          <div className="text-center mb-10 md:mb-14">
+            <span className="font-script text-accent text-xl">— The people behind E2 Trails</span>
+            <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 leading-tight text-primary">
+              Our Team
+            </h2>
+          </div>
           <div className="max-w-5xl mx-auto relative">
             {total > 1 && index > 0 && (
               <button
