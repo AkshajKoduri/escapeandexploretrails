@@ -56,6 +56,14 @@ const OUTSTATION_FIELDS: { key: string; label: string }[] = [
   { key: "stay_location", label: "Stay Location" },
 ];
 
+function hasValue(v: string | null | undefined | number): boolean {
+  if (v == null) return false;
+  if (typeof v === "number") return true;
+  const s = String(v).trim();
+  if (!s) return false;
+  return !/[\s.\u00b7\u2022\u25cf\u25cb\u25aa\u25ab\-–—_]+$/.test(s);
+}
+
 const fallbackImg = ahobilam;
 
 const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
