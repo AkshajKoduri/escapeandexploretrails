@@ -142,7 +142,7 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
                 label: (t.field_labels && t.field_labels[f.key]) || f.label,
                 value: (t[f.key] ?? "") as string,
               }))
-              .filter((x) => x.value && String(x.value).trim() !== ""),
+              .filter((x) => hasValue(x.value)),
           };
         }),
     );
