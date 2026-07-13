@@ -392,7 +392,7 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
                 </Accordion>
               )}
 
-              {openTrek.meetingPoint && (
+              {hasValue(openTrek.meetingPoint) && (
                 <section>
                   <h4 className="font-heading font-bold text-primary mb-1">Meeting Point</h4>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{openTrek.meetingPoint}</p>
