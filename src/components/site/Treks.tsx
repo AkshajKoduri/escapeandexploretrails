@@ -289,9 +289,9 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
                 <div className="absolute inset-x-0 bottom-0 p-6 text-charcoal-foreground">
                   <h3 className="font-heading font-bold text-2xl mb-2">{t.name}</h3>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-3">
-                    {t.dur && <span>⏱ Duration: {t.dur}</span>}
-                    {t.trekTime && <span>🕒 Assembly: {t.trekTime}</span>}
-                    {t.dist && <span>📍 {t.dist}</span>}
+                    {hasValue(t.dur) && <span>⏱ Duration: {t.dur}</span>}
+                    {hasValue(t.trekTime) && <span>🕒 Assembly: {t.trekTime}</span>}
+                    {hasValue(t.dist) && <span>📍 {t.dist}</span>}
                   </div>
                   {(() => {
                     const p = t.startingPrice ?? (t.price > 0 ? t.price : null);
@@ -335,10 +335,10 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
                 <DialogTitle className="font-heading text-2xl text-primary">{openTrek.name}</DialogTitle>
                 <DialogDescription className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                   
-                  {openTrek.trekTime && <span>🕒 Assembly: {openTrek.trekTime}</span>}
-                  {openTrek.dur && <span>⏱ Duration: {openTrek.dur}</span>}
-                  {openTrek.dist && <span>📍 {openTrek.dist}</span>}
-                  {openTrek.meetingPoint && <span>📌 Meeting Point: {openTrek.meetingPoint}</span>}
+                  {hasValue(openTrek.trekTime) && <span>🕒 Assembly: {openTrek.trekTime}</span>}
+                  {hasValue(openTrek.dur) && <span>⏱ Duration: {openTrek.dur}</span>}
+                  {hasValue(openTrek.dist) && <span>📍 {openTrek.dist}</span>}
+                  {hasValue(openTrek.meetingPoint) && <span>📌 Meeting Point: {openTrek.meetingPoint}</span>}
                 </DialogDescription>
               </DialogHeader>
               <img src={openTrek.img} alt={openTrek.name} className="w-full h-56 object-cover rounded-lg" />
