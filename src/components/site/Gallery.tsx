@@ -10,17 +10,6 @@ import g5 from "@/assets/gallery-5.jpg";
 import g6 from "@/assets/gallery-6.jpg";
 import g7 from "@/assets/gallery-7.jpg";
 
-const FALLBACK_ITEMS: GalleryItem[] = [
-  { id: "static-1", url: g1, alt: "Adventure trail moment", category: "General" },
-  { id: "static-2", url: g2, alt: "Adventure trail moment", category: "General" },
-  { id: "static-3", url: g3, alt: "Adventure trail moment", category: "General" },
-  { id: "static-4", url: g4, alt: "Adventure trail moment", category: "General" },
-  { id: "static-5", url: g5, alt: "Adventure trail moment", category: "General" },
-  { id: "static-6", url: g6, alt: "Adventure trail moment", category: "General" },
-  { id: "static-7", url: g7, alt: "Adventure trail moment", category: "General" },
-];
-
-
 type Category = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride" | "General";
 type FilterType = "All" | Category;
 
@@ -31,6 +20,16 @@ type GalleryItem = {
   category: Category;
 };
 
+const FALLBACK_ITEMS: GalleryItem[] = [
+  { id: "static-1", url: g1, alt: "Adventure trail moment", category: "General" },
+  { id: "static-2", url: g2, alt: "Adventure trail moment", category: "General" },
+  { id: "static-3", url: g3, alt: "Adventure trail moment", category: "General" },
+  { id: "static-4", url: g4, alt: "Adventure trail moment", category: "General" },
+  { id: "static-5", url: g5, alt: "Adventure trail moment", category: "General" },
+  { id: "static-6", url: g6, alt: "Adventure trail moment", category: "General" },
+  { id: "static-7", url: g7, alt: "Adventure trail moment", category: "General" },
+];
+
 const FILTERS: { key: FilterType; label: string }[] = [
   { key: "All", label: "All" },
   { key: "Hike", label: "Hikes" },
@@ -40,9 +39,10 @@ const FILTERS: { key: FilterType; label: string }[] = [
 ];
 
 export default function Gallery() {
-  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [items, setItems] = useState<GalleryItem[]>(FALLBACK_ITEMS);
   const [filter, setFilter] = useState<FilterType>("All");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
 
   useEffect(() => {
     (async () => {
