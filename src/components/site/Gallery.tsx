@@ -2,6 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { Instagram, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import g1 from "@/assets/gallery-1.jpg";
+import g2 from "@/assets/gallery-2.jpg";
+import g3 from "@/assets/gallery-3.jpg";
+import g4 from "@/assets/gallery-4.jpg";
+import g5 from "@/assets/gallery-5.jpg";
+import g6 from "@/assets/gallery-6.jpg";
+import g7 from "@/assets/gallery-7.jpg";
+
+const FALLBACK_ITEMS: GalleryItem[] = [
+  { id: "static-1", url: g1, alt: "Adventure trail moment", category: "General" },
+  { id: "static-2", url: g2, alt: "Adventure trail moment", category: "General" },
+  { id: "static-3", url: g3, alt: "Adventure trail moment", category: "General" },
+  { id: "static-4", url: g4, alt: "Adventure trail moment", category: "General" },
+  { id: "static-5", url: g5, alt: "Adventure trail moment", category: "General" },
+  { id: "static-6", url: g6, alt: "Adventure trail moment", category: "General" },
+  { id: "static-7", url: g7, alt: "Adventure trail moment", category: "General" },
+];
+
 
 type Category = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride" | "General";
 type FilterType = "All" | Category;
