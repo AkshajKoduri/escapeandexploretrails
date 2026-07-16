@@ -148,8 +148,9 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
           };
         }),
     );
-
+    setLoading(false);
   };
+
 
   useEffect(() => {
     load();
