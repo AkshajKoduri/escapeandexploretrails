@@ -74,10 +74,12 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
 
 export default function Treks({ mode = "outstation", preview = false }: { mode?: "outstation" | "hyderabad"; preview?: boolean } = {}) {
   const [treks, setTreks] = useState<TrekCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [callbackForId, setCallbackForId] = useState<string | null>(null);
   const [outstationFilter, setOutstationFilter] = useState<OutstationFilter>("All");
   const [hyderabadFilter, setHyderabadFilter] = useState<HyderabadFilter>("All");
+
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -146,8 +148,9 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
           };
         }),
     );
-
+    setLoading(false);
   };
+
 
   useEffect(() => {
     load();
@@ -244,6 +247,16 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
           }
           const visible = preview ? filtered.slice(0, 3) : filtered;
 
+          if (loading && treks.length === 0) {
+            return (
+              <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="rounded-2xl aspect-[4/5] bg-muted animate-pulse" />
+                ))}
+              </div>
+            );
+          }
+
           if (pool.length === 0) {
             return (
               <p className="mt-14 text-center text-muted-foreground">
@@ -260,12 +273,14 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
           }
           return (
           <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {visible.map((t) => (
+            {visible.map((t, i) => (
               <article
                 key={t.id}
                 onClick={() => setOpenId(t.id)}
-                className="group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
+                style={{ transitionDelay: `${i * 100}ms` }}
+                className="reveal group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
               >
+
                 <img
                   src={t.img}
                   alt={t.name}
