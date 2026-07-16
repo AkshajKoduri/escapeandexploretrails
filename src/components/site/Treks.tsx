@@ -74,10 +74,12 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
 
 export default function Treks({ mode = "outstation", preview = false }: { mode?: "outstation" | "hyderabad"; preview?: boolean } = {}) {
   const [treks, setTreks] = useState<TrekCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [callbackForId, setCallbackForId] = useState<string | null>(null);
   const [outstationFilter, setOutstationFilter] = useState<OutstationFilter>("All");
   const [hyderabadFilter, setHyderabadFilter] = useState<HyderabadFilter>("All");
+
 
   const load = async () => {
     const today = new Date().toISOString().slice(0, 10);
