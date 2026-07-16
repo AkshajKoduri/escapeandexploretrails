@@ -61,7 +61,7 @@ function hasValue(v: string | null | undefined | number): boolean {
   if (typeof v === "number") return true;
   const s = String(v).trim();
   if (!s) return false;
-  return !/[\s.\u00b7\u2022\u25cf\u25cb\u25aa\u25ab\-–—_]+$/.test(s);
+  return !/^[\s.\u00b7\u2022\u25cf\u25cb\u25aa\u25ab\-–—_]+$/.test(s);
 }
 
 const fallbackImg = ahobilam;
