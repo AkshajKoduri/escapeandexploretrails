@@ -70,7 +70,8 @@ export default function Gallery() {
         category: r.category as Category,
       })).filter((i) => i.url);
 
-      setItems(mapped);
+      if (mapped.length > 0) setItems(mapped);
+
     })();
   }, []);
 
