@@ -94,8 +94,9 @@
 
   .reveal {
     opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.8s var(--transition-smooth), transform 0.8s var(--transition-smooth);
+    transform: translateY(24px);
+    transition: opacity 0.7s var(--transition-smooth), transform 0.7s var(--transition-smooth);
+    will-change: opacity, transform;
   }
   .reveal.in-view { opacity: 1; transform: translateY(0); }
 
@@ -103,6 +104,29 @@
   .reveal-left.in-view { opacity: 1; transform: translateX(0); }
   .reveal-right { opacity: 0; transform: translateX(40px); transition: all 0.9s var(--transition-smooth); }
   .reveal-right.in-view { opacity: 1; transform: translateX(0); }
+
+  /* Tactile press/hover micro-interaction for buttons and interactive pills. */
+  .tactile {
+    transition: transform 0.2s var(--transition-smooth), box-shadow 0.2s var(--transition-smooth), background-color 0.2s var(--transition-smooth), color 0.2s var(--transition-smooth);
+    will-change: transform;
+  }
+  .tactile:hover { transform: scale(1.03); }
+  .tactile:active { transform: scale(0.97); }
+
+  /* Global subtle press feedback on native buttons and links marked as button. */
+  button:not(:disabled):active,
+  a[role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.97);
+  }
+  button, a[role="button"] {
+    transition: transform 0.18s var(--transition-smooth);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .tactile:hover, .tactile:active, button:active, a[role="button"]:active { transform: none !important; }
+  }
+
 
   .text-shadow-strong { text-shadow: 0 4px 30px hsl(0 0% 0% / 0.6); }
 
