@@ -274,56 +274,60 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
           return (
           <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {visible.map((t, i) => (
-              <article
+              <div
                 key={t.id}
-                onClick={() => setOpenId(t.id)}
+                className="reveal"
                 style={{ transitionDelay: `${i * 100}ms` }}
-                className="reveal group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
               >
+                <article
+                  onClick={() => setOpenId(t.id)}
+                  className="group relative overflow-hidden rounded-2xl shadow-card aspect-[4/5] bg-charcoal cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-trail"
+                >
 
-                <img
-                  src={t.img}
-                  alt={t.name}
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-card" />
-                <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition-colors duration-500" />
+                  <img
+                    src={t.img}
+                    alt={t.name}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-card" />
+                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition-colors duration-500" />
 
-                <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${diffStyle[t.diff].bg}`}>
-                    {diffStyle[t.diff].label}
-                  </span>
-                  {t.isFull && (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md bg-destructive/80 text-destructive-foreground ml-auto">
-                      Trip Full
+                  <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${diffStyle[t.diff].bg}`}>
+                      {diffStyle[t.diff].label}
                     </span>
-                  )}
-                </div>
-
-                <div className="absolute inset-x-0 bottom-0 p-6 text-charcoal-foreground">
-                  <h3 className="font-heading font-bold text-2xl mb-2">{t.name}</h3>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-3">
-                    {hasValue(t.dur) && <span>⏱ Duration: {t.dur}</span>}
-                    {hasValue(t.trekTime) && <span>🕒 Assembly: {t.trekTime}</span>}
-                    {hasValue(t.dist) && <span>📍 {t.dist}</span>}
+                    {t.isFull && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md bg-destructive/80 text-destructive-foreground ml-auto">
+                        Trip Full
+                      </span>
+                    )}
                   </div>
-                  {(() => {
-                    const p = t.startingPrice ?? (t.price > 0 ? t.price : null);
-                    return p != null ? (
-                      <div className="text-sm font-bold text-accent mb-4">Starting Price Rs. {p.toLocaleString("en-IN")}/-</div>
-                    ) : null;
-                  })()}
 
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setOpenId(t.id); }}
-                    className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
-                  >
-                    View More Info →
-                  </button>
-                </div>
-              </article>
+                  <div className="absolute inset-x-0 bottom-0 p-6 text-charcoal-foreground">
+                    <h3 className="font-heading font-bold text-2xl mb-2">{t.name}</h3>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal-foreground/85 mb-3">
+                      {hasValue(t.dur) && <span>⏱ Duration: {t.dur}</span>}
+                      {hasValue(t.trekTime) && <span>🕒 Assembly: {t.trekTime}</span>}
+                      {hasValue(t.dist) && <span>📍 {t.dist}</span>}
+                    </div>
+                    {(() => {
+                      const p = t.startingPrice ?? (t.price > 0 ? t.price : null);
+                      return p != null ? (
+                        <div className="text-sm font-bold text-accent mb-4">Starting Price Rs. {p.toLocaleString("en-IN")}/-</div>
+                      ) : null;
+                    })()}
+
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setOpenId(t.id); }}
+                      className="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
+                    >
+                      View More Info →
+                    </button>
+                  </div>
+                </article>
+              </div>
             ))}
           </div>
           );
