@@ -448,22 +448,6 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
                 >
                   📞 Request a Callback
                 </button>
-                {openTrek.isFull ? (
-                  <button
-                    disabled
-                    className="inline-flex items-center justify-center w-full sm:flex-1 px-5 py-3 rounded-full bg-muted text-muted-foreground font-semibold cursor-not-allowed"
-                  >
-                    Sold Out
-                  </button>
-                ) : (
-                  <Link
-                    to={`/booking?trek=${openTrek.id}`}
-                    className="inline-flex items-center justify-center w-full sm:flex-1 px-5 py-3 rounded-full bg-accent text-accent-foreground font-semibold hover:bg-gold transition-colors"
-                  >
-                    Book Now →
-                  </Link>
-                )}
-              </div>
             </>
           )}
         </DialogContent>
