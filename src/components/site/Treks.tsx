@@ -448,6 +448,7 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
                 >
                   📞 Request a Callback
                 </button>
+              </div>
             </>
           )}
         </DialogContent>
