@@ -82,8 +82,8 @@ export default function Contact() {
             </div>
 
             <div className="relative space-y-4 text-sm md:text-base">
-              <a href="mailto:hello@e2trails.in" className="flex items-center gap-3 hover:text-accent transition-colors">
-                <Mail className="w-5 h-5 text-accent" /> hello@e2trails.in
+              <a href="mailto:e2trails.in@gmail.com" className="flex items-center gap-3 hover:text-accent transition-colors">
+                <Mail className="w-5 h-5 text-accent" /> e2trails.in@gmail.com
               </a>
               <a href="https://instagram.com/e2trails.in" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-accent transition-colors">
                 <Instagram className="w-5 h-5 text-accent" /> @e2trails.in
