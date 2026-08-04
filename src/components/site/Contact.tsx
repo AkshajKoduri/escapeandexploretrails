@@ -88,8 +88,8 @@ export default function Contact() {
               <a href="https://instagram.com/e2trails.in" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-accent transition-colors">
                 <Instagram className="w-5 h-5 text-accent" /> @e2trails.in
               </a>
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-accent" /> Hyderabad, Telangana, India
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-accent shrink-0 mt-0.5" /> F-No. 501, Plot No. 708-B, Vishnu Residency, Kondapur, K.V. Rangareddy, Telangana – 500084
               </div>
             </div>
           </div>
