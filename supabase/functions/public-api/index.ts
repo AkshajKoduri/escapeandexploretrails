@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
           return json({ error: "This trip is not open for booking" }, 400);
         }
 
-        const members = p.is_group ? p.members : [];
+        const members = (p.is_group ? p.members : []) ?? [];
         const seatsNeeded = 1 + members.length;
         const remaining = Math.max((trek.max_seats ?? 0) - (trek.seats_taken ?? 0), 0);
         if (remaining < seatsNeeded) {
