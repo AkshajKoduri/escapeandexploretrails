@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2, Plus, Trash2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { publicApi } from "@/lib/publicApi";
 import logo from "@/assets/logo.png";
 
 type Member = { name: string };
@@ -138,37 +139,16 @@ export default function BookingPage() {
 
     setSubmitting(true);
     try {
-      const bookingId = crypto.randomUUID();
-      const { error: bErr } = await supabase
-        .from("bookings")
-        .insert({
-          id: bookingId,
-          trek_id: trekId,
-          trek_name: selectedTrek.name,
-          primary_name: parsed.data.name,
-          primary_age: parsed.data.age,
-          primary_gender: parsed.data.gender,
-          primary_phone: parsed.data.phone,
-          primary_email: parsed.data.email || null,
-          primary_aadhaar: "",
-          primary_aadhaar_photo: "",
-          is_group: isGroup && members.length > 0,
-          seats_booked: seatsNeeded,
-          status: "confirmed",
-        } as any);
-      if (bErr) throw bErr;
-
-      if (isGroup && members.length > 0) {
-        const rows = members.map((m) => ({
-          booking_id: bookingId,
-          full_name: m.name.trim(),
-          aadhaar_number: "",
-          aadhaar_photo: "",
-        }));
-        const { error: mErr } = await supabase.from("booking_members").insert(rows);
-        if (mErr) throw mErr;
-      }
-
+      await publicApi("createBooking", {
+        trek_id: trekId,
+        primary_name: parsed.data.name,
+        primary_age: parsed.data.age,
+        primary_gender: parsed.data.gender,
+        primary_phone: parsed.data.phone,
+        primary_email: parsed.data.email || null,
+        is_group: isGroup && members.length > 0,
+        members: isGroup ? members.map((m) => ({ full_name: m.name.trim() })) : [],
+      });
 
       setDone(true);
       toast.success("Booking confirmed!");

@@ -5,6 +5,18 @@ import { toast } from "sonner";
 import ahobilam from "@/assets/trek-ahobilam.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { z } from "zod";
+import { publicApi } from "@/lib/publicApi";
+
+const callbackSchema = z.object({
+  full_name: z.string().trim().min(2, "Please enter your name").max(100, "Name too long"),
+  email: z.string().trim().email("Invalid email").max(255).optional().or(z.literal("")),
+  mobile_number: z
+    .string()
+    .trim()
+    .regex(/^[+]?[0-9\s()-]{7,20}$/, "Enter a valid mobile number"),
+  preferred_time: z.string().trim().max(100).optional().or(z.literal("")),
+});
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
 type EventType = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
@@ -478,26 +490,30 @@ function CallbackDialog({ trek, onClose }: { trek: TrekCard | null; onClose: () 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trek) return;
-    if (!fullName.trim() || !mobile.trim()) {
-      toast.error("Please enter your name and mobile number.");
+    const parsed = callbackSchema.safeParse({
+      full_name: fullName,
+      email: email,
+      mobile_number: mobile,
+      preferred_time: preferredTime,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("callback_requests" as any).insert({
-      trip_id: trek.id,
-      trip_name: trek.name,
-      full_name: fullName.trim(),
-      email: email.trim() || null,
-      mobile_number: mobile.trim(),
-      preferred_time: preferredTime,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await publicApi("createCallbackRequest", {
+        trip_id: trek.id,
+        trip_name: trek.name,
+        ...parsed.data,
+      });
+      toast.success("Thanks! We'll call you back soon.");
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not send your request. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success("Thanks! We'll call you back soon.");
-    onClose();
   };
 
   return (

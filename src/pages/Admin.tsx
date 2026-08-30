@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { adminApi, adminRemove, adminUpload } from "@/lib/adminApi";
+import { firstError, manualBookingSchema, teamMemberSchema, trailLogSchema, tripSchema } from "@/lib/adminSchemas";
 import { toast } from "sonner";
 import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -345,7 +346,20 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!f.name?.trim()) return toast.error("Trip name is required");
+    const invalid = firstError(tripSchema, {
+      name: f.name ?? "",
+      event_type: f.event_type || "Hike",
+      max_seats: Number(f.max_seats) || 0,
+      starting_price:
+        f.starting_price != null && f.starting_price !== ("" as any) && !Number.isNaN(Number(f.starting_price))
+          ? Number(f.starting_price)
+          : null,
+      description: f.description ?? "",
+      instructions: f.instructions ?? "",
+      album_url: f.album_url ?? "",
+      itinerary_url: f.itinerary_url ?? "",
+    });
+    if (invalid) return toast.error(invalid);
     if (f.max_seats < currentSeatsTaken) {
       return toast.error(`Can't set max seats below current bookings (${currentSeatsTaken})`);
     }
@@ -1027,9 +1041,16 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!trekId) return toast.error("Please select a trip");
-    if (!fullName.trim()) return toast.error("Full name is required");
-    if (!phone.trim()) return toast.error("Phone number is required");
+    const invalid = firstError(manualBookingSchema, {
+      trek_id: trekId,
+      primary_name: fullName,
+      primary_phone: phone,
+      primary_email: email,
+      primary_age: age ? Number(age) : null,
+      seats_booked: Math.max(1, Number(seats) || 1),
+      notes,
+    });
+    if (invalid) return toast.error(invalid);
     const trek = treks.find((t) => t.id === trekId);
     if (!trek) return toast.error("Invalid trip");
 
@@ -1519,9 +1540,13 @@ function TrailLogTab() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) {
-      return toast.error("Title and description are required");
-    }
+    const invalid = firstError(trailLogSchema, {
+      title,
+      category,
+      description,
+      instagram_url: sourceType === "instagram" ? instagramUrl : "",
+    });
+    if (invalid) return toast.error(invalid);
     if (sourceType === "pdf" && !pdfFile) return toast.error("Please choose a PDF file");
     if (sourceType === "instagram" && !instagramUrl.trim()) return toast.error("Please paste an Instagram URL");
 
@@ -1840,7 +1865,8 @@ function TeamMemberDialog({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !roleTitle.trim()) return toast.error("Name and role are required");
+    const invalid = firstError(teamMemberSchema, { full_name: fullName, role_title: roleTitle, bio });
+    if (invalid) return toast.error(invalid);
     setSaving(true);
     try {
       let photo_url = member?.photo_url ?? null;
