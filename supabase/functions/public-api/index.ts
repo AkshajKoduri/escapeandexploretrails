@@ -35,14 +35,6 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const ip = clientIp(req);
-  const limited = await rateLimit(`public:${ip}`, 5, 60_000);
-  if (!limited.allowed) {
-    return json(
-      { error: "Too many requests. Please wait a moment and try again." },
-      429,
-      { "retry-after": String(limited.retryAfter) },
-    );
-  }
 
   let body: any;
   try {
@@ -51,6 +43,20 @@ Deno.serve(async (req) => {
     return json({ error: "Invalid JSON" }, 400);
   }
   const { action, payload = {} } = body ?? {};
+
+  // Read-only actions get their own, looser bucket; writes stay tightly limited.
+  const readOnly = action === "galleryUrls";
+  const limited = readOnly
+    ? await rateLimit(`public-read:${ip}`, 60, 60_000)
+    : await rateLimit(`public:${ip}`, 5, 60_000);
+  if (!limited.allowed) {
+    return json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      429,
+      { "retry-after": String(limited.retryAfter) },
+    );
+  }
+
 
   try {
     switch (action) {
