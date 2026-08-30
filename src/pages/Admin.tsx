@@ -345,7 +345,20 @@ function TripForm({ initial, isEdit, currentSeatsTaken, onDone }: { initial: Tre
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!f.name?.trim()) return toast.error("Trip name is required");
+    const invalid = firstError(tripSchema, {
+      name: f.name ?? "",
+      event_type: f.event_type || "Hike",
+      max_seats: Number(f.max_seats) || 0,
+      starting_price:
+        f.starting_price != null && f.starting_price !== ("" as any) && !Number.isNaN(Number(f.starting_price))
+          ? Number(f.starting_price)
+          : null,
+      description: f.description ?? "",
+      instructions: f.instructions ?? "",
+      album_url: f.album_url ?? "",
+      itinerary_url: f.itinerary_url ?? "",
+    });
+    if (invalid) return toast.error(invalid);
     if (f.max_seats < currentSeatsTaken) {
       return toast.error(`Can't set max seats below current bookings (${currentSeatsTaken})`);
     }
