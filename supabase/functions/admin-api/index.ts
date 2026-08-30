@@ -1,10 +1,29 @@
-// Admin API: password-gated, uses service role for privileged ops.
-// Actions dispatch model. Client must send header `x-admin-password`.
+// Admin API: password login -> short-lived signed session token.
+// Every privileged action runs with the service role, behind token auth,
+// rate limiting and server-side payload validation.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { clientIp, rateLimit, resetRateLimit } from "../_shared/rateLimit.ts";
+import { issueToken, timingSafeEqual, verifyToken } from "../_shared/adminSession.ts";
+import {
+  assertUploadAllowed,
+  BOOKING_COLUMNS,
+  CALLBACK_COLUMNS,
+  GALLERY_COLUMNS,
+  idPayload,
+  patchPayload,
+  pickAllowed,
+  removePayload,
+  reorderPayload,
+  TEAM_COLUMNS,
+  TREK_COLUMNS,
+  uploadPayload,
+  z,
+} from "../_shared/validation.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-password",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-admin-token",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -16,10 +35,10 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, status = 200, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, "content-type": "application/json" },
+    headers: { ...cors, ...extra, "content-type": "application/json" },
   });
 
 function b64ToBytes(b64: string): Uint8Array {
@@ -29,14 +48,17 @@ function b64ToBytes(b64: string): Uint8Array {
   return out;
 }
 
+const parse = <T>(schema: z.ZodType<T>, payload: unknown): T => {
+  const r = schema.safeParse(payload);
+  if (!r.success) throw new Error(r.error.issues[0]?.message ?? "Invalid payload");
+  return r.data;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  const pwd = req.headers.get("x-admin-password") ?? "";
-  if (!ADMIN_PASSWORD || pwd !== ADMIN_PASSWORD) {
-    return json({ error: "Unauthorized" }, 401);
-  }
+  const ip = clientIp(req);
 
   let body: any;
   try {
@@ -45,10 +67,43 @@ Deno.serve(async (req) => {
     return json({ error: "Invalid JSON" }, 400);
   }
   const { action, payload = {} } = body ?? {};
+  if (typeof action !== "string" || action.length > 64) {
+    return json({ error: "Invalid action" }, 400);
+  }
+
+  // ---- Login: strict brute-force limiting, constant-time compare ----
+  if (action === "login") {
+    const limited = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
+    if (!limited.allowed) {
+      return json(
+        { error: "Too many attempts. Try again later." },
+        429,
+        { "retry-after": String(limited.retryAfter) },
+      );
+    }
+    const pwd = typeof payload?.password === "string" ? payload.password : "";
+    if (!ADMIN_PASSWORD || !timingSafeEqual(pwd, ADMIN_PASSWORD)) {
+      return json({ error: "Invalid password" }, 401);
+    }
+    resetRateLimit(`login:${ip}`);
+    const { token, expiresAt } = await issueToken();
+    return json({ token, expiresAt });
+  }
+
+  // ---- Everything else requires a valid session token ----
+  const session = await verifyToken(req.headers.get("x-admin-token"));
+  if (!session.valid) return json({ error: "Unauthorized" }, 401);
+
+  const perSession = rateLimit(`admin:${session.jti ?? ip}`, 120, 60_000);
+  if (!perSession.allowed) {
+    return json({ error: "Too many requests" }, 429, { "retry-after": String(perSession.retryAfter) });
+  }
 
   try {
     switch (action) {
       case "verify":
+      case "logout":
+        // Tokens are stateless and short-lived; the client simply discards it.
         return json({ ok: true });
 
       // ---- Reads ----
@@ -76,14 +131,15 @@ Deno.serve(async (req) => {
 
       // ---- Bookings ----
       case "updateBooking": {
-        const { id, patch } = payload;
-        const { error } = await supabase.from("bookings").update(patch).eq("id", id);
+        const { id, patch } = parse(patchPayload, payload);
+        const safe = pickAllowed(patch, BOOKING_COLUMNS);
+        const { error } = await supabase.from("bookings").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
       }
       case "insertBooking": {
-        const { row } = payload;
-        if (!row?.primary_name || !row?.primary_phone || !row?.trek_name) {
+        const row = pickAllowed(payload?.row, BOOKING_COLUMNS) as Record<string, unknown>;
+        if (!row.primary_name || !row.primary_phone || !row.trek_name) {
           return json({ error: "Missing required fields" }, 400);
         }
         const { data, error } = await supabase.from("bookings").insert(row).select().single();
@@ -93,13 +149,14 @@ Deno.serve(async (req) => {
 
       // ---- Callbacks ----
       case "updateCallback": {
-        const { id, patch } = payload;
-        const { error } = await supabase.from("callback_requests").update(patch).eq("id", id);
+        const { id, patch } = parse(patchPayload, payload);
+        const safe = pickAllowed(patch, CALLBACK_COLUMNS);
+        const { error } = await supabase.from("callback_requests").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
       }
       case "deleteCallback": {
-        const { id } = payload;
+        const { id } = parse(idPayload, payload);
         const { error } = await supabase.from("callback_requests").delete().eq("id", id);
         if (error) throw error;
         return json({ ok: true });
@@ -107,22 +164,25 @@ Deno.serve(async (req) => {
 
       // ---- Treks ----
       case "insertTrek": {
+        const row = pickAllowed(payload?.row, TREK_COLUMNS) as Record<string, unknown>;
+        if (!row.name || !row.event_type) return json({ error: "Trip name and event type are required" }, 400);
         const { data, error } = await supabase
           .from("upcoming_treks")
-          .insert(payload.row)
+          .insert(row)
           .select()
           .single();
         if (error) throw error;
         return json({ data });
       }
       case "updateTrek": {
-        const { id, patch } = payload;
-        const { error } = await supabase.from("upcoming_treks").update(patch).eq("id", id);
+        const { id, patch } = parse(patchPayload, payload);
+        const safe = pickAllowed(patch, TREK_COLUMNS);
+        const { error } = await supabase.from("upcoming_treks").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
       }
       case "deleteTrek": {
-        const { id } = payload;
+        const { id } = parse(idPayload, payload);
         const { error } = await supabase.from("upcoming_treks").delete().eq("id", id);
         if (error) throw error;
         return json({ ok: true });
@@ -130,12 +190,9 @@ Deno.serve(async (req) => {
 
       // ---- Storage ----
       case "uploadFile": {
-        const { bucket, path, base64, contentType, upsert = false } = payload;
-        if (!bucket || !path || !base64) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs", "team-photos"].includes(bucket)) {
-          return json({ error: "Bucket not allowed" }, 400);
-        }
+        const { bucket, path, base64, contentType, upsert } = parse(uploadPayload, payload);
         const bytes = b64ToBytes(base64);
+        assertUploadAllowed(bucket, path, contentType, bytes.byteLength);
         const { error } = await supabase.storage
           .from(bucket)
           .upload(path, bytes, { contentType: contentType || "application/octet-stream", upsert });
@@ -147,11 +204,7 @@ Deno.serve(async (req) => {
         return json({ path, publicUrl });
       }
       case "removeFile": {
-        const { bucket, path } = payload;
-        if (!bucket || !path) return json({ error: "Missing fields" }, 400);
-        if (!["trek-images", "itineraries", "gallery-images", "trail-log-pdfs", "team-photos"].includes(bucket)) {
-          return json({ error: "Bucket not allowed" }, 400);
-        }
+        const { bucket, path } = parse(removePayload, payload);
         const { error } = await supabase.storage.from(bucket).remove([path]);
         if (error) throw error;
         return json({ ok: true });
@@ -167,29 +220,31 @@ Deno.serve(async (req) => {
         return json({ data });
       }
       case "insertGalleryImage": {
+        const row = pickAllowed(payload?.row, GALLERY_COLUMNS) as Record<string, unknown>;
+        if (!row.image_url) return json({ error: "Image is required" }, 400);
         const { data, error } = await supabase
           .from("gallery_images")
-          .insert(payload.row)
+          .insert(row)
           .select()
           .single();
         if (error) throw error;
         return json({ data });
       }
       case "updateGalleryImage": {
-        const { id, patch } = payload;
-        const { error } = await supabase.from("gallery_images").update(patch).eq("id", id);
+        const { id, patch } = parse(patchPayload, payload);
+        const safe = pickAllowed(patch, GALLERY_COLUMNS);
+        const { error } = await supabase.from("gallery_images").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
       }
       case "deleteGalleryImage": {
-        const { id } = payload;
+        const { id } = parse(idPayload, payload);
         const { error } = await supabase.from("gallery_images").delete().eq("id", id);
         if (error) throw error;
         return json({ ok: true });
       }
       case "reorderGalleryImages": {
-        const { updates } = payload;
-        if (!Array.isArray(updates)) return json({ error: "updates must be array" }, 400);
+        const { updates } = parse(reorderPayload, payload);
         for (const u of updates) {
           const { error } = await supabase
             .from("gallery_images")
@@ -210,10 +265,14 @@ Deno.serve(async (req) => {
         return json({ data });
       }
       case "insertTrailLog": {
-        const { row } = payload;
-        if (!row?.title || !row?.category || !row?.description) {
-          return json({ error: "Missing required fields" }, 400);
-        }
+        const schema = z.object({
+          title: z.string().trim().min(1).max(200),
+          category: z.string().trim().min(1).max(100),
+          description: z.string().trim().min(1).max(5000),
+          pdf_storage_path: z.string().trim().max(300).optional().nullable(),
+          instagram_url: z.string().trim().url().max(500).optional().nullable().or(z.literal("")),
+        });
+        const row = parse(schema, payload?.row);
         const hasPdf = !!row.pdf_storage_path;
         const hasIg = !!row.instagram_url;
         if (hasPdf === hasIg) {
@@ -226,7 +285,7 @@ Deno.serve(async (req) => {
         };
         if (hasPdf) {
           insertRow.pdf_storage_path = row.pdf_storage_path;
-          insertRow.pdf_url = row.pdf_storage_path; // stored for reference; signed URL generated at read time
+          insertRow.pdf_url = row.pdf_storage_path; // signed URL generated at read time
         } else {
           insertRow.instagram_url = row.instagram_url;
         }
@@ -235,7 +294,7 @@ Deno.serve(async (req) => {
         return json({ data });
       }
       case "deleteTrailLog": {
-        const { id } = payload;
+        const { id } = parse(idPayload, payload);
         const { data: existing, error: fetchErr } = await supabase
           .from("trail_log").select("pdf_storage_path").eq("id", id).maybeSingle();
         if (fetchErr) throw fetchErr;
@@ -257,23 +316,22 @@ Deno.serve(async (req) => {
         return json({ data });
       }
       case "insertTeamMember": {
-        const { row } = payload;
-        if (!row?.full_name || !row?.role_title) return json({ error: "Missing required fields" }, 400);
+        const row = pickAllowed(payload?.row, TEAM_COLUMNS) as Record<string, unknown>;
+        if (!row.full_name || !row.role_title) return json({ error: "Missing required fields" }, 400);
         const { data, error } = await supabase.from("team_members").insert(row).select().single();
         if (error) throw error;
         return json({ data });
       }
       case "updateTeamMember": {
-        const { id, patch } = payload;
-        // Prevent unlocking / removing founder flag on the seeded founder
-        const safePatch = { ...patch };
-        delete safePatch.is_founder;
-        const { error } = await supabase.from("team_members").update(safePatch).eq("id", id);
+        const { id, patch } = parse(patchPayload, payload);
+        // is_founder is not in the allow-list, so it can never be changed here.
+        const safe = pickAllowed(patch, TEAM_COLUMNS);
+        const { error } = await supabase.from("team_members").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
       }
       case "deleteTeamMember": {
-        const { id } = payload;
+        const { id } = parse(idPayload, payload);
         const { data: existing, error: fetchErr } = await supabase
           .from("team_members").select("is_founder, photo_url").eq("id", id).maybeSingle();
         if (fetchErr) throw fetchErr;
@@ -286,8 +344,7 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
       case "reorderTeamMembers": {
-        const { updates } = payload;
-        if (!Array.isArray(updates)) return json({ error: "updates must be array" }, 400);
+        const { updates } = parse(reorderPayload, payload);
         for (const u of updates) {
           const { error } = await supabase
             .from("team_members")
@@ -302,6 +359,6 @@ Deno.serve(async (req) => {
         return json({ error: `Unknown action: ${action}` }, 400);
     }
   } catch (err: any) {
-    return json({ error: err?.message ?? "Server error" }, 500);
+    return json({ error: err?.message ?? "Server error" }, 400);
   }
 });
