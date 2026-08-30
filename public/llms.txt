@@ -1,0 +1,16 @@
+# E2 Trails
+
+> Guided treks, weekend hikes, cycling and bike rides run from Hyderabad and across India.
+
+E2 Trails organises monsoon and Himalayan treks, Hyderabad day hikes, cycling rides and bike rides, with itineraries, dates and pricing published per trip.
+
+## Pages
+
+- [Home](/): About E2 Trails, upcoming trips, gallery and contact details.
+- [Upcoming Treks](/upcoming-treks): Outstation treks — monsoon/waterfall, Himalayan and winter categories.
+- [Hyderabad Trails](/hyderabad-trails): Hikes, cycling rides and bike rides around Hyderabad.
+- [The Trail Log](/trail-log): Trail guides, trek journals, tips and event recaps.
+
+## Optional
+
+- [Booking](/booking): Trip booking form.
