@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Mountain } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
-import { adminApi, clearAdminPassword, isAdminSession, setAdminPassword } from "@/lib/adminApi";
+import { adminApi, adminLogin, clearAdminSession, isAdminSession } from "@/lib/adminApi";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -20,13 +20,14 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
     if (busy) return;
     setBusy(true);
     try {
-      setAdminPassword(pwd);
+      await adminLogin(pwd);
       await adminApi("verify");
+      setPwd("");
       setOk(true);
     } catch (err: any) {
-      clearAdminPassword();
-      toast.error("Access denied.");
-      navigate("/", { replace: true });
+      clearAdminSession();
+      setPwd("");
+      toast.error(err?.message ?? "Access denied.");
     } finally {
       setBusy(false);
     }
