@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Plus, Trash2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { publicApi } from "@/lib/publicApi";
+import { useSeo } from "@/hooks/useSeo";
 import logo from "@/assets/logo.png";
 
 type Member = { name: string };
@@ -51,9 +52,11 @@ export default function BookingPage() {
   const selectedTrek = useMemo(() => trekOptions.find((t) => t.id === trekId), [trekOptions, trekId]);
   const seatsNeeded = 1 + (isGroup ? members.length : 0);
 
-  useEffect(() => {
-    document.title = "Book a Trek — E2 Trails";
-  }, []);
+  useSeo({
+    title: "Book a Trek — Reserve Your Spot | E2 Trails",
+    description: "Reserve your place on an upcoming E2 Trails trek, hike or cycling ride. Pick a trip, add your group details and confirm your booking in minutes.",
+    path: "/booking",
+  });
 
   const loadTreks = async () => {
     const today = new Date().toISOString().slice(0, 10);

@@ -6,6 +6,7 @@ import TrailLogCard, { type TrailLogPost } from "@/components/site/TrailLogCard"
 import { fetchTrailLogPosts } from "@/lib/trailLog";
 import { BookOpen } from "lucide-react";
 import { useReveal } from "@/hooks/useReveal";
+import { useSeo } from "@/hooks/useSeo";
 
 
 type FilterKey = "All" | "Trail Guide" | "Trek Journal" | "Tips & Advice" | "Event Recap";
@@ -23,13 +24,18 @@ export default function TrailLog() {
   const [posts, setPosts] = useState<TrailLogPost[] | null>(null);
   const [filter, setFilter] = useState<FilterKey>("All");
 
-  useEffect(() => {
-    document.title = "The Trail Log — E2 Trails";
-    const desc = "Adventures, guides & stories from E2 Trails — trail guides, trek journals, tips and event recaps from our community.";
-    let m = document.querySelector('meta[name="description"]');
-    if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
-    m.setAttribute("content", desc);
-  }, []);
+  useSeo({
+    title: "The Trail Log — Trek Guides, Journals & Tips | E2 Trails",
+    description: "Adventures, guides and stories from E2 Trails — trail guides, trek journals, packing tips and event recaps from our trekking community.",
+    path: "/trail-log",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "The Trail Log",
+      url: "https://e2trails-in.lovable.app/trail-log",
+      description: "Trail guides, trek journals, tips and event recaps from E2 Trails.",
+    },
+  });
 
   useEffect(() => {
     fetchTrailLogPosts().then(setPosts);
