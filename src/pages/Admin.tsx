@@ -1344,13 +1344,11 @@ function GalleryTab() {
       const res = await adminApi<{ data: GalleryImage[] }>("listGalleryImages");
       const rows = res?.data ?? [];
       setItems(rows);
-      // Sign URLs for private bucket display
+      // Sign URLs for private bucket display (server-side; bucket has no public read)
       const paths = rows.map((r) => r.storage_path).filter(Boolean) as string[];
       if (paths.length) {
-        const { data } = await supabase.storage.from("gallery-images").createSignedUrls(paths, 60 * 60);
-        const map: Record<string, string> = {};
-        (data ?? []).forEach((s: any) => { if (s.path && s.signedUrl) map[s.path] = s.signedUrl; });
-        setUrls(map);
+        const res = await publicApi<{ urls: Record<string, string> }>("galleryUrls", { paths });
+        setUrls(res?.urls ?? {});
       } else {
         setUrls({});
       }
