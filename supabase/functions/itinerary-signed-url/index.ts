@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  const limited = rateLimit(`itinerary:${clientIp(req)}`, 30, 60_000);
+  const limited = await rateLimit(`itinerary:${clientIp(req)}`, 30, 60_000);
   if (!limited.allowed) {
     return json({ error: "Too many requests" }, 429, { "retry-after": String(limited.retryAfter) });
   }

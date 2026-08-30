@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const ip = clientIp(req);
-  const limited = rateLimit(`public:${ip}`, 5, 60_000);
+  const limited = await rateLimit(`public:${ip}`, 5, 60_000);
   if (!limited.allowed) {
     return json(
       { error: "Too many requests. Please wait a moment and try again." },
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
           return json({ error: "This trip is not open for booking" }, 400);
         }
 
-        const members = p.is_group ? p.members : [];
+        const members = (p.is_group ? p.members : []) ?? [];
         const seatsNeeded = 1 + members.length;
         const remaining = Math.max((trek.max_seats ?? 0) - (trek.seats_taken ?? 0), 0);
         if (remaining < seatsNeeded) {

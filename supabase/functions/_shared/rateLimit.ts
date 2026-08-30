@@ -1,18 +1,23 @@
-// Simple in-memory sliding-window rate limiter.
-// Scope: per edge-function instance (not distributed). Adequate for this
-// traffic level; it stops scripted spam / brute force from a single client.
+// Durable sliding-window rate limiter.
+//
+// Edge-function isolates are short lived and requests are spread across many
+// of them, so an in-memory counter never sees enough traffic to trigger.
+// State therefore lives in the database (`public.rate_limit_hits`) and is
+// evaluated atomically by the `check_rate_limit` SQL function, which makes the
+// limit hold across every isolate.
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-type Bucket = number[]; // timestamps (ms)
+let client: SupabaseClient | null = null;
 
-const store = new Map<string, Bucket>();
-let lastSweep = 0;
-
-function sweep(now: number, maxWindow: number) {
-  if (now - lastSweep < 60_000) return;
-  lastSweep = now;
-  for (const [k, v] of store) {
-    if (v.length === 0 || now - v[v.length - 1] > maxWindow) store.delete(k);
+function db(): SupabaseClient {
+  if (!client) {
+    client = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
   }
+  return client;
 }
 
 export interface RateLimitResult {
@@ -21,23 +26,30 @@ export interface RateLimitResult {
   retryAfter: number; // seconds
 }
 
-export function rateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
-  const now = Date.now();
-  sweep(now, windowMs);
-  const hits = (store.get(key) ?? []).filter((t) => now - t < windowMs);
-  if (hits.length >= limit) {
-    store.set(key, hits);
-    const retryAfter = Math.ceil((windowMs - (now - hits[0])) / 1000);
-    return { allowed: false, remaining: 0, retryAfter: Math.max(retryAfter, 1) };
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+  try {
+    const { data, error } = await db().rpc("check_rate_limit", {
+      _key: key,
+      _limit: limit,
+      _window_seconds: Math.ceil(windowMs / 1000),
+    });
+    if (error) throw error;
+    const r = data as { allowed: boolean; remaining: number; retry_after: number };
+    return { allowed: !!r.allowed, remaining: r.remaining ?? 0, retryAfter: r.retry_after ?? 1 };
+  } catch (_err) {
+    // Fail open on infrastructure errors so a database hiccup can't take the
+    // public forms offline. The action itself is still fully validated.
+    return { allowed: true, remaining: limit, retryAfter: 0 };
   }
-  hits.push(now);
-  store.set(key, hits);
-  return { allowed: true, remaining: limit - hits.length, retryAfter: 0 };
 }
 
 /** Clear a key's history (e.g. after a successful login). */
-export function resetRateLimit(key: string) {
-  store.delete(key);
+export async function resetRateLimit(key: string): Promise<void> {
+  try {
+    await db().rpc("reset_rate_limit", { _key: key });
+  } catch (_err) {
+    // best effort
+  }
 }
 
 /** Best-effort client IP from proxy headers. */
