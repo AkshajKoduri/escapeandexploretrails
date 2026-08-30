@@ -5,6 +5,18 @@ import { toast } from "sonner";
 import ahobilam from "@/assets/trek-ahobilam.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { z } from "zod";
+import { publicApi } from "@/lib/publicApi";
+
+const callbackSchema = z.object({
+  full_name: z.string().trim().min(2, "Please enter your name").max(100, "Name too long"),
+  email: z.string().trim().email("Invalid email").max(255).optional().or(z.literal("")),
+  mobile_number: z
+    .string()
+    .trim()
+    .regex(/^[+]?[0-9\s()-]{7,20}$/, "Enter a valid mobile number"),
+  preferred_time: z.string().trim().max(100).optional().or(z.literal("")),
+});
 
 type Difficulty = "Easy" | "Moderate" | "Hard";
 type EventType = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
