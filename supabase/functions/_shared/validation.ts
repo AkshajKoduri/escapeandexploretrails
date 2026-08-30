@@ -135,3 +135,7 @@ export const publicCallbackPayload = z.object({
 });
 
 export const signedUrlPayload = z.object({ trekId: uuid });
+
+export const galleryUrlsPayload = z.object({
+  paths: z.array(z.string().min(1).max(512)).max(200).optional(),
+});
