@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
       }
       case "insertGalleryImage": {
         const row = pickAllowed(payload?.row, GALLERY_COLUMNS) as Record<string, unknown>;
-        if (!row.image_url) return json({ error: "Image is required" }, 400);
+        if (!row.image_url && !row.storage_path) return json({ error: "Image is required" }, 400);
         const { data, error } = await supabase
           .from("gallery_images")
           .insert(row)
