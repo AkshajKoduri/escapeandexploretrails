@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const ip = clientIp(req);
-  const limited = rateLimit(`public:${ip}`, 5, 60_000);
+  const limited = await rateLimit(`public:${ip}`, 5, 60_000);
   if (!limited.allowed) {
     return json(
       { error: "Too many requests. Please wait a moment and try again." },

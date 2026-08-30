@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 
   // ---- Login: strict brute-force limiting, constant-time compare ----
   if (action === "login") {
-    const limited = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
+    const limited = await rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
     if (!limited.allowed) {
       return json(
         { error: "Too many attempts. Try again later." },
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     if (!ADMIN_PASSWORD || !timingSafeEqual(pwd, ADMIN_PASSWORD)) {
       return json({ error: "Invalid password" }, 401);
     }
-    resetRateLimit(`login:${ip}`);
+    await resetRateLimit(`login:${ip}`);
     const { token, expiresAt } = await issueToken();
     return json({ token, expiresAt });
   }
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
   const session = await verifyToken(req.headers.get("x-admin-token"));
   if (!session.valid) return json({ error: "Unauthorized" }, 401);
 
-  const perSession = rateLimit(`admin:${session.jti ?? ip}`, 120, 60_000);
+  const perSession = await rateLimit(`admin:${session.jti ?? ip}`, 120, 60_000);
   if (!perSession.allowed) {
     return json({ error: "Too many requests" }, 429, { "retry-after": String(perSession.retryAfter) });
   }
