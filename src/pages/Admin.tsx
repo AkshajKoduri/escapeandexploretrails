@@ -1540,9 +1540,13 @@ function TrailLogTab() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) {
-      return toast.error("Title and description are required");
-    }
+    const invalid = firstError(trailLogSchema, {
+      title,
+      category,
+      description,
+      instagram_url: sourceType === "instagram" ? instagramUrl : "",
+    });
+    if (invalid) return toast.error(invalid);
     if (sourceType === "pdf" && !pdfFile) return toast.error("Please choose a PDF file");
     if (sourceType === "instagram" && !instagramUrl.trim()) return toast.error("Please paste an Instagram URL");
 
