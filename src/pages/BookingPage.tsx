@@ -330,11 +330,11 @@ export default function BookingPage() {
                   <div key={i} className="rounded-xl border border-border p-4 bg-background/50 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-primary text-sm">Member {i + 1}</span>
-                      <button type="button" onClick={() => removeMember(i)} className="text-destructive hover:text-destructive/80">
+                      <button type="button" aria-label={`Remove member ${i + 1}`} onClick={() => removeMember(i)} className="text-destructive hover:text-destructive/80">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <input required value={m.name} onChange={(e) => updateMember(i, { name: e.target.value })} className={inputCls} placeholder="Full name" maxLength={80} />
+                    <input required aria-label={`Member ${i + 1} full name`} value={m.name} onChange={(e) => updateMember(i, { name: e.target.value })} className={inputCls} placeholder="Full name" maxLength={80} />
                   </div>
                 ))}
                 <button type="button" onClick={addMember} className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-border hover:border-accent hover:text-accent text-muted-foreground transition">
