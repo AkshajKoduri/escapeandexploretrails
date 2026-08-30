@@ -196,6 +196,51 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
     ? treks.filter((t) => t.eventType === "Monsoon Trek")
     : treks.filter((t) => t.eventType === "Hike" || t.eventType === "Cycling Ride" || t.eventType === "Bike Ride");
 
+  // Event structured data for the listed trips (rich results in search)
+  useEffect(() => {
+    if (pool.length === 0) return;
+    const origin = "https://e2trails-in.lovable.app";
+    const events = pool
+      .filter((t) => t.dates.length > 0)
+      .map((t) => ({
+        "@context": "https://schema.org",
+        "@type": "Event",
+        name: t.name,
+        startDate: t.dates[0],
+        eventStatus: "https://schema.org/EventScheduled",
+        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        ...(t.description ? { description: t.description } : {}),
+        location: {
+          "@type": "Place",
+          name: t.destination || t.meetingPoint || "India",
+          address: { "@type": "PostalAddress", addressCountry: "IN" },
+        },
+        organizer: { "@type": "Organization", name: "E2 Trails", url: `${origin}/` },
+        ...(t.startingPrice || t.price
+          ? {
+              offers: {
+                "@type": "Offer",
+                price: String(t.startingPrice ?? t.price),
+                priceCurrency: "INR",
+                availability: t.isFull
+                  ? "https://schema.org/SoldOut"
+                  : "https://schema.org/InStock",
+                url: `${origin}${isOutstation ? "/upcoming-treks" : "/hyderabad-trails"}`,
+              },
+            }
+          : {}),
+      }));
+    if (events.length === 0) return;
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.trekSchema = mode;
+    script.textContent = JSON.stringify(events);
+    document.head.appendChild(script);
+    return () => {
+      script.remove();
+    };
+  }, [pool.map((t) => t.id).join(","), mode]);
+
   return (
     <section id={sectionId} className="py-24 md:py-32 bg-background">
       <div className="container">
