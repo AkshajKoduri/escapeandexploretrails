@@ -22,6 +22,11 @@ export default function Stats() {
   return (
     <section className="bg-charcoal text-charcoal-foreground py-20 md:py-28 relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.04] [background:radial-gradient(circle_at_30%_20%,white,transparent_50%)]" />
+      <div className="container relative">
+        <h2 className="text-center font-heading font-black text-3xl md:text-4xl mb-12 reveal">
+          E2 Trails by the Numbers
+        </h2>
+      </div>
       <div className="container relative grid grid-cols-2 lg:grid-cols-4 gap-10">
         <Stat icon={Footprints} end={500} label="Trekkers Guided" />
         <Stat icon={MapPin} end={30} label="Destinations Explored" />
