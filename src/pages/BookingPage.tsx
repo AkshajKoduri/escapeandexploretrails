@@ -367,10 +367,14 @@ export default function BookingPage() {
 const inputCls = "w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent transition";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = useId();
+  const control = React.isValidElement(children)
+    ? React.cloneElement(children as React.ReactElement<any>, { id })
+    : children;
   return (
     <div>
-      <label className="block text-sm font-semibold text-primary mb-2">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-sm font-semibold text-primary mb-2">{label}</label>
+      {control}
     </div>
   );
 }
