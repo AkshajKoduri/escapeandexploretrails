@@ -1041,9 +1041,16 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!trekId) return toast.error("Please select a trip");
-    if (!fullName.trim()) return toast.error("Full name is required");
-    if (!phone.trim()) return toast.error("Phone number is required");
+    const invalid = firstError(manualBookingSchema, {
+      trek_id: trekId,
+      primary_name: fullName,
+      primary_phone: phone,
+      primary_email: email,
+      primary_age: age ? Number(age) : null,
+      seats_booked: Math.max(1, Number(seats) || 1),
+      notes,
+    });
+    if (invalid) return toast.error(invalid);
     const trek = treks.find((t) => t.id === trekId);
     if (!trek) return toast.error("Invalid trip");
 
