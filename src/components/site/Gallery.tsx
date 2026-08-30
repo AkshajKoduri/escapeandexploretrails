@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Instagram, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { publicApi } from "@/lib/publicApi";
 import g1 from "@/assets/gallery-1.jpg";
 import g2 from "@/assets/gallery-2.jpg";
 import g3 from "@/assets/gallery-3.jpg";
@@ -55,12 +56,12 @@ export default function Gallery() {
       const paths = data.map((r: any) => r.storage_path).filter(Boolean) as string[];
       let urlMap: Record<string, string> = {};
       if (paths.length) {
-        const { data: signed } = await supabase.storage
-          .from("gallery-images")
-          .createSignedUrls(paths, 60 * 60 * 6);
-        (signed ?? []).forEach((s: any) => {
-          if (s.path && s.signedUrl) urlMap[s.path] = s.signedUrl;
-        });
+        try {
+          const res = await publicApi<{ urls: Record<string, string> }>("galleryUrls", { paths });
+          urlMap = res?.urls ?? {};
+        } catch {
+          urlMap = {};
+        }
       }
 
       const mapped: GalleryItem[] = data.map((r: any) => ({

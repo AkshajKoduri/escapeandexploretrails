@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { adminApi, adminRemove, adminUpload } from "@/lib/adminApi";
+import { publicApi } from "@/lib/publicApi";
 import { firstError, manualBookingSchema, teamMemberSchema, trailLogSchema, tripSchema } from "@/lib/adminSchemas";
 import { toast } from "sonner";
 import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
@@ -1344,13 +1345,11 @@ function GalleryTab() {
       const res = await adminApi<{ data: GalleryImage[] }>("listGalleryImages");
       const rows = res?.data ?? [];
       setItems(rows);
-      // Sign URLs for private bucket display
+      // Sign URLs for private bucket display (server-side; bucket has no public read)
       const paths = rows.map((r) => r.storage_path).filter(Boolean) as string[];
       if (paths.length) {
-        const { data } = await supabase.storage.from("gallery-images").createSignedUrls(paths, 60 * 60);
-        const map: Record<string, string> = {};
-        (data ?? []).forEach((s: any) => { if (s.path && s.signedUrl) map[s.path] = s.signedUrl; });
-        setUrls(map);
+        const res = await publicApi<{ urls: Record<string, string> }>("galleryUrls", { paths });
+        setUrls(res?.urls ?? {});
       } else {
         setUrls({});
       }

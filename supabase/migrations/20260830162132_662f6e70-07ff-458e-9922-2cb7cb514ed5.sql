@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anyone can read gallery-images files" ON storage.objects;
