@@ -55,12 +55,12 @@ export default function Gallery() {
       const paths = data.map((r: any) => r.storage_path).filter(Boolean) as string[];
       let urlMap: Record<string, string> = {};
       if (paths.length) {
-        const { data: signed } = await supabase.storage
-          .from("gallery-images")
-          .createSignedUrls(paths, 60 * 60 * 6);
-        (signed ?? []).forEach((s: any) => {
-          if (s.path && s.signedUrl) urlMap[s.path] = s.signedUrl;
-        });
+        try {
+          const res = await publicApi<{ urls: Record<string, string> }>("galleryUrls", { paths });
+          urlMap = res?.urls ?? {};
+        } catch {
+          urlMap = {};
+        }
       }
 
       const mapped: GalleryItem[] = data.map((r: any) => ({
