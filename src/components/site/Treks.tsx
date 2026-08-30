@@ -478,26 +478,30 @@ function CallbackDialog({ trek, onClose }: { trek: TrekCard | null; onClose: () 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trek) return;
-    if (!fullName.trim() || !mobile.trim()) {
-      toast.error("Please enter your name and mobile number.");
+    const parsed = callbackSchema.safeParse({
+      full_name: fullName,
+      email: email,
+      mobile_number: mobile,
+      preferred_time: preferredTime,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("callback_requests" as any).insert({
-      trip_id: trek.id,
-      trip_name: trek.name,
-      full_name: fullName.trim(),
-      email: email.trim() || null,
-      mobile_number: mobile.trim(),
-      preferred_time: preferredTime,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await publicApi("createCallbackRequest", {
+        trip_id: trek.id,
+        trip_name: trek.name,
+        ...parsed.data,
+      });
+      toast.success("Thanks! We'll call you back soon.");
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not send your request. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success("Thanks! We'll call you back soon.");
-    onClose();
   };
 
   return (
