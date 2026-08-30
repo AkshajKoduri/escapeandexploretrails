@@ -229,6 +229,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_hits: {
+        Row: {
+          hit_at: string
+          id: number
+          key: string
+        }
+        Insert: {
+          hit_at?: string
+          id?: number
+          key: string
+        }
+        Update: {
+          hit_at?: string
+          id?: number
+          key?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           badges: Json
@@ -491,6 +509,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: { _key: string; _limit: number; _window_seconds: number }
+        Returns: Json
+      }
       get_trek_seat_stats: {
         Args: never
         Returns: {
@@ -507,6 +529,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      reset_rate_limit: { Args: { _key: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
