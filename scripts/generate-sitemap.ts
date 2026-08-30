@@ -3,7 +3,7 @@
 import { writeFileSync } from "fs"
 import { resolve } from "path"
 
-const BASE_URL = "https://e2trails.in"
+const BASE_URL = "https://e2trails-in.lovable.app"
 
 interface SitemapEntry {
   path: string

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SITE_URL = "https://e2trails.in";
+const SITE_URL = "https://e2trails-in.lovable.app";
 
 type SeoOptions = {
   title: string;
