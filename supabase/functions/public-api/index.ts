@@ -3,7 +3,7 @@
 // role so the underlying tables need no anonymous insert grants.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { clientIp, rateLimit } from "../_shared/rateLimit.ts";
-import { publicBookingPayload, publicCallbackPayload, z } from "../_shared/validation.ts";
+import { galleryUrlsPayload, publicBookingPayload, publicCallbackPayload, z } from "../_shared/validation.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
