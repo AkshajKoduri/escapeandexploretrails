@@ -113,7 +113,7 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-hero" />
 
       <div className="relative z-10 h-full container flex flex-col items-center justify-center text-center text-charcoal-foreground">
-        <h1 className="sr-only">Where Every Trail Tells a Story</h1>
+        <h1 className="sr-only">E2 Trails — Guided Treks, Hikes &amp; Cycling Rides from Hyderabad and Across India</h1>
 
         <h1 aria-hidden="true" className="font-heading font-black text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05] max-w-5xl text-shadow-strong">
           {typed}
