@@ -129,6 +129,33 @@ Deno.serve(async (req) => {
         return json({ ok: true, id: bookingId });
       }
 
+      case "galleryUrls": {
+        // Signs only storage paths that are registered gallery images, so the
+        // bucket itself needs no anonymous read policy.
+        const p = parse(galleryUrlsPayload, payload);
+        const q = supabase.from("gallery_images").select("storage_path");
+        const { data: rows, error } = p.paths?.length
+          ? await q.in("storage_path", p.paths)
+          : await q;
+        if (error) throw error;
+
+        const paths = (rows ?? [])
+          .map((r: any) => r.storage_path)
+          .filter((v: unknown): v is string => typeof v === "string" && v.length > 0);
+        if (paths.length === 0) return json({ urls: {} });
+
+        const { data: signed, error: sErr } = await supabase.storage
+          .from("gallery-images")
+          .createSignedUrls(paths, 60 * 60 * 6);
+        if (sErr) throw sErr;
+
+        const urls: Record<string, string> = {};
+        (signed ?? []).forEach((s: any) => {
+          if (s?.path && s?.signedUrl) urls[s.path] = s.signedUrl;
+        });
+        return json({ urls });
+      }
+
       default:
         return json({ error: "Unknown action" }, 400);
     }
