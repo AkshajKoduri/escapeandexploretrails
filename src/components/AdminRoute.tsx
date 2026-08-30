@@ -1,12 +1,10 @@
 import { ReactNode, useEffect, useState, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
 import { Mountain } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { adminApi, adminLogin, clearAdminSession, isAdminSession } from "@/lib/adminApi";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
   const [ok, setOk] = useState<boolean>(() => isAdminSession());
   const [pwd, setPwd] = useState("");
   const [busy, setBusy] = useState(false);
