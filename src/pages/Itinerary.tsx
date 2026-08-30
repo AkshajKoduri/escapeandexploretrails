@@ -4,6 +4,7 @@ import { ArrowLeft, Share2, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useSeo } from "@/hooks/useSeo";
 
 type Day = { title: string; description: string };
 
@@ -48,6 +49,14 @@ export default function Itinerary() {
       .catch(() => { if (!cancelled) setPdfUrl(null); });
     return () => { cancelled = true; };
   }, [trek?.id, trek?.itinerary_file_path]);
+
+  useSeo({
+    title: trek?.name ? `${trek.name} — Itinerary | E2 Trails` : "Trip Itinerary | E2 Trails",
+    description: trek?.name
+      ? `Day-wise itinerary for the ${trek.name} trip with E2 Trails — plan, schedule and what to expect on the trail.`
+      : "Day-wise itineraries for E2 Trails trips — plan, schedule and what to expect on the trail.",
+    path: `/itinerary/${trekId ?? ""}`,
+  });
 
   const days: Day[] = Array.isArray(trek?.itinerary_days) ? (trek!.itinerary_days as Day[]) : [];
   const hasDays = days.length > 0;

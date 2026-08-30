@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useId, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -330,11 +330,11 @@ export default function BookingPage() {
                   <div key={i} className="rounded-xl border border-border p-4 bg-background/50 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-primary text-sm">Member {i + 1}</span>
-                      <button type="button" onClick={() => removeMember(i)} className="text-destructive hover:text-destructive/80">
+                      <button type="button" aria-label={`Remove member ${i + 1}`} onClick={() => removeMember(i)} className="text-destructive hover:text-destructive/80">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <input required value={m.name} onChange={(e) => updateMember(i, { name: e.target.value })} className={inputCls} placeholder="Full name" maxLength={80} />
+                    <input required aria-label={`Member ${i + 1} full name`} value={m.name} onChange={(e) => updateMember(i, { name: e.target.value })} className={inputCls} placeholder="Full name" maxLength={80} />
                   </div>
                 ))}
                 <button type="button" onClick={addMember} className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-border hover:border-accent hover:text-accent text-muted-foreground transition">
@@ -367,10 +367,14 @@ export default function BookingPage() {
 const inputCls = "w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent transition";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = useId();
+  const control = React.isValidElement(children)
+    ? React.cloneElement(children as React.ReactElement<any>, { id })
+    : children;
   return (
     <div>
-      <label className="block text-sm font-semibold text-primary mb-2">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-sm font-semibold text-primary mb-2">{label}</label>
+      {control}
     </div>
   );
 }

@@ -98,22 +98,22 @@ export default function Contact() {
           {/* Form */}
           <form onSubmit={onSubmit} className="reveal-right bg-background rounded-2xl p-8 md:p-10 shadow-card border border-border space-y-5">
             <div>
-              <label className="text-sm font-semibold text-foreground mb-1.5 block">Full Name</label>
-              <input required maxLength={100} name="name" type="text" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+              <label htmlFor="contact-name" className="text-sm font-semibold text-foreground mb-1.5 block">Full Name</label>
+              <input id="contact-name" required maxLength={100} name="name" type="text" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
-                <label className="text-sm font-semibold text-foreground mb-1.5 block">Email</label>
-                <input required maxLength={255} name="email" type="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+                <label htmlFor="contact-email" className="text-sm font-semibold text-foreground mb-1.5 block">Email</label>
+                <input id="contact-email" required maxLength={255} name="email" type="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
               </div>
               <div>
-                <label className="text-sm font-semibold text-foreground mb-1.5 block">Phone</label>
-                <input required maxLength={20} name="phone" type="tel" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
+                <label htmlFor="contact-phone" className="text-sm font-semibold text-foreground mb-1.5 block">Phone</label>
+                <input id="contact-phone" required maxLength={20} name="phone" type="tel" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent" />
               </div>
             </div>
             <div>
-              <label className="text-sm font-semibold text-foreground mb-1.5 block">Interested Trek</label>
-              <select name="trek" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent">
+              <label htmlFor="contact-trek" className="text-sm font-semibold text-foreground mb-1.5 block">Interested Trek</label>
+              <select id="contact-trek" name="trek" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent">
                 <option>Ahobilam Trek</option>
                 <option>Bhongir Fort Sunrise</option>
                 <option>Ananthagiri Night Camp</option>
@@ -123,8 +123,8 @@ export default function Contact() {
               </select>
             </div>
             <div>
-              <label className="text-sm font-semibold text-foreground mb-1.5 block">Message / Special Requirements</label>
-              <textarea name="message" rows={4} maxLength={1000} className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+              <label htmlFor="contact-message" className="text-sm font-semibold text-foreground mb-1.5 block">Message / Special Requirements</label>
+              <textarea id="contact-message" name="message" rows={4} maxLength={1000} className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
             </div>
 
             <button

@@ -17,7 +17,7 @@ export default function UpcomingTreksPage() {
       <Navbar />
       <BackButton to="/" label="Back to Home" />
       <div className="pt-6">
-        <Treks mode="outstation" />
+        <Treks mode="outstation" asH1 />
       </div>
       <Footer />
     </main>
