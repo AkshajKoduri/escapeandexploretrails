@@ -1865,7 +1865,8 @@ function TeamMemberDialog({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !roleTitle.trim()) return toast.error("Name and role are required");
+    const invalid = firstError(teamMemberSchema, { full_name: fullName, role_title: roleTitle, bio });
+    if (invalid) return toast.error(invalid);
     setSaving(true);
     try {
       let photo_url = member?.photo_url ?? null;
