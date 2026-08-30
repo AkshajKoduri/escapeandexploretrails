@@ -84,7 +84,7 @@ const diffStyle: Record<Difficulty, { bg: string; label: string }> = {
   Hard: { bg: "bg-destructive/20 text-red-200", label: "🔴 Hard" },
 };
 
-export default function Treks({ mode = "outstation", preview = false }: { mode?: "outstation" | "hyderabad"; preview?: boolean } = {}) {
+export default function Treks({ mode = "outstation", preview = false, asH1 = false }: { mode?: "outstation" | "hyderabad"; preview?: boolean; asH1?: boolean } = {}) {
   const [treks, setTreks] = useState<TrekCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -246,9 +246,15 @@ export default function Treks({ mode = "outstation", preview = false }: { mode?:
       <div className="container">
         <div className="text-center max-w-2xl mx-auto reveal">
           <span className="font-script text-accent text-xl">{headerScript}</span>
-          <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">
-            {headerTitle}
-          </h2>
+          {asH1 ? (
+            <h1 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">
+              {headerTitle}
+            </h1>
+          ) : (
+            <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">
+              {headerTitle}
+            </h2>
+          )}
           <p className="mt-4 text-muted-foreground">{headerBlurb}</p>
         </div>
 

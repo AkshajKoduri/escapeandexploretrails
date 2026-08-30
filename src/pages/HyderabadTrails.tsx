@@ -17,7 +17,7 @@ export default function HyderabadTrailsPage() {
       <Navbar />
       <BackButton to="/" label="Back to Home" />
       <div className="pt-6">
-        <Treks mode="hyderabad" />
+        <Treks mode="hyderabad" asH1 />
       </div>
       <Footer />
     </main>

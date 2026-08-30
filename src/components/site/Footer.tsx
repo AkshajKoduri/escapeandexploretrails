@@ -128,6 +128,7 @@ export default function Footer() {
                 href="https://instagram.com/e2trails.in"
                 target="_blank"
                 rel="noreferrer"
+                aria-label={`E2 Trails on Instagram — trek photo ${i + 1}`}
                 className="aspect-square overflow-hidden rounded-md group"
               >
                 <img src={t} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
