@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { adminApi, adminRemove, adminUpload } from "@/lib/adminApi";
+import { firstError, manualBookingSchema, teamMemberSchema, trailLogSchema, tripSchema } from "@/lib/adminSchemas";
 import { toast } from "sonner";
 import { Mountain, Download, ArrowLeft, Plus, Trash2, Pencil, Archive, Users, FileText, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
