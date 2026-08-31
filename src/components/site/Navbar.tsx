@@ -39,7 +39,7 @@ export default function Navbar() {
     >
 
       <div className="container flex items-center justify-between">
-        <a href="#home" className="flex items-center gap-3 text-charcoal-foreground">
+        <Link to="/#home" className="flex items-center gap-3 text-charcoal-foreground">
           <img
             src={logo}
             alt="E2 Trails logo"
@@ -48,7 +48,7 @@ export default function Navbar() {
           <span className="font-heading font-extrabold text-xl tracking-wide">
             E2 <span className="text-accent">TRAILS</span>
           </span>
-        </a>
+        </Link>
 
         <nav className="hidden lg:flex items-center gap-8">
           {links.map((l) => (
@@ -101,12 +101,12 @@ export default function Navbar() {
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
           <aside className="absolute top-0 right-0 h-full w-[80%] max-w-sm bg-charcoal text-charcoal-foreground p-8 animate-drawer-in flex flex-col">
             <div className="flex items-center justify-between mb-10">
-              <div className="flex items-center gap-3">
+              <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-3">
                 <img src={logo} alt="E2 Trails logo" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
                 <span className="font-heading font-extrabold text-xl">
                   E2 <span className="text-accent">TRAILS</span>
                 </span>
-              </div>
+              </Link>
               <button aria-label="Close" onClick={() => setOpen(false)}>
                 <X className="w-7 h-7" />
               </button>
