@@ -113,15 +113,16 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-hero" />
 
       <div className="relative z-10 h-full container flex flex-col items-center justify-center text-center text-charcoal-foreground">
-        <h1 className="font-heading font-black text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05] max-w-5xl text-shadow-strong">
-          <span className="sr-only">
-            E2 Trails — Guided Treks, Hikes &amp; Cycling Rides from Hyderabad and Across India
-          </span>
-          <span aria-hidden="true">
-            {typed}
-            {!reducedMotion && <span className="caret text-accent">|</span>}
-          </span>
+        <h1 className="sr-only">
+          E2 Trails — Guided Treks, Hikes &amp; Cycling Rides from Hyderabad and Across India
         </h1>
+        <div
+          aria-hidden="true"
+          className="font-heading font-black text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05] max-w-5xl text-shadow-strong"
+        >
+          {typed}
+          {!reducedMotion && <span className="caret text-accent">|</span>}
+        </div>
 
         <p className="mt-8 max-w-2xl text-base md:text-lg text-charcoal-foreground/90 reveal text-shadow-strong">
           Hikes, cycling, bike rides and seasonal treks — where every trail comes with memorable moments and new friendships.

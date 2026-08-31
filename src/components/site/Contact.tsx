@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Instagram, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { publicApi } from "@/lib/publicApi";
+import { supabase } from "@/integrations/supabase/client";
 
 const contactSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name").max(100, "Name too long"),
@@ -14,6 +15,26 @@ const contactSchema = z.object({
 
 export default function Contact() {
   const [sending, setSending] = useState(false);
+  const [trekOptions, setTrekOptions] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("upcoming_treks")
+        .select("id, name, trek_date")
+        .eq("is_archived", false)
+        .eq("is_draft", false)
+        .gte("trek_date", today)
+        .order("trek_date", { ascending: true });
+      if (active) setTrekOptions((data ?? []).map((t: any) => ({ id: t.id, name: t.name })));
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -114,12 +135,12 @@ export default function Contact() {
             <div>
               <label htmlFor="contact-trek" className="text-sm font-semibold text-foreground mb-1.5 block">Interested Trek</label>
               <select id="contact-trek" name="trek" className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent">
-                <option>Ahobilam Trek</option>
-                <option>Bhongir Fort Sunrise</option>
-                <option>Ananthagiri Night Camp</option>
-                <option>Koilkonda Fort Trail</option>
-                <option>Ethipothala Falls Hike</option>
-                <option>Medak Fort Weekend</option>
+                <option value="">Not sure / general enquiry</option>
+                {trekOptions.map((t) => (
+                  <option key={t.id} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
