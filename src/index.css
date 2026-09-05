@@ -288,6 +288,12 @@
   will-change: transform;
 }
 
+@keyframes bar-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.bar-enter { animation: bar-in 0.25s cubic-bezier(0.4,0,0.2,1) both; }
+
 @keyframes drawer-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
@@ -304,6 +310,6 @@
   html { scroll-behavior: auto; }
   .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; transition: none !important; }
   .tactile:hover, .tactile:active, button:active, a[role="button"]:active { transform: none !important; }
-  .marquee-track, .animate-kenburns, .animate-bounce-arrow, .animate-fade-up, .animate-drawer-in { animation: none !important; }
+  .marquee-track, .animate-kenburns, .animate-bounce-arrow, .animate-fade-up, .animate-drawer-in, .bar-enter { animation: none !important; }
   * { transition-duration: 0.01ms !important; }
 }

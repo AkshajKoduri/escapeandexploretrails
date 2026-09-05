@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 /* ------------------------------------------------------------------ */
 
 export type Difficulty = "Easy" | "Moderate" | "Hard";
+
 export type EventType = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride";
 
 export type AdventureExtra = { key: string; label: string; value: string };
@@ -113,6 +114,20 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   "Cycling Ride": "Cycling Ride",
   "Bike Ride": "Bike Ride",
   "Monsoon Trek": "Trek",
+};
+
+export const WHATSAPP_NUMBER = "916303682022";
+
+export function whatsappLink(message: string): string {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
+/** Generic scale definitions (never specific claims about a given trail). */
+export const DIFFICULTY_NOTES: Record<Difficulty, string> = {
+  Easy: "Easy — a relaxed pace on mostly well-defined paths, good for first-timers.",
+  Moderate:
+    "Moderate — a comfortable middle ground for people who are regularly active; expect some steady climbing.",
+  Hard: "Hard — long or steep sections that need real fitness and, ideally, some trekking experience.",
 };
 
 export function adventureLocation(a: Adventure): string {

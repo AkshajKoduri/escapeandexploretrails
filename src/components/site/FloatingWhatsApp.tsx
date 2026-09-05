@@ -21,6 +21,9 @@ export default function FloatingWhatsApp() {
   }, []);
 
   if (location.pathname.startsWith("/booking")) return null;
+  // Trek detail pages have their own WhatsApp CTAs plus a sticky booking bar
+  // that would collide with a floating button here.
+  if (/^\/adventures\/[^/]+$/.test(location.pathname)) return null;
   if (dialogOpen) return null;
 
   return (
