@@ -52,6 +52,9 @@ export default function TripDetail() {
   const [adventure, setAdventure] = useState<Adventure | null>(null);
   const [others, setOthers] = useState<Adventure[]>([]);
   const [loading, setLoading] = useState(true);
+  // Set when a visitor clicks "Book this date" — the booking panel below
+  // reacts by preselecting exactly that date.
+  const [requestedDate, setRequestedDate] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -326,7 +329,15 @@ export default function TripDetail() {
                   {adventure.dates.map((d) => (
                     <li key={d} className="flex flex-wrap items-center justify-between gap-3 py-4">
                       <span className="font-display font-semibold text-lg text-foreground">{fmtDate(d)}</span>
-                      <a href="#book" className="text-sm font-semibold text-accent hover:underline">
+                      <a
+                        href="#book"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setRequestedDate(d);
+                          document.getElementById("book")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="text-sm font-semibold text-accent hover:underline"
+                      >
                         Book this date →
                       </a>
                     </li>
@@ -337,7 +348,7 @@ export default function TripDetail() {
           </div>
 
           {/* ============ Booking panel ============ */}
-          <BookingPanel adventure={adventure} />
+          <BookingPanel adventure={adventure} requestedDate={requestedDate} />
         </div>
       </section>
 
@@ -373,7 +384,13 @@ export default function TripDetail() {
 /* Booking panel                                                       */
 /* ================================================================== */
 
-function BookingPanel({ adventure }: { adventure: Adventure }) {
+function BookingPanel({
+  adventure,
+  requestedDate,
+}: {
+  adventure: Adventure;
+  requestedDate?: string | null;
+}) {
   const [date, setDate] = useState<string>(adventure.dates[0] ?? "");
   const [people, setPeople] = useState(1);
   const [name, setName] = useState("");
@@ -397,6 +414,14 @@ function BookingPanel({ adventure }: { adventure: Adventure }) {
     setDone(false);
     setClientRef(crypto.randomUUID());
   }, [adventure.id, adventure.dates]);
+
+  // Honor a "Book this date" click: preselect exactly the date the visitor
+  // chose instead of silently defaulting to the first date.
+  useEffect(() => {
+    if (requestedDate && adventure.dates.includes(requestedDate)) {
+      setDate(requestedDate);
+    }
+  }, [requestedDate, adventure.id, adventure.dates]);
 
   const addPerson = () => setGroupNames((g) => (g.length < maxPeople - 1 ? [...g, ""] : g));
   const updatePerson = (i: number, v: string) =>
