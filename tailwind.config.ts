@@ -12,10 +12,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["'Bebas Neue'", "sans-serif"],
-        heading: ["Montserrat", "sans-serif"],
-        body: ["Inter", "sans-serif"],
-        script: ["'Playfair Display'", "serif"],
+        display: ["Fraunces", "Georgia", "serif"],
+        heading: ["Fraunces", "Georgia", "serif"],
+        body: ["'DM Sans'", "system-ui", "sans-serif"],
+        script: ["Fraunces", "Georgia", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -28,7 +28,7 @@ export default {
         destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
         muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
         accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
-        gold: { DEFAULT: "hsl(var(--gold))", foreground: "hsl(var(--gold-foreground))" },
+        gold: { DEFAULT: "hsl(var(--gold))", deep: "hsl(var(--gold-deep))", foreground: "hsl(var(--gold-foreground))" },
         charcoal: { DEFAULT: "hsl(var(--charcoal))", foreground: "hsl(var(--charcoal-foreground))" },
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },

@@ -1,44 +1,79 @@
-import { Shield, Map, Users } from "lucide-react";
+import { ShieldCheck, Map, Users, ArrowRight } from "lucide-react";
 
-const reasons = [
-  { icon: Shield, emoji: "🛡️", title: "Safety is Non-Negotiable", desc: "All treks are led by certified and experienced guides with first-aid kits and emergency protocols in place." },
-  { icon: Map, emoji: "🗺️", title: "We Know South India's Trails", desc: "From the Nallamala forests to the Deccan Plateau's forts, our routes are handpicked for the best experience." },
-  { icon: Users, emoji: "🤝", title: "You're Not a Customer — You're Community", desc: "Every trek is a small group experience designed to build real friendships and lasting memories." },
+const pillars = [
+  {
+    icon: ShieldCheck,
+    num: "01",
+    title: "Safety first",
+    desc: "Certified guides, first-aid kits, and clear emergency protocols on every outing. Adventure is only good when everyone comes home.",
+  },
+  {
+    icon: Map,
+    num: "02",
+    title: "Local knowledge",
+    desc: "From Nallamala forests to Deccan forts — routes handpicked from trails we know personally, not picked off a map.",
+  },
+  {
+    icon: Users,
+    num: "03",
+    title: "Real community",
+    desc: "Small groups built for real friendships, shared effort, and lasting memories. You're community, not a customer.",
+  },
 ];
 
 export default function WhyUs() {
   return (
-    <section className="py-24 md:py-32 bg-background">
-      <div className="container max-w-5xl">
-        <div className="text-center max-w-2xl mx-auto mb-16 reveal">
-          <span className="font-script text-accent text-xl">— Why us</span>
-          <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">
-            The E2 Trails Difference
-          </h2>
-        </div>
+    <section id="why-e2" className="py-20 md:py-28 bg-muted/40">
+      <div className="container max-w-6xl">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+          <div className="lg:col-span-5 lg:sticky lg:top-28">
+            <p className="kicker">Why E2 Trails</p>
+            <h2 className="editorial-title mt-3">
+              Not just another
+              <br />
+              <span className="font-script text-accent">trip operator.</span>
+            </h2>
+            <p className="editorial-lead">
+              Anyone can put a date on a trail. We build adventures around the people on them —
+              thoughtfully curated routes, honest trip information, and guides who treat every
+              first-timer like a future regular.
+            </p>
+            {/* Same-page native anchor: About now sits directly above WhyUs on
+                the homepage, so a router <Link to="/#story"> would reload/remount
+                instead of scrolling. */}
+            <a href="#story" className="btn-outline mt-8">
+              Meet the team
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </a>
+          </div>
 
-        <div className="space-y-10 md:space-y-16">
-          {reasons.map((r, i) => {
-            const Icon = r.icon;
-            const left = i % 2 === 0;
-            return (
-              <div
-                key={r.title}
-                className={`flex flex-col md:flex-row items-center gap-8 md:gap-12 ${left ? "" : "md:flex-row-reverse"} ${left ? "reveal-left" : "reveal-right"}`}
-              >
-                <div className="flex-shrink-0 w-28 h-28 rounded-2xl bg-gradient-forest text-charcoal-foreground flex items-center justify-center shadow-trail relative">
-                  <Icon className="w-12 h-12" strokeWidth={1.5} />
-                  <span className="absolute -top-2 -right-2 text-3xl">{r.emoji}</span>
+          <div className="lg:col-span-7 divide-y divide-border border-y border-border">
+            {pillars.map((p, i) => {
+              const Icon = p.icon;
+              return (
+                <div
+                  key={p.num}
+                  className="reveal py-8 md:py-10 grid sm:grid-cols-[auto_1fr] gap-6 items-start"
+                  style={{ transitionDelay: `${i * 80}ms` }}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="font-display text-4xl font-bold text-border select-none" aria-hidden="true">
+                      {p.num}
+                    </span>
+                    <span className="w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
+                      <Icon className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-xl md:text-2xl text-primary">{p.title}</h3>
+                    <p className="mt-2 text-muted-foreground leading-relaxed max-w-xl">{p.desc}</p>
+                  </div>
                 </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="font-heading font-bold text-2xl md:text-3xl text-primary">{r.title}</h3>
-                  <p className="mt-3 text-muted-foreground text-base md:text-lg leading-relaxed">{r.desc}</p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
   );
-}
+}

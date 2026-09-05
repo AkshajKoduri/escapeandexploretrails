@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Instagram, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { publicApi } from "@/lib/publicApi";
+import { cn } from "@/lib/utils";
 import g1 from "@/assets/gallery-1.jpg";
 import g2 from "@/assets/gallery-2.jpg";
 import g3 from "@/assets/gallery-3.jpg";
@@ -22,13 +22,13 @@ type GalleryItem = {
 };
 
 const FALLBACK_ITEMS: GalleryItem[] = [
-  { id: "static-1", url: g1, alt: "Adventure trail moment", category: "General" },
-  { id: "static-2", url: g2, alt: "Adventure trail moment", category: "General" },
-  { id: "static-3", url: g3, alt: "Adventure trail moment", category: "General" },
-  { id: "static-4", url: g4, alt: "Adventure trail moment", category: "General" },
-  { id: "static-5", url: g5, alt: "Adventure trail moment", category: "General" },
-  { id: "static-6", url: g6, alt: "Adventure trail moment", category: "General" },
-  { id: "static-7", url: g7, alt: "Adventure trail moment", category: "General" },
+  { id: "static-1", url: g1, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-2", url: g2, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-3", url: g3, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-4", url: g4, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-5", url: g5, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-6", url: g6, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-7", url: g7, alt: "Adventure trail moment with E2 Trails", category: "General" },
 ];
 
 const FILTERS: { key: FilterType; label: string }[] = [
@@ -44,7 +44,6 @@ export default function Gallery() {
   const [filter, setFilter] = useState<FilterType>("All");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -56,23 +55,24 @@ export default function Gallery() {
       const paths = data.map((r: any) => r.storage_path).filter(Boolean) as string[];
       let urlMap: Record<string, string> = {};
       if (paths.length) {
-        try {
-          const res = await publicApi<{ urls: Record<string, string> }>("galleryUrls", { paths });
-          urlMap = res?.urls ?? {};
-        } catch {
-          urlMap = {};
-        }
+        const { data: signed } = await supabase.storage
+          .from("gallery-images")
+          .createSignedUrls(paths, 60 * 60 * 6);
+        (signed ?? []).forEach((s: any) => {
+          if (s.path && s.signedUrl) urlMap[s.path] = s.signedUrl;
+        });
       }
 
-      const mapped: GalleryItem[] = data.map((r: any) => ({
-        id: r.id,
-        url: (r.storage_path && urlMap[r.storage_path]) || r.image_url || "",
-        alt: r.alt_text || "Gallery image",
-        category: r.category as Category,
-      })).filter((i) => i.url);
+      const mapped: GalleryItem[] = data
+        .map((r: any) => ({
+          id: r.id,
+          url: (r.storage_path && urlMap[r.storage_path]) || r.image_url || "",
+          alt: r.alt_text || "Gallery image",
+          category: r.category as Category,
+        }))
+        .filter((i) => i.url);
 
       if (mapped.length > 0) setItems(mapped);
-
     })();
   }, []);
 
@@ -83,33 +83,54 @@ export default function Gallery() {
 
   const open = activeIndex !== null;
   const active = activeIndex !== null ? visible[activeIndex] : null;
-  const prev = () =>
-    setActiveIndex((i) => (i === null ? i : (i - 1 + visible.length) % visible.length));
-  const next = () =>
-    setActiveIndex((i) => (i === null ? i : (i + 1) % visible.length));
+  const prev = () => setActiveIndex((i) => (i === null ? i : (i - 1 + visible.length) % visible.length));
+  const next = () => setActiveIndex((i) => (i === null ? i : (i + 1) % visible.length));
+
+  /** Editorial layout: index 0 gets a large feature cell, then a rhythm of shapes. */
+  const cellClass = (i: number) => {
+    if (i === 0) return "col-span-2 row-span-2 aspect-square md:aspect-auto";
+    if (i % 5 === 1) return "aspect-[4/3]";
+    if (i % 5 === 2) return "aspect-square";
+    if (i % 5 === 3) return "aspect-[3/4]";
+    return "aspect-[4/3]";
+  };
 
   return (
-    <section id="gallery" className="py-24 md:py-32 bg-background">
+    <section id="gallery" className="py-24 md:py-32 bg-muted/30">
       <div className="container">
-        <div className="text-center max-w-2xl mx-auto reveal">
-          <span className="font-script text-accent text-xl">— Memories</span>
-          <h2 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">
-            Moments on the Trail
-          </h2>
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="kicker">Life out there</p>
+            <h2 className="editorial-title mt-3">
+              Moments on
+              <span className="font-script text-accent"> the trail</span>
+            </h2>
+            <p className="editorial-lead">
+              Real frames from real outings — the sunrise summits, the bonfire evenings and the rides
+              home through city lights.
+            </p>
+          </div>
+          <a
+            href="https://instagram.com/e2trails.in"
+            target="_blank"
+            rel="noreferrer"
+            className="btn-outline shrink-0"
+          >
+            <Instagram className="w-4 h-4" aria-hidden="true" />
+            Follow @e2trails.in
+          </a>
         </div>
 
-        <div className="mt-10 flex flex-wrap justify-center gap-2 reveal">
+        <div className="mt-10 flex flex-wrap gap-2">
           {FILTERS.map((f) => {
             const active = filter === f.key;
             return (
               <button
                 key={f.key}
+                type="button"
                 onClick={() => { setFilter(f.key); setActiveIndex(null); }}
-                className={`px-5 py-2 rounded-full text-sm font-semibold font-heading transition-colors border ${
-                  active
-                    ? "bg-accent text-accent-foreground border-accent shadow-card"
-                    : "bg-background text-primary border-border hover:bg-accent/10 hover:border-accent"
-                }`}
+                aria-pressed={active}
+                className={cn("filter-pill", active ? "filter-pill-active" : "filter-pill-idle")}
               >
                 {f.label}
               </button>
@@ -118,56 +139,49 @@ export default function Gallery() {
         </div>
 
         {visible.length === 0 ? (
-          <p className="mt-14 text-center text-muted-foreground">
-            No photos in this category yet.
-          </p>
+          <p className="mt-14 text-center text-muted-foreground">No photos in this category yet.</p>
         ) : (
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="mt-10 grid grid-cols-2 md:grid-cols-4 auto-rows-[minmax(140px,auto)] md:auto-rows-[minmax(180px,auto)] gap-3 md:gap-4">
             {visible.map((img, i) => (
               <button
                 type="button"
                 key={img.id}
                 onClick={() => setActiveIndex(i)}
                 aria-label={`View photo: ${img.alt}`}
-                className="reveal relative overflow-hidden rounded-xl group cursor-pointer aspect-square"
-                style={{ transitionDelay: `${i * 50}ms` }}
+                className={cn(
+                  "reveal group relative overflow-hidden rounded-lg cursor-pointer bg-muted",
+                  cellClass(i),
+                )}
+                style={{ transitionDelay: `${(i % 6) * 50}ms` }}
               >
                 <img
                   src={img.url}
                   alt={img.alt}
                   loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
                 />
-                <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/50 transition-colors duration-500 flex items-center justify-center">
-                  <ZoomIn className="w-8 h-8 text-charcoal-foreground opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300" />
+                <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition-colors duration-500 flex items-center justify-center">
+                  <ZoomIn
+                    className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300"
+                    aria-hidden="true"
+                  />
                 </div>
+                {img.category !== "General" && (
+                  <span className="absolute bottom-3 left-3 pill bg-black/55 text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {img.category}
+                  </span>
+                )}
               </button>
             ))}
           </div>
         )}
-
-        <div className="mt-12 text-center reveal">
-          <a
-            href="https://instagram.com/e2trails.in"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-3 px-7 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold hover:scale-105 transition-transform shadow-glow"
-          >
-            <Instagram className="w-5 h-5" />
-            Follow Us @e2trails.in
-          </a>
-        </div>
       </div>
 
       <Dialog open={open} onOpenChange={(o) => !o && setActiveIndex(null)}>
         <DialogContent className="max-w-[95vw] md:max-w-5xl p-0 border-0 bg-black/95 overflow-hidden">
           {active && (
             <div className="relative flex items-center justify-center w-full h-[85vh]">
-              <img
-                src={active.url}
-                alt={active.alt}
-                className="max-w-full max-h-full object-contain"
-              />
+              <img src={active.url} alt={active.alt} className="max-w-full max-h-full object-contain" />
               <button
                 type="button"
                 onClick={prev}
@@ -193,4 +207,4 @@ export default function Gallery() {
       </Dialog>
     </section>
   );
-}
+}

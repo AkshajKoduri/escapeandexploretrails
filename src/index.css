@@ -1,58 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,600&display=swap');
-
+/* Fonts are loaded from index.html <link> tags (preconnect + earlier start);
+   keeping a CSS @import here would add a render-blocking round trip. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* E2 Trails Design System - all HSL */
-    --background: 39 37% 94%;            /* #F5F0E8 parchment */
-    --foreground: 0 0% 11%;              /* #1C1C1C near-black */
+    /* E2 Trails — editorial design system */
+    --background: 40 33% 96%;            /* warm sand */
+    --foreground: 160 10% 12%;         /* deep ink-green */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 11%;
+    --card-foreground: 160 10% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 11%;
+    --popover-foreground: 160 10% 12%;
 
-    --primary: 150 51% 15%;              /* #1B4332 deep forest */
-    --primary-foreground: 40 25% 97%;
+    --primary: 158 42% 18%;            /* rich forest */
+    --primary-foreground: 40 30% 97%;
 
-    --secondary: 89 23% 30%;             /* #4A5E3A earthy olive */
-    --secondary-foreground: 40 25% 97%;
+    --secondary: 152 18% 32%;          /* sage */
+    --secondary-foreground: 40 30% 97%;
 
-    --muted: 39 25% 88%;
-    --muted-foreground: 0 0% 30%;
+    --muted: 38 22% 91%;
+    --muted-foreground: 160 8% 36%;
 
-    --accent: 22 80% 50%;                /* #E76F1A sunrise orange */
+    --accent: 18 78% 41%;              /* terracotta — deep rust, AA-safe (5.2:1 on white) */
     --accent-foreground: 0 0% 100%;
 
-    --gold: 39 90% 55%;                  /* #F4A823 golden trail */
-    --gold-foreground: 0 0% 11%;
+    --gold: 38 82% 52%;
+    --gold-deep: 38 74% 33%; /* AA-safe gold for small text on light surfaces */
+    --gold-foreground: 160 10% 12%;
 
-    --charcoal: 0 0% 10%;                /* #1A1A1A */
-    --charcoal-foreground: 40 25% 97%;   /* #FAF9F6 */
+    --charcoal: 160 12% 8%;
+    --charcoal-foreground: 40 30% 97%;
 
-    --destructive: 0 84% 55%;
+    --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 39 20% 82%;
-    --input: 39 20% 82%;
-    --ring: 22 80% 50%;
+    --success: 152 45% 32%;
+    --warning: 38 82% 46%;
+    --info: 205 70% 40%;
+
+    --border: 38 18% 86%;
+    --input: 38 18% 84%;
+    --ring: 18 78% 41%;
 
     --radius: 0.75rem;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(180deg, hsl(0 0% 0% / 0.2) 0%, hsl(0 0% 0% / 0.4) 50%, hsl(0 0% 0% / 0.85) 100%);
-    --gradient-card: linear-gradient(180deg, transparent 40%, hsl(150 51% 10% / 0.95) 100%);
-    --gradient-orange: linear-gradient(135deg, hsl(22 80% 50%), hsl(39 90% 55%));
-    --gradient-forest: linear-gradient(135deg, hsl(150 51% 15%), hsl(89 23% 25%));
+    --gradient-hero: linear-gradient(180deg, hsl(160 12% 8% / 0.12) 0%, hsl(160 12% 8% / 0.35) 55%, hsl(160 12% 8% / 0.9) 100%);
+    --gradient-card: linear-gradient(180deg, transparent 30%, hsl(160 12% 8% / 0.92) 100%);
+    --gradient-orange: linear-gradient(135deg, hsl(18 72% 44%), hsl(24 70% 48%));
+    --gradient-forest: linear-gradient(160deg, hsl(158 42% 16%), hsl(152 18% 26%));
 
     /* Shadows */
-    --shadow-trail: 0 20px 50px -15px hsl(150 51% 15% / 0.4);
-    --shadow-glow: 0 0 40px hsl(22 80% 50% / 0.4);
-    --shadow-card: 0 10px 30px -10px hsl(0 0% 0% / 0.25);
+    --shadow-trail: 0 24px 48px -16px hsl(158 42% 18% / 0.3);
+    --shadow-glow: 0 0 0 1px hsl(18 72% 48% / 0.15), 0 12px 32px -8px hsl(18 72% 48% / 0.35);
+    --shadow-card: 0 1px 2px hsl(160 12% 8% / 0.06), 0 8px 24px -12px hsl(160 12% 8% / 0.14);
 
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -72,15 +77,134 @@
   html { scroll-behavior: smooth; }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4, h5 {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Fraunces', Georgia, serif;
     @apply tracking-tight;
   }
-  .font-display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; }
-  .font-script  { font-family: 'Playfair Display', serif; font-style: italic; }
+  .font-display { font-family: 'Fraunces', Georgia, serif; }
+  .font-script  { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 400; }
+
+  /* Accessible, on-brand focus states */
+  :focus-visible {
+    outline: 2px solid hsl(var(--accent));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  ::selection { background: hsl(var(--accent) / 0.22); }
+
+  /* Tap targets & haptics */
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+
+@layer components {
+  /* ---------- Typography ---------- */
+  .kicker {
+    @apply inline-flex items-center gap-2.5 text-[11px] md:text-xs font-semibold uppercase tracking-[0.22em] text-accent;
+  }
+  .kicker::before {
+    content: "";
+    @apply block h-px w-8 bg-current opacity-60;
+  }
+  /* On dark/photographic surfaces a darker rust would fail 4.5:1, so lift it */
+  .kicker-light { color: hsl(18 88% 66%); }
+
+  .editorial-title {
+    @apply font-heading font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.05] text-primary;
+  }
+  .editorial-title-light { @apply text-charcoal-foreground; }
+  .editorial-lead {
+    @apply mt-5 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl;
+  }
+  .editorial-lead-light { @apply text-charcoal-foreground/80; }
+
+  .section-label { @apply kicker mb-4; }
+  .section-title  { @apply editorial-title; }
+  .section-blurb  { @apply editorial-lead; }
+
+  .meta-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full bg-primary text-primary-foreground text-sm font-semibold tracking-wide hover:bg-secondary transition-colors duration-200;
+  }
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full bg-accent text-accent-foreground text-sm font-semibold tracking-wide hover:brightness-110 transition-all duration-200;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full border border-primary/25 text-primary text-sm font-semibold tracking-wide hover:bg-primary/5 transition-colors duration-200;
+  }
+  .btn-light {
+    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full bg-white text-charcoal text-sm font-semibold tracking-wide hover:bg-white/90 transition-colors duration-200;
+  }
+  .btn-ghost-light {
+    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full border border-charcoal-foreground/35 text-charcoal-foreground text-sm font-semibold tracking-wide hover:bg-charcoal-foreground/10 transition-colors duration-200;
+  }
+  .btn-ghost-dark {
+    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full border border-primary/25 text-primary text-sm font-semibold tracking-wide hover:bg-primary/5 transition-colors duration-200;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full bg-destructive text-destructive-foreground text-sm font-semibold hover:brightness-110 transition-all;
+  }
+  .btn-sm { @apply min-h-[38px] px-5 text-xs; }
+
+  /* ---------- Cards & surfaces ---------- */
+  .surface {
+    @apply bg-card border border-border shadow-card;
+  }
+  .card-hover {
+    transition: transform 0.35s var(--transition-smooth), box-shadow 0.35s var(--transition-smooth);
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-trail);
+  }
+
+  /* ---------- Forms ---------- */
+  .field-input {
+    @apply w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition;
+  }
+  .field-label {
+    @apply block text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2;
+  }
+  .field-error {
+    @apply mt-1.5 text-xs font-medium text-destructive;
+  }
+
+  /* ---------- Pills / badges ---------- */
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+  }
+  .pill-outline {
+    @apply pill border border-primary/20 text-primary bg-transparent;
+  }
+  .filter-pill {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-colors duration-150;
+  }
+  .filter-pill-idle {
+    @apply border-border bg-card text-muted-foreground hover:border-accent/60 hover:text-foreground;
+  }
+  .filter-pill-active {
+    @apply border-accent bg-accent text-accent-foreground;
+  }
+
+  /* ---------- Misc ---------- */
+  .hairline-t { border-top: 1px solid hsl(var(--border)); }
+  .hairline-b { border-bottom: 1px solid hsl(var(--border)); }
+  .hairline { border: 1px solid hsl(var(--border)); }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .text-balance { text-wrap: balance; }
+
+  .text-shadow-strong { text-shadow: 0 2px 24px hsl(160 12% 8% / 0.5); }
 }
 
 @layer utilities {
@@ -92,6 +216,7 @@
   .shadow-glow  { box-shadow: var(--shadow-glow); }
   .shadow-card  { box-shadow: var(--shadow-card); }
 
+  /* Scroll reveal (kept for existing components) */
   .reveal {
     opacity: 0;
     transform: translateY(24px);
@@ -105,7 +230,6 @@
   .reveal-right { opacity: 0; transform: translateX(40px); transition: all 0.9s var(--transition-smooth); }
   .reveal-right.in-view { opacity: 1; transform: translateX(0); }
 
-  /* Tactile press/hover micro-interaction for buttons and interactive pills. */
   .tactile {
     transition: transform 0.2s var(--transition-smooth), box-shadow 0.2s var(--transition-smooth), background-color 0.2s var(--transition-smooth), color 0.2s var(--transition-smooth);
     will-change: transform;
@@ -113,22 +237,23 @@
   .tactile:hover { transform: scale(1.03); }
   .tactile:active { transform: scale(0.97); }
 
-  /* Global subtle press feedback on native buttons and links marked as button. */
   button:not(:disabled):active,
   a[role="button"]:not([aria-disabled="true"]):active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
   button, a[role="button"] {
     transition: transform 0.18s var(--transition-smooth);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; transition: none !important; }
-    .tactile:hover, .tactile:active, button:active, a[role="button"]:active { transform: none !important; }
+  .trek-card {
+    @apply relative overflow-hidden rounded-xl bg-charcoal cursor-pointer;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.4s var(--transition-smooth), box-shadow 0.4s var(--transition-smooth);
   }
-
-
-  .text-shadow-strong { text-shadow: 0 4px 30px hsl(0 0% 0% / 0.6); }
+  .trek-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-trail);
+  }
 
   .marquee-track {
     display: flex;
@@ -154,9 +279,13 @@
 }
 .caret { animation: blink-caret 0.8s steps(1) infinite; }
 
-@keyframes float-dot {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.4); }
+@keyframes hero-kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+.animate-kenburns {
+  animation: hero-kenburns 24s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 @keyframes drawer-in {
@@ -164,3 +293,17 @@
   to { transform: translateX(0); }
 }
 .animate-drawer-in { animation: drawer-in 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.6s var(--transition-smooth) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .tactile:hover, .tactile:active, button:active, a[role="button"]:active { transform: none !important; }
+  .marquee-track, .animate-kenburns, .animate-bounce-arrow, .animate-fade-up, .animate-drawer-in { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}

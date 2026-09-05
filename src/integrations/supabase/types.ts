@@ -522,6 +522,32 @@ export type Database = {
           trek_id: string
         }[]
       }
+      create_booking: {
+        Args: {
+          p_trek_id: string
+          p_trek_date: string
+          p_name: string
+          p_phone: string
+          p_email?: string | null
+          p_age?: number | null
+          p_gender?: string | null
+          p_members?: string[] | null
+          p_client_ref?: string | null
+        }
+        Returns: {
+          booking_id?: string
+          code?: string
+          created?: boolean
+          ok: boolean
+          remaining?: number
+          seats?: number
+          trek_date?: string
+        }
+      }
+      get_explorer_count: {
+        Args: never
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

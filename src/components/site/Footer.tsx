@@ -1,148 +1,85 @@
-import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Instagram } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Instagram, Mail, Phone, MapPin } from "lucide-react";
 import logo from "@/assets/logo.png";
-import g1 from "@/assets/gallery-1.jpg";
-import g2 from "@/assets/gallery-2.jpg";
-import g3 from "@/assets/gallery-3.jpg";
-import g4 from "@/assets/gallery-4.jpg";
-import g5 from "@/assets/gallery-5.jpg";
-import g6 from "@/assets/gallery-6.jpg";
-import g7 from "@/assets/gallery-7.jpg";
-
-function ExploreAdventuresFooter() {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) {
-      document.addEventListener("mousedown", handleClick);
-    }
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        className="text-charcoal-foreground/70 hover:text-accent transition-colors inline-flex items-center gap-1 min-h-[44px]"
-      >
-        Explore Adventures
-        <span className={cn("text-xs transition-transform duration-200", open && "rotate-180")}>▾</span>
-      </button>
-      <div
-        role="menu"
-        className={cn(
-          "absolute top-full left-0 mt-2 min-w-[12rem] rounded-lg border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
-          open ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
-        )}
-      >
-        <Link
-          to="/hyderabad-trails"
-          role="menuitem"
-          className="flex items-center min-h-[44px] px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-          onClick={() => setOpen(false)}
-        >
-          Hyderabad Trails
-        </Link>
-        <div className="h-px bg-white/10" />
-        <Link
-          to="/upcoming-treks"
-          role="menuitem"
-          className="flex items-center min-h-[44px] px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-          onClick={() => setOpen(false)}
-        >
-          Outstation Treks
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-
-const thumbs = [g1, g2, g3, g4, g5, g7];
-const links = [
-  { label: "Home", href: "/#home" },
-  { label: "Explore Adventures", href: "#", dropdown: true },
-  { label: "About", href: "/#about" },
-  { label: "Gallery", href: "/#gallery" },
-  { label: "Contact", href: "/#contact" },
-];
 
 export default function Footer() {
   return (
     <footer className="bg-charcoal text-charcoal-foreground relative">
-      {/* Mountain silhouette */}
-      <svg className="absolute top-0 left-0 w-full h-12 -translate-y-[99%] text-charcoal" viewBox="0 0 1200 100" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0,100 L0,60 L150,20 L280,75 L400,15 L560,70 L700,25 L860,65 L1000,30 L1200,55 L1200,100 Z" fill="currentColor" />
-      </svg>
-
-      <div className="container py-16 grid md:grid-cols-3 gap-12">
+      <div className="container py-16 md:py-20 grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+        {/* Brand */}
         <div>
           <div className="flex items-center gap-3">
-            <img src={logo} alt="E2 Trails logo" className="w-11 h-11 rounded-full bg-white object-contain p-0.5" />
-            <span className="font-heading font-extrabold text-xl">
+            <img src={logo} alt="E2 Trails logo" className="w-10 h-10 rounded-full bg-white object-contain p-0.5" />
+            <span className="font-display font-bold text-lg">
               E2 <span className="text-accent">TRAILS</span>
             </span>
           </div>
-          <p className="mt-4 text-charcoal-foreground/70 leading-relaxed">
-            Curating safe, soulful adventures across India — one trail at a time.
+          <p className="mt-4 text-sm text-charcoal-foreground/65 leading-relaxed max-w-xs">
+            Curating safe, soulful adventures across India — hikes, rides and trails where every
+            summit is a new story.
           </p>
           <p className="mt-4 font-script text-gold">"Every summit, a new story."</p>
         </div>
 
-        <div>
-          <h4 className="font-heading font-bold text-lg mb-4 uppercase tracking-wider">Quick Links</h4>
-          <ul className="space-y-2">
-            {links.map((l) => (
-              <li key={l.label}>
-                {l.dropdown ? (
-                  <ExploreAdventuresFooter />
-                ) : (
-                  <a href={l.href} className="text-charcoal-foreground/70 hover:text-accent transition-colors">
-                    {l.label}
-                  </a>
-                )}
-              </li>
-            ))}
+        {/* Adventures */}
+        <nav aria-label="Adventures">
+          <h4 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Adventures</h4>
+          <ul className="space-y-2.5 text-sm text-charcoal-foreground/65">
+            <li><Link to="/adventures" className="hover:text-accent transition-colors">All Adventures</Link></li>
+            <li><Link to="/upcoming-treks" className="hover:text-accent transition-colors">Outstation Treks</Link></li>
+            <li><Link to="/hyderabad-trails" className="hover:text-accent transition-colors">Hyderabad Trails</Link></li>
+            <li><Link to="/booking" className="hover:text-accent transition-colors">Book a Trip</Link></li>
           </ul>
-        </div>
+        </nav>
 
+        {/* Company */}
+        <nav aria-label="Company">
+          <h4 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Company</h4>
+          <ul className="space-y-2.5 text-sm text-charcoal-foreground/65">
+            <li><a href="/#story" className="hover:text-accent transition-colors">Our Story</a></li>
+            <li><a href="/trail-log" className="hover:text-accent transition-colors">Trail Journal</a></li>
+            <li><a href="/#gallery" className="hover:text-accent transition-colors">Life Out There</a></li>
+            <li><a href="/#contact" className="hover:text-accent transition-colors">Contact</a></li>
+          </ul>
+        </nav>
+
+        {/* Contact */}
         <div>
-          <h4 className="font-heading font-bold text-lg mb-4 uppercase tracking-wider flex items-center gap-2">
-            <Instagram className="w-5 h-5 text-accent" /> Follow Us
-          </h4>
-          <div className="grid grid-cols-3 gap-2">
-            {thumbs.map((t, i) => (
+          <h4 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Contact</h4>
+          <ul className="space-y-3 text-sm text-charcoal-foreground/65">
+            <li>
+              <a href="mailto:hello@e2trails.in" className="inline-flex items-center gap-2.5 hover:text-accent transition-colors">
+                <Mail className="w-4 h-4 text-accent" aria-hidden="true" /> hello@e2trails.in
+              </a>
+            </li>
+            <li>
+              <a href="tel:+916303682022" className="inline-flex items-center gap-2.5 hover:text-accent transition-colors">
+                <Phone className="w-4 h-4 text-accent" aria-hidden="true" /> +91 63036 82022
+              </a>
+            </li>
+            <li className="inline-flex items-center gap-2.5">
+              <MapPin className="w-4 h-4 text-accent" aria-hidden="true" /> Hyderabad, India
+            </li>
+            <li>
               <a
-                key={i}
                 href="https://instagram.com/e2trails.in"
                 target="_blank"
                 rel="noreferrer"
-                aria-label={`E2 Trails on Instagram — trek photo ${i + 1}`}
-                className="aspect-square overflow-hidden rounded-md group"
+                className="inline-flex items-center gap-2.5 hover:text-accent transition-colors"
               >
-                <img src={t} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <Instagram className="w-4 h-4 text-accent" aria-hidden="true" /> @e2trails.in
               </a>
-            ))}
-          </div>
+            </li>
+          </ul>
         </div>
       </div>
 
       <div className="border-t border-charcoal-foreground/10 py-6">
-        <div className="container text-center text-sm text-charcoal-foreground/60">
-          © 2026 E2 Trails. All rights reserved. | Made with <span className="text-accent">🧡</span> in Hyderabad
+        <div className="container flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-charcoal-foreground/50">
+          <p>© {new Date().getFullYear()} E2 Trails. All rights reserved.</p>
+          <p>Made with <span className="text-accent">🧡</span> in Hyderabad</p>
         </div>
       </div>
     </footer>
   );
-}
+}

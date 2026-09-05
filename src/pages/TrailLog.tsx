@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
-import BackButton from "@/components/site/BackButton";
 import TrailLogCard, { type TrailLogPost } from "@/components/site/TrailLogCard";
 import { fetchTrailLogPosts } from "@/lib/trailLog";
 import { BookOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useReveal } from "@/hooks/useReveal";
-import { useSeo } from "@/hooks/useSeo";
-
 
 type FilterKey = "All" | "Trail Guide" | "Trek Journal" | "Tips & Advice" | "Event Recap";
 
@@ -24,18 +22,18 @@ export default function TrailLog() {
   const [posts, setPosts] = useState<TrailLogPost[] | null>(null);
   const [filter, setFilter] = useState<FilterKey>("All");
 
-  useSeo({
-    title: "The Trail Log — Trek Guides, Journals & Tips | E2 Trails",
-    description: "Adventures, guides and stories from E2 Trails — trail guides, trek journals, packing tips and event recaps from our trekking community.",
-    path: "/trail-log",
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      name: "The Trail Log",
-      url: "https://e2trails-in.lovable.app/trail-log",
-      description: "Trail guides, trek journals, tips and event recaps from E2 Trails.",
-    },
-  });
+  useEffect(() => {
+    document.title = "The Trail Journal — E2 Trails";
+    const desc =
+      "Adventures, guides & stories from E2 Trails — trail guides, trek journals, tips and event recaps from our community.";
+    let m = document.querySelector('meta[name="description"]');
+    if (!m) {
+      m = document.createElement("meta");
+      m.setAttribute("name", "description");
+      document.head.appendChild(m);
+    }
+    m.setAttribute("content", desc);
+  }, []);
 
   useEffect(() => {
     fetchTrailLogPosts().then(setPosts);
@@ -50,30 +48,30 @@ export default function TrailLog() {
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
-      <BackButton to="/" label="Back to Home" />
 
-      <section className="pt-8 md:pt-12 pb-24 md:pb-32">
+      <section className="pt-32 md:pt-40 pb-20 md:pb-28">
         <div className="container">
-
-          <div className="text-center max-w-2xl mx-auto reveal">
-            <span className="font-script text-accent text-xl">— Adventures, guides & stories</span>
-            <h1 className="font-heading font-extrabold text-4xl md:text-6xl mt-2 text-primary">
-              The Trail Log
+          <div className="max-w-2xl">
+            <p className="kicker">Adventures, guides &amp; stories</p>
+            <h1 className="editorial-title mt-3">
+              The Trail
+              <span className="font-script text-accent"> Journal</span>
             </h1>
+            <p className="editorial-lead">
+              Stories, guides and moments from the trail — written by the people who were there.
+            </p>
           </div>
 
-          <div className="mt-10 flex flex-wrap justify-center gap-2 reveal">
+          <div className="mt-10 flex flex-wrap gap-2">
             {FILTERS.map((f) => {
               const active = filter === f.key;
               return (
                 <button
                   key={f.key}
+                  type="button"
                   onClick={() => setFilter(f.key)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold font-heading transition-colors border ${
-                    active
-                      ? "bg-accent text-accent-foreground border-accent shadow-card"
-                      : "bg-background text-primary border-border hover:bg-accent/10 hover:border-accent"
-                  }`}
+                  aria-pressed={active}
+                  className={cn("filter-pill", active ? "filter-pill-active" : "filter-pill-idle")}
                 >
                   {f.label}
                 </button>
@@ -84,24 +82,22 @@ export default function TrailLog() {
           {posts === null ? (
             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-72 rounded-2xl bg-muted animate-pulse" />
+                <div key={i} className="h-72 rounded-xl bg-muted animate-pulse" />
               ))}
             </div>
           ) : posts.length === 0 ? (
             <div className="mt-20 text-center reveal">
-              <BookOpen className="w-14 h-14 text-accent/60 mx-auto mb-5" strokeWidth={1.5} />
+              <BookOpen className="w-12 h-12 text-accent/60 mx-auto mb-5" strokeWidth={1.5} aria-hidden="true" />
               <p className="text-muted-foreground max-w-md mx-auto text-lg">
                 Stories from the trail are coming soon. Check back after our next adventure!
               </p>
             </div>
           ) : visible.length === 0 ? (
-            <p className="mt-14 text-center text-muted-foreground">
-              No posts in this category yet.
-            </p>
+            <p className="mt-14 text-center text-muted-foreground">No posts in this category yet.</p>
           ) : (
             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {visible.map((p) => (
-                <TrailLogCard key={p.id} post={p} />
+                <TrailLogCard key={p.id} post={p} featured={p === visible[0] && filter === "All"} />
               ))}
             </div>
           )}
@@ -111,4 +107,4 @@ export default function TrailLog() {
       <Footer />
     </main>
   );
-}
+}

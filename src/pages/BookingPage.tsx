@@ -1,380 +1,428 @@
-import React, { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { CheckCircle2, Plus, Trash2, ArrowLeft } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { publicApi } from "@/lib/publicApi";
-import { useSeo } from "@/hooks/useSeo";
+import { CheckCircle2, Plus, Minus, ArrowLeft, ArrowRight, MapPin, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Adventure } from "@/lib/treks";
+import {
+  DIFFICULTY_STYLES,
+  fetchAdventures,
+  fmtDate,
+  fmtDateShort,
+  hasValue,
+  inr,
+  submitBooking,
+} from "@/lib/treks";
 import logo from "@/assets/logo.png";
-
-type Member = { name: string };
-type TrekOpt = {
-  id: string;
-  name: string;
-  trek_date: string;
-  trek_time: string | null;
-  meeting_point: string | null;
-  instructions: string | null;
-  price: number;
-  destination: string | null;
-  seats_remaining: number;
-  max_seats: number;
-  itinerary_url: string | null;
-  itinerary_file_path: string | null;
-};
 
 const primarySchema = z.object({
   name: z.string().trim().min(2, "Name too short").max(80),
-  age: z.coerce.number().int().min(10).max(99),
+  age: z.coerce.number().int().min(10, "Minimum age is 10").max(99),
   gender: z.enum(["Male", "Female", "Other", "Prefer not to say"]),
-  phone: z.string().trim().regex(/^[+]?[0-9\s-]{10,15}$/, "Enter a valid phone"),
+  phone: z.string().trim().regex(/^[+]?[0-9\s-]{10,15}$/, "Enter a valid phone number"),
   email: z.string().trim().email("Invalid email").optional().or(z.literal("")),
-  trekId: z.string().min(1, "Choose a trek"),
 });
 
 export default function BookingPage() {
   const [params] = useSearchParams();
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-
-  const [trekOptions, setTrekOptions] = useState<TrekOpt[]>([]);
+  const [adventures, setAdventures] = useState<Adventure[]>([]);
   const [trekId, setTrekId] = useState<string>(params.get("trek") ?? "");
-
+  const [date, setDate] = useState<string>(params.get("date") ?? "");
+  const [people, setPeople] = useState(1);
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [isGroup, setIsGroup] = useState(false);
-  const [members, setMembers] = useState<Member[]>([]);
-
-  const selectedTrek = useMemo(() => trekOptions.find((t) => t.id === trekId), [trekOptions, trekId]);
-  const seatsNeeded = 1 + (isGroup ? members.length : 0);
-
-  useSeo({
-    title: "Book a Trek — Reserve Your Spot | E2 Trails",
-    description: "Reserve your place on an upcoming E2 Trails trek, hike or cycling ride. Pick a trip, add your group details and confirm your booking in minutes.",
-    path: "/booking",
-  });
-
-  const loadTreks = async () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const [{ data: tdata }, { data: stats }] = await Promise.all([
-      supabase
-        .from("upcoming_treks")
-        .select("*")
-        .eq("is_archived", false)
-        .eq("is_draft", false)
-        .gte("trek_date", today)
-        .order("trek_date", { ascending: true }),
-      supabase.rpc("get_trek_seat_stats"),
-    ]);
-    const sm = new Map<string, any>();
-    (stats ?? []).forEach((s: any) => sm.set(s.trek_id, s));
-    setTrekOptions(
-      (tdata ?? []).map((t: any) => ({
-        id: t.id,
-        name: t.name,
-        trek_date: t.trek_date,
-        trek_time: t.trek_time,
-        meeting_point: t.meeting_point,
-        instructions: t.instructions,
-        price: Number(t.price ?? 0),
-        destination: t.destination,
-        seats_remaining: sm.get(t.id)?.seats_remaining ?? t.max_seats ?? 0,
-        max_seats: sm.get(t.id)?.max_seats ?? t.max_seats ?? 0,
-        itinerary_url: t.itinerary_url ?? null,
-        itinerary_file_path: t.itinerary_file_path ?? null,
-      })),
-    );
-  };
+  const [groupNames, setGroupNames] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  // Idempotency key for this booking attempt: retries after a timeout or lost
+  // response reuse the same key so the server never creates a duplicate.
+  const [clientRef, setClientRef] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
-    loadTreks();
-    const ch = supabase
-      .channel("booking-treks")
-      .on("postgres_changes", { event: "*", schema: "public", table: "upcoming_treks" }, loadTreks)
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, loadTreks)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
+    document.title = "Book a Trek — E2 Trails";
+    let cancelled = false;
+    fetchAdventures().then((all) => {
+      if (cancelled) return;
+      setAdventures(all);
+    });
+    return () => { cancelled = true; };
   }, []);
+
+  const selected = useMemo(() => adventures.find((a) => a.id === trekId), [adventures, trekId]);
+  const maxPeople = selected ? Math.max(1, selected.seatsRemaining) : 1;
+  const price = selected?.startingPrice ?? (selected && selected.price > 0 ? selected.price : null);
+
+  // Keep date valid when adventure changes
+  useEffect(() => {
+    if (selected && !selected.dates.includes(date)) setDate(selected.dates[0] ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
 
   useEffect(() => {
-    // no-op: booking is now public; users enter their details manually
-  }, []);
+    setErrors({});
+  }, [trekId, date]);
 
-  const addMember = () => setMembers((m) => [...m, { name: "" }]);
-  const removeMember = (i: number) => setMembers((m) => m.filter((_, idx) => idx !== i));
-  const updateMember = (i: number, patch: Partial<Member>) =>
-    setMembers((m) => m.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
+  const addPerson = () => setGroupNames((g) => (g.length < maxPeople - 1 ? [...g, ""] : g));
+  const updatePerson = (i: number, v: string) =>
+    setGroupNames((g) => g.map((x, idx) => (idx === i ? v : x)));
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
 
-    const parsed = primarySchema.safeParse({ name, age, gender, phone, email, trekId });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
+    if (!selected) return toast.error("Please choose an adventure");
+    if (!date) {
+      setErrors({ date: "Choose a date" });
       return;
     }
-    if (!selectedTrek) return toast.error("Selected trek is no longer available");
 
-    if (isGroup) {
-      for (const [i, m] of members.entries()) {
-        if (!m.name.trim()) {
-          toast.error(`Member ${i + 1}: name is required`);
-          return;
-        }
+    const parsed = primarySchema.safeParse({ name, age, gender, phone, email });
+    if (!parsed.success) {
+      const next: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0]);
+        if (!next[key]) next[key] = issue.message;
+      }
+      setErrors(next);
+      return;
+    }
+    for (const [i, g] of groupNames.entries()) {
+      if (!g.trim()) {
+        setErrors({ [`member-${i}`]: `Member ${i + 1}: name is required` });
+        return;
       }
     }
 
-    // Re-check seat availability live
-    const { data: stats } = await supabase.rpc("get_trek_seat_stats");
-    const live = (stats ?? []).find((s: any) => s.trek_id === trekId);
-    const remaining = live?.seats_remaining ?? selectedTrek.seats_remaining;
-    if (remaining < seatsNeeded) {
-      toast.error(`Only ${remaining} seat(s) left for this trek`);
-      await loadTreks();
+    setSubmitting(true);
+    const result = await submitBooking({
+      trek: selected,
+      trekDate: date,
+      name: parsed.data.name,
+      age: parsed.data.age,
+      gender: parsed.data.gender,
+      phone: parsed.data.phone,
+      email: parsed.data.email || undefined,
+      groupMembers: groupNames.filter((n) => n.trim()).map((n) => ({ name: n })),
+      clientRef,
+    });
+    setSubmitting(false);
+
+    if (!result.ok) {
+      toast.error(result.message);
       return;
     }
-
-    setSubmitting(true);
-    try {
-      await publicApi("createBooking", {
-        trek_id: trekId,
-        primary_name: parsed.data.name,
-        primary_age: parsed.data.age,
-        primary_gender: parsed.data.gender,
-        primary_phone: parsed.data.phone,
-        primary_email: parsed.data.email || null,
-        is_group: isGroup && members.length > 0,
-        members: isGroup ? members.map((m) => ({ full_name: m.name.trim() })) : [],
-      });
-
-      setDone(true);
-      toast.success("Booking confirmed!");
-    } catch (err: any) {
-      toast.error(err.message ?? "Booking failed");
-    } finally {
-      setSubmitting(false);
-    }
+    setDone(true);      toast.success("Booking received — our team will call you to confirm.");
   };
 
+  const reset = () => {
+    setDone(false);
+    setClientRef(crypto.randomUUID());
+    setGroupNames([]);
+    setPeople(1);
+  };
+
+  const diff = selected ? DIFFICULTY_STYLES[selected.diff] : null;
 
   return (
-    <main className="min-h-screen bg-secondary/5">
+    <main className="min-h-screen bg-background">
       <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="container flex items-center justify-between py-4">
+        <div className="container flex items-center justify-between py-3.5">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="E2 Trails" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
-            <span className="font-heading font-extrabold text-lg text-primary">E2 TRAILS</span>
+            <img src={logo} alt="E2 Trails" className="w-8 h-8 rounded-full bg-white object-contain p-0.5" />
+            <span className="font-display font-bold text-base text-primary">E2 TRAILS</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </Link>
-          </div>
+          <Link to="/adventures" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" /> All adventures
+          </Link>
         </div>
       </header>
 
-      <div className="container py-12 md:py-16 max-w-3xl">
-        <div className="text-center mb-10">
-          <span className="font-script text-accent text-xl">— Reserve your spot</span>
-          <h1 className="font-heading font-extrabold text-3xl md:text-5xl mt-2 text-primary">Book Your Adventure</h1>
-        </div>
-
+      <div className="container py-12 md:py-16 max-w-5xl">
         {done ? (
-          <div className="bg-card rounded-2xl shadow-trail p-10 text-center border border-primary/10">
-            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-orange flex items-center justify-center mb-6 shadow-glow">
-              <CheckCircle2 className="w-10 h-10 text-accent-foreground" strokeWidth={2.5} />
+          <div className="max-w-2xl mx-auto text-center bg-card rounded-xl shadow-trail p-10 border border-primary/10">
+            <div className="w-16 h-16 mx-auto rounded-full bg-green-600/15 flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-8 h-8 text-green-700" strokeWidth={2.5} aria-hidden="true" />
             </div>
-            <h2 className="font-heading font-bold text-2xl text-primary">You're on the trail! 🥾</h2>
-            <p className="mt-4 text-muted-foreground">
-              Your booking for <span className="font-semibold text-accent">{selectedTrek?.name}</span> is confirmed.
-              Our team will reach you on <span className="font-semibold">{phone}</span>.
+            <h1 className="font-display font-bold text-3xl text-primary">You're on the trail!</h1>
+            <p className="mt-4 text-muted-foreground leading-relaxed">
+              Your booking for <span className="font-semibold text-accent">{selected?.name}</span>
+              {date ? ` on ${fmtDate(date)}` : ""} has been received. Our team will call you on{" "}
+              <span className="font-semibold">{phone}</span> to confirm payment and share the final
+              details.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={() => { setDone(false); setMembers([]); setIsGroup(false); }}
-                className="px-7 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-secondary transition"
-              >
-                Add a Person
-              </button>
-              <Link
-                to="/"
-                className="px-7 py-3 rounded-full bg-accent text-accent-foreground font-semibold hover:opacity-90 transition"
-              >
-                Return to Homepage
-              </Link>
+              <button onClick={reset} className="btn-outline">Book another</button>
+              <Link to="/" className="btn-accent">Return to homepage</Link>
             </div>
           </div>
         ) : (
-          <form onSubmit={onSubmit} className="bg-card rounded-2xl shadow-trail p-6 md:p-10 border border-primary/10 space-y-6">
-            <div>
-              <h2 className="font-heading font-bold text-xl text-primary mb-1">Choose a Trek</h2>
-              {trekOptions.length === 0 ? (
-                <p className="text-sm text-muted-foreground mb-5">No upcoming treks are open right now. Please check back soon.</p>
-              ) : (
-                <Field label="Select Trek *">
-                  <select required value={trekId} onChange={(e) => setTrekId(e.target.value)} className={inputCls}>
-                    <option value="">Choose your adventure...</option>
-                    {trekOptions.map((t) => (
-                      <option key={t.id} value={t.id} disabled={t.seats_remaining <= 0}>
-                        {t.name} — {new Date(t.trek_date).toLocaleDateString()} {t.seats_remaining <= 0 ? "(FULL)" : ""}
-                      </option>
+          <form onSubmit={onSubmit} noValidate className="grid lg:grid-cols-[1fr_400px] gap-10 items-start">
+            <div className="space-y-10 min-w-0">
+              <div>
+                <p className="kicker">Reserve your spot</p>
+                <h1 className="font-display font-extrabold text-3xl md:text-5xl mt-3 text-primary">Book your adventure</h1>
+                <p className="mt-4 text-muted-foreground">
+                  Choose your adventure, pick a date and tell us who's coming. No payment is taken
+                  online — we confirm with you directly.
+                </p>
+              </div>
+
+              {/* 1. Adventure */}
+              <section>
+                <h2 className="font-display font-bold text-xl text-primary mb-4">
+                  <span className="text-accent mr-2">1</span> Choose your adventure
+                </h2>
+                {adventures.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No adventures are open for booking right now. Check back soon.</p>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {adventures.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        aria-pressed={trekId === a.id}
+                        onClick={() => setTrekId(a.id)}
+                        disabled={a.isFull}
+                        className={cn(
+                          "text-left rounded-xl border p-4 transition-colors",
+                          trekId === a.id
+                            ? "border-accent bg-accent/5 ring-1 ring-accent"
+                            : "border-border bg-card hover:border-accent/50",
+                          a.isFull && "opacity-50",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-semibold text-primary leading-snug">{a.name}</span>
+                          {a.isFull && <span className="pill bg-destructive/10 text-destructive shrink-0">Full</span>}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                            {a.destination || a.location || a.region || "Hyderabad"}
+                          </span>
+                          {hasValue(a.dur) && (
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                              {a.dur}
+                            </span>
+                          )}
+                        </div>
+                        {price != null && (
+                          <p className="mt-2 text-sm font-bold text-gold-deep">{inr(price)} / person</p>
+                        )}
+                      </button>
                     ))}
-                  </select>
-                </Field>
+                  </div>
+                )}
+              </section>
+
+              {/* 2. Date */}
+              {selected && (
+                <section>
+                  <h2 className="font-display font-bold text-xl text-primary mb-1">
+                    <span className="text-accent mr-2">2</span> Choose your date
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {selected.seatsRemaining > 0
+                      ? `${selected.seatsRemaining} spots available across these dates`
+                      : "This adventure is currently full."}
+                  </p>
+                  {selected.dates.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No upcoming dates yet — check back soon.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {selected.dates.map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          aria-pressed={date === d}
+                          onClick={() => setDate(d)}
+                          className={cn("filter-pill", date === d ? "filter-pill-active" : "filter-pill-idle")}
+                        >
+                          {fmtDateShort(d)}
+                          <span className="text-xs opacity-70">{new Date(d).getFullYear()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {errors.date && <p className="field-error" role="alert">{errors.date}</p>}
+                </section>
               )}
 
-              {selectedTrek && (
-                <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm space-y-1.5">
-                  <div className="flex justify-between flex-wrap gap-2">
-                    <span className="font-semibold text-primary">{selectedTrek.name}</span>
-                    {selectedTrek.price > 0 && (
-                      <span className="font-bold text-accent">₹{selectedTrek.price.toLocaleString("en-IN")} / person</span>
-                    )}
+              {/* 3. People */}
+              {selected && (
+                <section>
+                  <h2 className="font-display font-bold text-xl text-primary mb-4">
+                    <span className="text-accent mr-2">3</span> How many people?
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      aria-label="Fewer people"
+                      onClick={() => setPeople((p) => Math.max(1, p - 1))}
+                      disabled={people <= 1}
+                      className="w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center hover:bg-muted disabled:opacity-40"
+                    >
+                      <Minus className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                    <span className="w-10 text-center font-display font-bold text-2xl text-primary" aria-live="polite">
+                      {people}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="More people"
+                      onClick={() => setPeople((p) => Math.min(maxPeople, p + 1))}
+                      disabled={people >= maxPeople}
+                      className="w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center hover:bg-muted disabled:opacity-40"
+                    >
+                      <Plus className="w-4 h-4" aria-hidden="true" />
+                    </button>
                   </div>
-                  <div className="text-muted-foreground">
-                    📅 {new Date(selectedTrek.trek_date).toLocaleDateString()}
-                    {selectedTrek.trek_time ? ` • 🕒 ${selectedTrek.trek_time}` : ""}
-                    {selectedTrek.destination ? ` • 📍 ${selectedTrek.destination}` : ""}
-                  </div>
-                  
-                  {selectedTrek.meeting_point && (
-                    <div className="text-muted-foreground"><strong className="text-primary">Meeting point:</strong> {selectedTrek.meeting_point}</div>
-                  )}
-                  {selectedTrek.instructions && (
-                    <div className="text-muted-foreground"><strong className="text-primary">Instructions:</strong> {selectedTrek.instructions}</div>
-                  )}
-                  {(selectedTrek.itinerary_url || selectedTrek.itinerary_file_path) && (
-                    <div className="pt-2 flex flex-wrap gap-2">
-                      {selectedTrek.itinerary_url && (
-                        <a
-                          href={selectedTrek.itinerary_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold hover:opacity-90 transition"
-                        >
-                          📋 View Itinerary
-                        </a>
-                      )}
-                      {selectedTrek.itinerary_file_path && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const { data, error } = await supabase.functions.invoke("itinerary-signed-url", {
-                              body: { trekId: selectedTrek.id },
-                            });
-                            if (error || !data?.url) {
-                              toast.error("Itinerary is not available right now");
-                              return;
-                            }
-                            window.open(data.url, "_blank", "noopener,noreferrer");
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition"
-                        >
-                          📄 Download Itinerary (PDF)
+                  {people > 1 && (
+                    <div className="mt-5 space-y-3 max-w-md">
+                      <p className="text-sm text-muted-foreground">
+                        Add the other {people - 1} person{people - 1 > 1 ? "s" : ""} you're booking for.
+                      </p>
+                      {groupNames.map((g, i) => (
+                        <div key={i}>
+                          <input
+                            value={g}
+                            onChange={(e) => updatePerson(i, e.target.value)}
+                            placeholder={`Person ${i + 2} — full name`}
+                            maxLength={80}
+                            aria-label={`Person ${i + 2} name`}
+                            className="field-input"
+                          />
+                          {errors[`member-${i}`] && <p className="field-error" role="alert">{errors[`member-${i}`]}</p>}
+                        </div>
+                      ))}
+                      {groupNames.length < people - 1 && (
+                        <button type="button" onClick={addPerson} className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline">
+                          <Plus className="w-4 h-4" aria-hidden="true" /> Add another person
                         </button>
                       )}
-
                     </div>
                   )}
-                </div>
+                </section>
+              )}
+
+              {/* 4. Details */}
+              {selected && (
+                <section>
+                  <h2 className="font-display font-bold text-xl text-primary mb-4">
+                    <span className="text-accent mr-2">4</span> Your details
+                  </h2>
+                  <div className="space-y-4 max-w-xl">
+                    <div>
+                      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name *" maxLength={80} aria-label="Full name" className="field-input" />
+                      {errors.name && <p className="field-error" role="alert">{errors.name}</p>}
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <input type="number" min={10} max={99} value={age} onChange={(e) => setAge(e.target.value)} placeholder="Age *" aria-label="Age" className="field-input" />
+                        {errors.age && <p className="field-error" role="alert">{errors.age}</p>}
+                      </div>
+                      <div>
+                        <select value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Gender" className="field-input">
+                          <option value="">Gender *</option>
+                          <option>Male</option>
+                          <option>Female</option>
+                          <option>Other</option>
+                          <option>Prefer not to say</option>
+                        </select>
+                        {errors.gender && <p className="field-error" role="alert">{errors.gender}</p>}
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number *" aria-label="Phone number" className="field-input" />
+                        {errors.phone && <p className="field-error" role="alert">{errors.phone}</p>}
+                      </div>
+                      <div>
+                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" aria-label="Email" className="field-input" />
+                        {errors.email && <p className="field-error" role="alert">{errors.email}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </section>
               )}
             </div>
 
-            <div className="border-t border-border pt-6">
-              <h2 className="font-heading font-bold text-xl text-primary mb-1">Your Details</h2>
-              <p className="text-sm text-muted-foreground mb-5">As the account holder, please share your full information.</p>
-
-              <div className="space-y-5">
-                <Field label="Full Name *">
-                  <input required maxLength={80} value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="e.g. Aarav Reddy" />
-                </Field>
-                <div className="grid md:grid-cols-2 gap-5">
-                  <Field label="Age *">
-                    <input type="number" required min={10} max={99} value={age} onChange={(e) => setAge(e.target.value)} className={inputCls} placeholder="24" />
-                  </Field>
-                  <Field label="Gender *">
-                    <select required value={gender} onChange={(e) => setGender(e.target.value)} className={inputCls}>
-                      <option value="">Select...</option>
-                      <option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option>
-                    </select>
-                  </Field>
-                </div>
-                <div className="grid md:grid-cols-2 gap-5">
-                  <Field label="Phone Number *">
-                    <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} placeholder="+91 98765 43210" />
-                  </Field>
-                  <Field label="Email">
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder="you@example.com" />
-                  </Field>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-6">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={isGroup} onChange={(e) => { setIsGroup(e.target.checked); if (!e.target.checked) setMembers([]); }} className="w-4 h-4 accent-accent" />
-                <span className="font-semibold text-primary">This is a group / family booking</span>
-              </label>
-              <p className="text-sm text-muted-foreground mt-1 ml-7">Add other people you're booking for. We only need their name.</p>
-            </div>
-
-            {isGroup && (
-              <div className="space-y-4">
-                {members.map((m, i) => (
-                  <div key={i} className="rounded-xl border border-border p-4 bg-background/50 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-primary text-sm">Member {i + 1}</span>
-                      <button type="button" aria-label={`Remove member ${i + 1}`} onClick={() => removeMember(i)} className="text-destructive hover:text-destructive/80">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <input required aria-label={`Member ${i + 1} full name`} value={m.name} onChange={(e) => updateMember(i, { name: e.target.value })} className={inputCls} placeholder="Full name" maxLength={80} />
+            {/* Summary sidebar */}
+            <aside className="lg:sticky lg:top-20 rounded-xl border border-primary/15 bg-card shadow-trail p-7">
+              <h2 className="font-display font-bold text-xl text-primary">Booking summary</h2>
+              {selected ? (
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="rounded-lg overflow-hidden bg-muted">
+                    {selected.img ? (
+                      <img src={selected.img} alt={selected.name} className="w-full h-32 object-cover" />
+                    ) : null}
                   </div>
-                ))}
-                <button type="button" onClick={addMember} className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-border hover:border-accent hover:text-accent text-muted-foreground transition">
-                  <Plus className="w-4 h-4" /> Add another person
-                </button>
-              </div>
-            )}
+                  <p className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Trip</span>
+                    <span className="font-semibold text-right">{selected.name}</span>
+                  </p>
+                  {diff && (
+                    <p className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Difficulty</span>
+                      <span className="font-semibold">{selected.diff}</span>
+                    </p>
+                  )}
+                  {hasValue(selected.dur) && (
+                    <p className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Duration</span>
+                      <span className="font-semibold">{selected.dur}</span>
+                    </p>
+                  )}
+                  <p className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Date</span>
+                    <span className="font-semibold">{date ? fmtDate(date) : "—"}</span>
+                  </p>
+                  <p className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Participants</span>
+                    <span className="font-semibold">{people}</span>
+                  </p>
+                  {price != null ? (
+                    <p className="flex justify-between gap-3 border-t border-border pt-3 mt-3">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="font-display font-bold text-xl text-primary">{inr(price * people)}</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Price is confirmed by our team for this adventure.</p>
+                  )}
+                  {selected.itineraryDays.length > 0 && (
+                    <Link
+                      to={`/itinerary/${selected.id}`}
+                      className="block text-xs font-semibold text-accent hover:underline pt-1"
+                    >
+                      View itinerary →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">Choose an adventure to see your summary.</p>
+              )}
 
-            {selectedTrek && selectedTrek.price > 0 && (
-              <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Total ({seatsNeeded} {seatsNeeded === 1 ? "person" : "people"})</span>
-                <span className="font-heading font-bold text-2xl text-primary">₹{(selectedTrek.price * seatsNeeded).toLocaleString("en-IN")}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting || !selectedTrek || (selectedTrek?.seats_remaining ?? 0) < seatsNeeded}
-              className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-orange text-accent-foreground font-semibold tracking-wide shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Submitting..." : "Confirm Booking"}
-            </button>
+              <button
+                type="submit"
+                disabled={submitting || !selected || (selected?.seatsRemaining ?? 0) < people || selected.isFull}
+                className="btn-accent w-full mt-6 disabled:opacity-50"
+              >
+                {submitting ? "Confirming…" : "Confirm booking"}
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <p className="mt-3 text-xs text-muted-foreground text-center leading-relaxed">
+                No payment is taken online. Our team calls you to confirm and share payment details.
+              </p>
+            </aside>
           </form>
         )}
       </div>
     </main>
   );
-}
-
-const inputCls = "w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent transition";
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  const id = useId();
-  const control = React.isValidElement(children)
-    ? React.cloneElement(children as React.ReactElement<any>, { id })
-    : children;
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-semibold text-primary mb-2">{label}</label>
-      {control}
-    </div>
-  );
-}
+}

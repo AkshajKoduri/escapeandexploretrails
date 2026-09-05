@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { FileText, Instagram, ExternalLink } from "lucide-react";
+import { FileText, Instagram, ExternalLink, ArrowUpRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type TrailLogPost = {
   id: string;
@@ -25,13 +26,12 @@ function loadInstagramEmbedScript() {
   document.body.appendChild(s);
 }
 
-export default function TrailLogCard({ post }: { post: TrailLogPost }) {
+export default function TrailLogCard({ post, featured = false }: { post: TrailLogPost; featured?: boolean }) {
   const embedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (post.instagram_url) {
       loadInstagramEmbedScript();
-      // Re-process after a tick in case the script is already loaded
       const t = setTimeout(() => {
         const w = window as any;
         w.instgrm?.Embeds?.process?.();
@@ -47,9 +47,14 @@ export default function TrailLogCard({ post }: { post: TrailLogPost }) {
   });
 
   return (
-    <article className="rounded-2xl border border-primary/10 bg-card shadow-card overflow-hidden flex flex-col">
+    <article
+      className={cn(
+        "group rounded-xl border border-border bg-card shadow-card overflow-hidden flex flex-col card-hover h-full",
+        featured && "lg:min-h-full",
+      )}
+    >
       {post.instagram_url ? (
-        <div ref={embedRef} className="bg-muted min-h-[420px] flex items-center justify-center p-2">
+        <div ref={embedRef} className={cn("bg-muted flex items-center justify-center p-2", featured ? "min-h-[360px]" : "min-h-[220px]")}>
           <blockquote
             className="instagram-media w-full"
             data-instgrm-permalink={post.instagram_url}
@@ -61,23 +66,26 @@ export default function TrailLogCard({ post }: { post: TrailLogPost }) {
             </a>
           </blockquote>
         </div>
-      ) : post.pdf_signed_url ? (
-        <div className="bg-gradient-to-br from-accent/15 to-primary/10 aspect-[4/3] flex items-center justify-center">
-          <FileText className="w-16 h-16 text-accent" strokeWidth={1.5} />
+      ) : (
+        <div
+          className={cn(
+            "bg-gradient-to-br from-accent/15 to-primary/10 flex items-center justify-center",
+            featured ? "aspect-[16/10]" : "aspect-[16/10]",
+          )}
+        >
+          <FileText className="w-14 h-14 text-accent" strokeWidth={1.5} aria-hidden="true" />
         </div>
-      ) : null}
+      )}
 
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center px-3 py-1 rounded-full bg-accent/15 text-accent text-xs font-semibold font-heading">
-            {post.category}
-          </span>
+          <span className="pill bg-accent/15 text-accent">{post.category}</span>
           <span className="text-xs text-muted-foreground">{date}</span>
         </div>
-        <h3 className="font-heading font-bold text-lg text-primary leading-snug">
+        <h3 className={cn("font-display font-bold text-primary leading-snug", featured ? "text-2xl" : "text-lg")}>
           {post.title}
         </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+        <p className={cn("text-sm text-muted-foreground leading-relaxed flex-1", featured && "text-base line-clamp-4")}>
           {post.description}
         </p>
         {post.pdf_signed_url ? (
@@ -85,21 +93,25 @@ export default function TrailLogCard({ post }: { post: TrailLogPost }) {
             href={post.pdf_signed_url}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-flex items-center gap-2 self-start px-4 py-2 rounded-full bg-gradient-orange text-accent-foreground text-sm font-semibold hover:scale-105 transition-transform shadow-glow"
+            className="mt-1 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-accent hover:underline"
           >
-            <FileText className="w-4 h-4" /> View PDF
+            <FileText className="w-4 h-4" aria-hidden="true" />
+            Read the story
+            <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
           </a>
         ) : post.instagram_url ? (
           <a
             href={post.instagram_url}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-flex items-center gap-2 self-start text-sm font-semibold text-accent hover:underline"
+            className="mt-1 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-accent hover:underline"
           >
-            <Instagram className="w-4 h-4" /> Open on Instagram <ExternalLink className="w-3 h-3" />
+            <Instagram className="w-4 h-4" aria-hidden="true" />
+            Open on Instagram
+            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
           </a>
         ) : null}
       </div>
     </article>
   );
-}
+}

@@ -84,21 +84,21 @@ export default function Itinerary() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-card">
+      <header className="sticky top-0 z-40 bg-charcoal text-charcoal-foreground shadow-card">
         <div className="container flex items-center justify-between gap-3 py-3">
           <Link
-            to="/#treks"
-            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 text-sm font-semibold text-primary-foreground transition-colors"
+            to="/adventures"
+            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-charcoal-foreground/10 hover:bg-charcoal-foreground/20 text-sm font-semibold text-charcoal-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <h1 className="font-heading font-bold text-base sm:text-lg text-primary-foreground truncate">
+          <h1 className="font-display font-bold text-base sm:text-lg text-charcoal-foreground truncate">
             {trek?.name ?? "Itinerary"}
           </h1>
           <button
             type="button"
             onClick={share}
-            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-gold transition-colors"
+            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:brightness-110 transition-all"
           >
             <Share2 className="w-4 h-4" /> Share
           </button>

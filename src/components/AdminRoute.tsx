@@ -1,10 +1,12 @@
 import { ReactNode, useEffect, useState, FormEvent } from "react";
-import { Mountain } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
-import { adminApi, adminLogin, clearAdminSession, isAdminSession } from "@/lib/adminApi";
+import { adminApi, clearAdminPassword, isAdminSession, setAdminPassword } from "@/lib/adminApi";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [ok, setOk] = useState<boolean>(() => isAdminSession());
   const [pwd, setPwd] = useState("");
   const [busy, setBusy] = useState(false);
@@ -18,47 +20,58 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
     if (busy) return;
     setBusy(true);
     try {
-      await adminLogin(pwd);
+      setAdminPassword(pwd);
       await adminApi("verify");
-      setPwd("");
       setOk(true);
     } catch (err: any) {
-      clearAdminSession();
-      setPwd("");
-      toast.error(err?.message ?? "Access denied.");
+      clearAdminPassword();
+      toast.error("Access denied.");
+      navigate("/", { replace: true });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary/10 via-background to-primary/10 px-4">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-sm bg-card rounded-2xl shadow-trail border border-primary/10 p-8 text-center"
-      >
-        <img src={logo} alt="E2 Trails" className="w-14 h-14 rounded-full bg-white object-contain p-1 mx-auto mb-3 shadow-card" />
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Mountain className="w-5 h-5 text-primary" />
-          <h1 className="font-heading font-bold text-xl text-primary">E2 TRAILS Admin</h1>
+    <main className="min-h-screen bg-charcoal text-charcoal-foreground grid place-items-center px-4 relative overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage:
+            "linear-gradient(hsl(40 30% 97% / 0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(40 30% 97% / 0.4) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+        }}
+        aria-hidden="true"
+      />
+      <form onSubmit={onSubmit} className="relative w-full max-w-sm bg-charcoal border border-charcoal-foreground/15 rounded-xl p-8 shadow-trail">
+        <img src={logo} alt="E2 Trails" className="w-12 h-12 rounded-full bg-white object-contain p-1 mx-auto mb-4 shadow-card" />
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <ShieldCheck className="w-5 h-5 text-accent" aria-hidden="true" />
+          <h1 className="font-display font-bold text-xl">E2 TRAILS Admin</h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-6">Enter the admin password to continue.</p>
+        <p className="text-sm text-charcoal-foreground/60 mb-6 text-center">
+          Enter the admin password to continue.
+        </p>
         <input
           type="password"
           autoFocus
           value={pwd}
           onChange={(e) => setPwd(e.target.value)}
           placeholder="Password"
-          className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-accent transition mb-4"
+          aria-label="Admin password"
+          className="w-full px-4 py-3 rounded-lg border border-charcoal-foreground/20 bg-charcoal text-charcoal-foreground placeholder:text-charcoal-foreground/40 focus:outline-none focus:ring-2 focus:ring-accent transition mb-4"
         />
+        <button type="submit" disabled={busy} className="btn-accent w-full disabled:opacity-60">
+          {busy ? "Verifying…" : "Enter admin"}
+        </button>
         <button
-          type="submit"
-          disabled={busy}
-          className="w-full px-6 py-3 rounded-full bg-gradient-orange text-accent-foreground font-semibold shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-60"
+          type="button"
+          onClick={() => navigate("/")}
+          className="mt-4 inline-flex items-center gap-1.5 text-xs text-charcoal-foreground/50 hover:text-charcoal-foreground transition-colors"
         >
-          {busy ? "Verifying…" : "Enter Admin"}
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to the public site
         </button>
       </form>
     </main>
   );
-}
+}

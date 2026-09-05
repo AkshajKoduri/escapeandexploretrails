@@ -1,71 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import hero from "@/assets/hero.jpg";
-
-function ExploreAdventuresDropdown() {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) {
-      document.addEventListener("mousedown", handleClick);
-    }
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        className="px-8 py-4 rounded-full bg-gradient-orange text-accent-foreground font-semibold tracking-wide shadow-glow hover:scale-105 transition-transform inline-flex items-center justify-center gap-2"
-      >
-        Explore Adventures
-        <span className={cn("text-sm transition-transform duration-200", open && "rotate-180")}>▾</span>
-      </button>
-      <div
-        role="menu"
-        className={cn(
-          "absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-[14rem] rounded-xl border border-white/10 bg-charcoal/95 backdrop-blur-md text-charcoal-foreground shadow-card overflow-hidden transition-all duration-200 z-50",
-          open ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
-        )}
-      >
-        <Link
-          to="/hyderabad-trails"
-          role="menuitem"
-          className="flex items-center min-h-[44px] px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-          onClick={() => setOpen(false)}
-        >
-          Hyderabad Trails
-        </Link>
-        <div className="h-px bg-white/10" />
-        <Link
-          to="/upcoming-treks"
-          role="menuitem"
-          className="flex items-center min-h-[44px] px-5 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-          onClick={() => setOpen(false)}
-        >
-          Outstation Treks
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-
-const FULL = "Where Every Trail Tells a Story";
+import { ChevronDown, ArrowRight, ShieldCheck, Users } from "lucide-react";
+import hero from "@/assets/hero.webp";
 
 export default function Hero() {
-  const [typed, setTyped] = useState("");
   const [offset, setOffset] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -78,74 +16,78 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
-    if (reducedMotion) {
-      setTyped(FULL);
-      return;
-    }
-    let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setTyped(FULL.slice(0, i));
-      if (i >= FULL.length) clearInterval(id);
-    }, 55);
-    return () => clearInterval(id);
-  }, [reducedMotion]);
-
-  useEffect(() => {
     if (reducedMotion) return;
-    const onScroll = () => setOffset(window.scrollY * 0.4);
+    const onScroll = () => setOffset(window.scrollY * 0.28);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [reducedMotion]);
 
-  const bgTransform = reducedMotion
-    ? "scale(1.1)"
-    : `translate3d(0, ${offset}px, 0) scale(1.1)`;
-
   return (
-    <section id="home" className="relative h-screen min-h-[640px] w-full overflow-hidden">
+    <section id="home" className="relative h-[94vh] min-h-[620px] w-full overflow-hidden bg-charcoal">
+      {/* Ken Burns + parallax */}
       <div
-        className="absolute inset-0 will-change-transform"
-        style={{ transform: bgTransform }}
+        className="absolute inset-0 will-change-transform animate-kenburns"
+        style={{ transform: reducedMotion ? undefined : `translate3d(0, ${offset}px, 0)` }}
       >
-        <img src={hero} alt="South Indian fort hilltop at golden hour" className="w-full h-full object-cover" width={1920} height={1080} />
+        <img
+          src={hero}
+          alt="Golden-hour view across a South Indian fort hilltop"
+          className="w-full h-full object-cover"
+          width={1920}
+          height={1080}
+          fetchPriority="high"
+          decoding="async"
+        />
       </div>
-      <div className="absolute inset-0 bg-gradient-hero" />
+      <div className="absolute inset-0 bg-gradient-hero" aria-hidden="true" />
 
-      <div className="relative z-10 h-full container flex flex-col items-center justify-center text-center text-charcoal-foreground">
-        <h1 className="sr-only">
-          E2 Trails — Guided Treks, Hikes &amp; Cycling Rides from Hyderabad and Across India
-        </h1>
-        <div
-          aria-hidden="true"
-          className="font-heading font-black text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05] max-w-5xl text-shadow-strong"
-        >
-          {typed}
-          {!reducedMotion && <span className="caret text-accent">|</span>}
-        </div>
+      <div className="relative z-10 h-full container flex flex-col justify-end pb-28 md:pb-32 text-charcoal-foreground">
+        <div className="max-w-3xl">
+          <p className="kicker kicker-light reveal">
+            Escape &amp; Explore · Hyderabad
+          </p>
 
-        <p className="mt-8 max-w-2xl text-base md:text-lg text-charcoal-foreground/90 reveal text-shadow-strong">
-          Hikes, cycling, bike rides and seasonal treks — where every trail comes with memorable moments and new friendships.
-        </p>
+          <h1 className="font-display font-bold text-[2.9rem] sm:text-6xl md:text-7xl leading-[1.02] mt-5 text-shadow-strong text-balance reveal">
+            Where every trail
+            <br />
+            <span className="font-script text-gold">tells a story.</span>
+          </h1>
 
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 reveal">
-          <ExploreAdventuresDropdown />
-          <a
-            href="#about"
-            className="px-8 py-4 rounded-full border-2 border-charcoal-foreground/80 text-charcoal-foreground font-semibold tracking-wide hover:bg-charcoal-foreground hover:text-charcoal transition-colors"
-          >
-            Who We Are
-          </a>
+          <p className="mt-6 max-w-xl text-base md:text-lg text-charcoal-foreground/85 leading-relaxed reveal">
+            Find your next adventure. Explore hikes, cycling experiences, trails and weekend
+            escapes curated by E2 Trails — guided, safe and built around real people.
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row gap-3 reveal">
+            <Link to="/adventures" className="btn-accent">
+              Explore adventures
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Link>
+            <a href="#featured" className="btn-ghost-light">
+              See the next departure
+            </a>
+          </div>
+
+          <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-xs text-charcoal-foreground/70">
+            <span className="inline-flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-gold" aria-hidden="true" />
+              Safety-first guided outings
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Users className="w-4 h-4 text-gold" aria-hidden="true" />
+              Small-group adventures
+            </span>
+          </div>
         </div>
       </div>
 
       <a
-        href="#about"
-        aria-label="Scroll down"
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-charcoal-foreground/80 animate-bounce-arrow"
+        href="#featured"
+        aria-label="Scroll to the next departure"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 text-charcoal-foreground/70 animate-bounce-arrow"
       >
-        <ChevronDown className="w-8 h-8" />
+        <ChevronDown className="w-6 h-6" />
       </a>
     </section>
   );
-}
+}
