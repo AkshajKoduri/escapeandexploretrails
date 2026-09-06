@@ -80,6 +80,7 @@
     font-family: 'DM Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-wrap: break-word;
   }
   h1, h2, h3, h4, h5 {
     font-family: 'Fraunces', Georgia, serif;
@@ -112,9 +113,12 @@
   }
   /* On dark/photographic surfaces a darker rust would fail 4.5:1, so lift it */
   .kicker-light { color: hsl(18 88% 66%); }
+  .text-accent-light { color: hsl(18 88% 66%); }
+  .link-on-dark:hover { color: hsl(18 88% 66%); }
 
   .editorial-title {
-    @apply font-heading font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.05] text-primary;
+    @apply font-heading font-bold text-[2.125rem] sm:text-4xl md:text-5xl lg:text-6xl leading-[1.04] text-primary;
+    text-wrap: balance;
   }
   .editorial-title-light { @apply text-charcoal-foreground; }
   .editorial-lead {
@@ -129,9 +133,9 @@
   /* Section vertical rhythm — the four steps used across public pages.
      Content bands pick a step; adjacent bands alternate surfaces (bg or
      hairline) rather than inventing new paddings. */
-  .section-band { @apply py-16 md:py-20; }   /* utility/interactive band */
-  .section     { @apply py-20 md:py-28; }   /* standard content section */
-  .section-lg  { @apply py-24 md:py-32; }   /* generous editorial section */
+  .section-band { @apply py-14 md:py-20; }   /* utility/interactive band */
+  .section     { @apply py-16 md:py-24 lg:py-28; }   /* standard content section */
+  .section-lg  { @apply py-20 md:py-28 lg:py-32; }   /* generous editorial section */
 
   .meta-label {
     @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
@@ -162,9 +166,11 @@
   .card-hover {
     transition: transform 0.35s var(--transition-smooth), box-shadow 0.35s var(--transition-smooth);
   }
-  .card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-trail);
+  @media (hover: hover) and (pointer: fine) {
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-trail);
+    }
   }
 
   /* ---------- Forms ---------- */
@@ -235,7 +241,9 @@
     transition: transform 0.2s var(--transition-smooth), box-shadow 0.2s var(--transition-smooth), background-color 0.2s var(--transition-smooth), color 0.2s var(--transition-smooth);
     will-change: transform;
   }
-  .tactile:hover { transform: scale(1.03); }
+  @media (hover: hover) and (pointer: fine) {
+    .tactile:hover { transform: scale(1.03); }
+  }
   .tactile:active { transform: scale(0.97); }
 
   button:not(:disabled):active,
@@ -251,9 +259,11 @@
     box-shadow: var(--shadow-card);
     transition: transform 0.4s var(--transition-smooth), box-shadow 0.4s var(--transition-smooth);
   }
-  .trek-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-trail);
+  @media (hover: hover) and (pointer: fine) {
+    .trek-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-trail);
+    }
   }
 
   .marquee-track {
@@ -323,4 +333,4 @@
   .marquee-track, .animate-kenburns, .animate-bounce-arrow, .animate-fade-up, .animate-drawer-in, .bar-enter { animation: none !important; }
   /* Catch one-off keyframe animations (e.g. team-nudge) that aren't listed above. */
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-}
+}

@@ -23,7 +23,7 @@ export default function Hero() {
   }, [reducedMotion]);
 
   return (
-    <section id="main-content" tabIndex={-1} className="relative h-[94vh] min-h-[620px] w-full overflow-hidden bg-charcoal outline-none">
+    <section id="main-content" tabIndex={-1} className="relative h-[100svh] min-h-[660px] max-h-[920px] w-full overflow-hidden bg-charcoal outline-none">
       {/* Ken Burns + parallax */}
       <div
         className="absolute inset-0 will-change-transform animate-kenburns"
@@ -32,7 +32,7 @@ export default function Hero() {
         <img
           src={hero}
           alt="Golden-hour view across a South Indian fort hilltop"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-[58%_center] sm:object-center"
           width={1920}
           height={1080}
           decoding="async"
@@ -40,21 +40,21 @@ export default function Hero() {
       </div>
       <div className="absolute inset-0 bg-gradient-hero" aria-hidden="true" />
 
-      <div className="relative z-10 h-full container flex flex-col justify-end pb-28 md:pb-32 text-charcoal-foreground">
-        <div className="max-w-3xl">
+      <div className="relative z-10 h-full container flex flex-col justify-end pb-24 sm:pb-28 md:pb-32 text-charcoal-foreground">
+        <div className="max-w-[46rem]">
           <p className="kicker kicker-light reveal">
             Escape &amp; Explore · Hyderabad
           </p>
 
-          <h1 className="font-display font-bold text-[2.9rem] sm:text-6xl md:text-7xl leading-[1.02] mt-5 text-shadow-strong text-balance reveal">
+          <h1 className="font-display font-bold text-[2.75rem] min-[390px]:text-[3rem] sm:text-6xl md:text-7xl leading-[1.01] mt-5 text-shadow-strong text-balance reveal">
             Where every trail
             <br />
             <span className="font-script text-gold">tells a story.</span>
           </h1>
 
           <p className="mt-6 max-w-xl text-base md:text-lg text-charcoal-foreground/85 leading-relaxed reveal">
-            Find your next adventure. Explore hikes, cycling experiences, trails and weekend
-            escapes curated by E2 Trails — guided, safe and built around real people.
+            Guided hikes, cycling experiences and weekend escapes from Hyderabad — clear plans,
+            safe leadership and a community that welcomes first-timers.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-3 reveal">
@@ -67,7 +67,7 @@ export default function Hero() {
             </a>
           </div>
 
-          <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-xs text-charcoal-foreground/70">
+          <div className="mt-10 sm:mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-xs text-charcoal-foreground/75">
             <span className="inline-flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-gold" aria-hidden="true" />
               Safety-first guided outings

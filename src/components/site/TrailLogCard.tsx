@@ -12,9 +12,13 @@ export type TrailLogPost = {
   created_at: string;
 };
 
+type InstagramWindow = Window & {
+  instgrm?: { Embeds?: { process?: () => void } };
+};
+
 function loadInstagramEmbedScript() {
   if (typeof window === "undefined") return;
-  const w = window as any;
+  const w = window as InstagramWindow;
   if (w.instgrm?.Embeds?.process) {
     w.instgrm.Embeds.process();
     return;
@@ -33,7 +37,7 @@ export default function TrailLogCard({ post, featured = false }: { post: TrailLo
     if (post.instagram_url) {
       loadInstagramEmbedScript();
       const t = setTimeout(() => {
-        const w = window as any;
+        const w = window as InstagramWindow;
         w.instgrm?.Embeds?.process?.();
       }, 200);
       return () => clearTimeout(t);
@@ -68,10 +72,7 @@ export default function TrailLogCard({ post, featured = false }: { post: TrailLo
         </div>
       ) : (
         <div
-          className={cn(
-            "bg-gradient-to-br from-accent/15 to-primary/10 flex items-center justify-center",
-            featured ? "aspect-[16/10]" : "aspect-[16/10]",
-          )}
+          className="flex aspect-[16/10] items-center justify-center bg-primary/5"
         >
           <FileText className="w-14 h-14 text-accent" strokeWidth={1.5} aria-hidden="true" />
         </div>
@@ -114,4 +115,4 @@ export default function TrailLogCard({ post, featured = false }: { post: TrailLo
       </div>
     </article>
   );
-}
+}

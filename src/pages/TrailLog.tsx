@@ -43,7 +43,7 @@ export default function TrailLog() {
     <main className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
 
-      <section id="main-content" tabIndex={-1} className="pt-32 md:pt-40 pb-20 md:pb-28 outline-none">
+      <section id="main-content" tabIndex={-1} className="pt-28 pb-16 md:pt-36 md:pb-24 outline-none">
         <div className="container">
           <div className="max-w-2xl">
             <p className="kicker">Adventures, guides &amp; stories</p>
@@ -89,10 +89,15 @@ export default function TrailLog() {
           ) : visible.length === 0 ? (
             <p className="mt-14 text-center text-muted-foreground">No posts in this category yet.</p>
           ) : (
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visible.map((p) => (
-                <TrailLogCard key={p.id} post={p} featured={p === visible[0] && filter === "All"} />
-              ))}
+            <div className="mt-12 grid grid-cols-1 gap-x-6 gap-y-9 md:grid-cols-2 lg:grid-cols-3 lg:gap-x-8 lg:gap-y-12">
+              {visible.map((p, index) => {
+                const featured = index === 0 && filter === "All";
+                return (
+                  <div key={p.id} className={cn("min-w-0", featured && "md:col-span-2")}>
+                    <TrailLogCard post={p} featured={featured} />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

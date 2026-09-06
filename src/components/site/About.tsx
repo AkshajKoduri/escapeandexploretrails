@@ -92,9 +92,9 @@ export default function About() {
         ? founderAshok
         : "";
     return (
-      <div className="bg-card border border-border rounded-xl shadow-card p-6 md:p-10 grid md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center">
+      <div className="grid items-start gap-8 border-y border-border py-7 md:grid-cols-[220px,1fr] md:gap-10 md:py-10">
         <div className="relative mx-auto md:mx-0">
-          <div className="relative w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden ring-4 ring-accent/25 shadow-trail bg-muted">
+          <div className="relative aspect-[4/5] w-44 overflow-hidden rounded-lg bg-muted shadow-card md:w-[220px]">
             {src ? (
               <img
                 src={src}
@@ -184,9 +184,9 @@ export default function About() {
 
       {/* ============ Team ============ */}
       {current && (
-        <div className="container mt-20 md:mt-28" ref={sectionRef}>
-          <div className="text-center mb-10 md:mb-14">
-            <p className="kicker justify-center">The people behind E2 Trails</p>
+        <div className="container mt-16 md:mt-24" ref={sectionRef}>
+          <div className="max-w-5xl mx-auto mb-8 md:mb-10">
+            <p className="kicker">The people behind E2 Trails</p>
             <h2 className="editorial-title mt-3">Our team</h2>
           </div>
           <div className="max-w-5xl mx-auto relative">
@@ -229,7 +229,7 @@ export default function About() {
 
             {total > 1 && (
               <>
-                <div className="mt-6 flex justify-center gap-2">
+                <div className="mt-6 hidden justify-center gap-2 md:flex">
                   {members.map((m, i) => (
                     <button
                       key={m.id}
@@ -239,7 +239,27 @@ export default function About() {
                     />
                   ))}
                 </div>
-                <p className="mt-3 md:hidden text-center text-sm text-muted-foreground font-medium">← Swipe to meet the team →</p>
+                <div className="mt-5 flex items-center justify-between md:hidden">
+                  <button
+                    type="button"
+                    onClick={prev}
+                    aria-label="Previous team member"
+                    className="grid h-11 w-11 place-items-center rounded-full border border-border bg-card text-primary"
+                  >
+                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
+                    {index + 1} of {total}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={next}
+                    aria-label="Next team member"
+                    className="grid h-11 w-11 place-items-center rounded-full border border-border bg-card text-primary"
+                  >
+                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -248,4 +268,4 @@ export default function About() {
 
     </section>
   );
-}
+}

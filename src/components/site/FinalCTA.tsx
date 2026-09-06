@@ -4,7 +4,7 @@ import hero from "@/assets/hero.webp";
 
 export default function FinalCTA() {
   return (
-    <section className="relative py-28 md:py-40 overflow-hidden bg-charcoal">
+    <section className="relative py-20 md:py-32 overflow-hidden bg-charcoal">
       <img
         src={hero}
         alt=""

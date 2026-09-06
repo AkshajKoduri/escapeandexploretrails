@@ -271,7 +271,7 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
-      <section id="main-content" tabIndex={-1} className="pt-28 md:pt-36 pb-10 bg-background outline-none">
+      <section id="main-content" tabIndex={-1} className="pt-24 md:pt-28 pb-8 md:pb-10 bg-background outline-none">
         <div className="container">
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
             <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to home
@@ -367,7 +367,7 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
         </div>
       </section>
 
-      <section className="py-12 md:py-16 pb-24">
+      <section className="pt-10 pb-20 md:pt-14 md:pb-24">
         <div className="container">
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -380,7 +380,7 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
               <Compass className="w-12 h-12 text-muted-foreground/50 mx-auto mb-5" strokeWidth={1.5} aria-hidden="true" />
               <h2 className="font-display font-bold text-2xl text-primary">No adventures match your filters</h2>
               <p className="mt-3 text-muted-foreground">
-                Try removing a filter or two — new dates are added every week.
+                Try removing a filter or browse all current adventures.
               </p>
               <button type="button" onClick={clearAll} className="btn-accent mt-7">
                 Clear filters
@@ -388,10 +388,15 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
             </div>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground mb-6" role="status">
-                {visible.length} adventure{visible.length > 1 ? "s" : ""} found
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              <div className="mb-7 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-4" role="status">
+                <p className="font-display text-lg font-semibold text-primary">
+                  {visible.length} adventure{visible.length > 1 ? "s" : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {activeFilterSummary || "All current adventures"}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-9 lg:gap-x-8 lg:gap-y-12">
                 {visible.map((a, i) => (
                   <div key={a.id} className="reveal" style={{ transitionDelay: `${(i % 6) * 50}ms` }}>
                     <AdventureCard adventure={a} priority={i < 3} />

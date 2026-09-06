@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Adventure } from "@/lib/treks";
 import { fetchAdventures, hasValue, inr } from "@/lib/treks";
@@ -62,8 +62,8 @@ export default function BookingPage() {
         </a>
         <div className="container flex items-center justify-between py-3.5">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="E2 Trails" className="w-8 h-8 rounded-full bg-white object-contain p-0.5" />
-            <span className="font-display font-bold text-base text-primary">E2 TRAILS</span>
+            <img src={logo} alt="E2 Trails" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
+            <span className="font-display font-bold text-base tracking-wide text-primary">E2 TRAILS</span>
           </Link>
           <Link
             to="/adventures"
@@ -74,10 +74,10 @@ export default function BookingPage() {
         </div>
       </header>
 
-      <div id="main-content" tabIndex={-1} className="container py-10 md:py-14 max-w-6xl outline-none">
+      <div id="main-content" tabIndex={-1} className="container max-w-6xl py-10 pb-20 md:py-14 md:pb-24 outline-none">
         <div className="max-w-2xl">
           <p className="kicker">Reserve your spot</p>
-          <h1 className="font-display font-extrabold text-3xl md:text-5xl mt-3 text-primary">
+          <h1 className="editorial-title mt-3">
             Book your adventure
           </h1>
           <p className="mt-4 text-muted-foreground leading-relaxed">
@@ -106,7 +106,7 @@ export default function BookingPage() {
               No adventures are open for booking right now. Check back soon.
             </p>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid sm:grid-cols-2 gap-4">
               {adventures.map((a) => {
                 const full = a.isFull || a.seatsRemaining <= 0;
                 const price = a.startingPrice ?? (a.price > 0 ? a.price : null);
@@ -118,16 +118,22 @@ export default function BookingPage() {
                     onClick={() => setTrekId(a.id)}
                     disabled={full}
                     className={cn(
-                      "text-left rounded-xl border p-4 transition-colors min-h-[44px]",
+                      "relative min-h-[124px] overflow-hidden rounded-xl border p-5 text-left transition-colors",
                       trekId === a.id
-                        ? "border-accent bg-accent/5 ring-1 ring-accent"
-                        : "border-border bg-card hover:border-accent/50",
+                        ? "border-accent bg-accent/5 ring-1 ring-accent shadow-card"
+                        : "border-border bg-card hover:border-accent/50 hover:bg-card/80",
                       full && "opacity-50",
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-3">
                       <span className="font-semibold text-primary leading-snug">{a.name}</span>
-                      {full && <span className="pill bg-destructive/10 text-destructive shrink-0">Full</span>}
+                      {full ? (
+                        <span className="pill bg-destructive/10 text-destructive shrink-0">Full</span>
+                      ) : trekId === a.id ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
+                          <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Selected
+                        </span>
+                      ) : null}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
@@ -150,6 +156,16 @@ export default function BookingPage() {
             </div>
           )}
         </section>
+
+        {!loading && adventures.length > 0 && !selected && (
+          <section className="mt-10 border-y border-border py-7" aria-live="polite">
+            <p className="meta-label">Next step</p>
+            <h2 className="mt-2 font-display text-xl font-bold text-primary">Choose a trip to continue</h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              Select an adventure above to see its available dates, traveller details and booking summary.
+            </p>
+          </section>
+        )}
 
         {/* 2. Booking form (shared with the trek page) */}
         {selected && (

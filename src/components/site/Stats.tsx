@@ -76,10 +76,10 @@ export default function Stats() {
             const Icon = s.icon;
             return (
               <div key={s.label} className="text-center px-2">
-                <Icon className="w-5 h-5 text-accent mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
+                <Icon className="w-5 h-5 text-gold mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
                 <p className="font-display font-bold text-3xl md:text-4xl leading-none">
                   {s.value.toLocaleString("en-IN")}
-                  <span className="text-accent">{s.suffix}</span>
+                  <span className="text-gold">{s.suffix}</span>
                 </p>
                 <p className="mt-2 text-primary-foreground/70 text-xs md:text-sm font-medium tracking-wide">{s.label}</p>
               </div>
@@ -87,7 +87,7 @@ export default function Stats() {
           })}
           {metrics.nextDate ? (
             <div className="text-center px-2">
-              <CalendarDays className="w-5 h-5 text-accent mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
+              <CalendarDays className="w-5 h-5 text-gold mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
               <p className="font-display font-bold text-3xl md:text-4xl leading-none text-gold">
                 {fmtDate(metrics.nextDate)}
               </p>
@@ -95,7 +95,7 @@ export default function Stats() {
             </div>
           ) : (
             <div className="text-center px-2">
-              <Compass className="w-5 h-5 text-accent mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
+              <Compass className="w-5 h-5 text-gold mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
               <p className="font-display font-bold text-3xl md:text-4xl leading-none">—</p>
               <p className="mt-2 text-primary-foreground/70 text-xs md:text-sm font-medium tracking-wide">Next dates coming soon</p>
             </div>

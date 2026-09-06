@@ -20,6 +20,9 @@ export default function Navbar() {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const { pathname } = useLocation();
   const isHome = pathname === "/";
+  const adventureActive = pathname.startsWith("/adventures") || pathname === "/upcoming-treks" || pathname === "/hyderabad-trails";
+  const journalActive = pathname === "/trail-log";
+  const linkIsActive = (href: string) => href === "/adventures" ? pathname.startsWith("/adventures") : pathname === href;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -74,10 +77,10 @@ export default function Navbar() {
           <img
             src={logo}
             alt="E2 Trails logo"
-            className="w-9 h-9 rounded-full bg-white object-contain p-0.5 shadow-card"
+            className="w-10 h-10 rounded-full bg-white object-contain p-0.5 shadow-card"
           />
-          <span className="font-display font-bold text-lg tracking-wide leading-none">
-            E2 <span className="text-accent">TRAILS</span>
+          <span className="font-display font-bold text-[1.15rem] tracking-wide leading-none">
+            E2 <span className="text-accent-light">TRAILS</span>
           </span>
         </Link>
 
@@ -90,7 +93,10 @@ export default function Navbar() {
               aria-expanded={adventuresOpen}
               aria-haspopup="menu"
               onClick={() => setAdventuresOpen((v) => !v)}
-              className="inline-flex items-center gap-1 text-sm font-medium text-charcoal-foreground/90 hover:text-accent transition-colors min-h-[44px]"
+              className={cn(
+                "link-on-dark inline-flex items-center gap-1 text-sm font-medium transition-colors min-h-[44px]",
+                adventureActive ? "text-accent-light" : "text-charcoal-foreground/90",
+              )}
             >
               Adventures
               <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", adventuresOpen && "rotate-180")} aria-hidden="true" />
@@ -107,25 +113,36 @@ export default function Navbar() {
                   key={l.href}
                   to={l.href}
                   role="menuitem"
+                  aria-current={linkIsActive(l.href) ? "page" : undefined}
                   onClick={() => setAdventuresOpen(false)}
-                  className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-charcoal-foreground/10 transition-colors group"
+                  className={cn(
+                    "flex items-center justify-between gap-3 px-5 py-4 hover:bg-charcoal-foreground/10 transition-colors group",
+                    linkIsActive(l.href) && "bg-charcoal-foreground/10",
+                  )}
                 >
                   <span>
                     <span className="block text-sm font-semibold">{l.label}</span>
                     <span className="block text-xs text-charcoal-foreground/55 mt-0.5">{l.note}</span>
                   </span>
-                  <ArrowRight className="w-4 h-4 text-accent opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" aria-hidden="true" />
+                  <ArrowRight className="w-4 h-4 text-accent-light opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" aria-hidden="true" />
                 </Link>
               ))}
             </div>
           </div>
-          <Link to="/trail-log" className="text-sm font-medium text-charcoal-foreground/90 hover:text-accent transition-colors min-h-[44px] inline-flex items-center">
+          <Link
+            to="/trail-log"
+            aria-current={journalActive ? "page" : undefined}
+            className={cn(
+              "link-on-dark text-sm font-medium transition-colors min-h-[44px] inline-flex items-center",
+              journalActive ? "text-accent-light" : "text-charcoal-foreground/90",
+            )}
+          >
             Trail Journal
           </Link>
-          <a href="/#story" className="text-sm font-medium text-charcoal-foreground/90 hover:text-accent transition-colors min-h-[44px] inline-flex items-center">
+          <a href="/#story" className="link-on-dark text-sm font-medium text-charcoal-foreground/90 transition-colors min-h-[44px] inline-flex items-center">
             About
           </a>
-          <a href="/#contact" className="text-sm font-medium text-charcoal-foreground/90 hover:text-accent transition-colors min-h-[44px] inline-flex items-center">
+          <a href="/#contact" className="link-on-dark text-sm font-medium text-charcoal-foreground/90 transition-colors min-h-[44px] inline-flex items-center">
             Contact
           </a>
         </nav>
@@ -133,7 +150,7 @@ export default function Navbar() {
         <div className="hidden lg:flex items-center gap-3">
           <a
             href="tel:+916303682022"
-            className="inline-flex items-center gap-2 min-h-[44px] px-4 text-sm font-semibold text-charcoal-foreground/90 hover:text-accent transition-colors"
+            className="link-on-dark inline-flex items-center gap-2 min-h-[44px] px-4 text-sm font-semibold text-charcoal-foreground/90 transition-colors"
           >
             <Phone className="w-4 h-4" aria-hidden="true" />
             +91 63036 82022
@@ -170,7 +187,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-3">
                   <img src={logo} alt="" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
                   <DialogPrimitive.Title className="font-display font-bold text-lg">
-                    E2 <span className="text-accent">TRAILS</span>
+                    E2 <span className="text-accent-light">TRAILS</span>
                   </DialogPrimitive.Title>
                 </div>
                 <DialogPrimitive.Close asChild>
@@ -191,14 +208,18 @@ export default function Navbar() {
                   <Link
                     key={l.href}
                     to={l.href}
+                    aria-current={linkIsActive(l.href) ? "page" : undefined}
                     onClick={() => setOpen(false)}
-                    className="min-h-[64px] py-3 flex items-center justify-between gap-4 border-b border-charcoal-foreground/10"
+                    className={cn(
+                      "min-h-[64px] py-3 flex items-center justify-between gap-4 border-b border-charcoal-foreground/10",
+                      linkIsActive(l.href) && "text-accent-light",
+                    )}
                   >
                     <span>
                       <span className="block text-lg font-medium">{l.label}</span>
                       <span className="block text-xs text-charcoal-foreground/55 mt-0.5">{l.note}</span>
                     </span>
-                    <ArrowRight className="w-4 h-4 shrink-0 text-accent" aria-hidden="true" />
+                    <ArrowRight className="w-4 h-4 shrink-0 text-accent-light" aria-hidden="true" />
                   </Link>
                 ))}
 
@@ -212,8 +233,12 @@ export default function Navbar() {
                     <Link
                       key={l.label}
                       to={l.to}
+                      aria-current={l.to === pathname ? "page" : undefined}
                       onClick={() => setOpen(false)}
-                      className="min-h-[52px] py-3 text-lg font-medium hover:text-accent transition-colors border-b border-charcoal-foreground/10"
+                      className={cn(
+                        "link-on-dark min-h-[52px] py-3 text-lg font-medium transition-colors border-b border-charcoal-foreground/10",
+                        l.to === pathname && "text-accent-light",
+                      )}
                     >
                       {l.label}
                     </Link>
@@ -222,7 +247,7 @@ export default function Navbar() {
                       key={l.label}
                       href={l.href}
                       onClick={() => setOpen(false)}
-                      className="min-h-[52px] py-3 text-lg font-medium hover:text-accent transition-colors border-b border-charcoal-foreground/10"
+                      className="link-on-dark min-h-[52px] py-3 text-lg font-medium transition-colors border-b border-charcoal-foreground/10"
                     >
                       {l.label}
                     </a>

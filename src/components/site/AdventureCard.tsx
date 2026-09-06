@@ -1,13 +1,15 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, MapPin } from "lucide-react";
+import { ArrowRight, Clock, MapPin, Mountain } from "lucide-react";
 import type { Adventure } from "@/lib/treks";
-import { DIFFICULTY_STYLES, EVENT_TYPE_LABELS, fmtDateShort, hasValue, inr } from "@/lib/treks";
+import { DIFFICULTY_STYLES, EVENT_TYPE_LABELS, hasValue, inr } from "@/lib/treks";
 
 /**
  * Editorial adventure card. Dates, price and availability are always real
  * (from the DB) — we never fabricate seat counts.
  */
 export default function AdventureCard({ adventure, priority = false }: { adventure: Adventure; priority?: boolean }) {
+  const [imageFailed, setImageFailed] = useState(false);
   const price = adventure.startingPrice ?? (adventure.price > 0 ? adventure.price : null);
   const location = adventure.destination || adventure.location || adventure.region || "Hyderabad";
   const diff = DIFFICULTY_STYLES[adventure.diff];
@@ -21,16 +23,21 @@ export default function AdventureCard({ adventure, priority = false }: { adventu
     >
       <article className="relative h-full overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col">
         <div className="relative aspect-[4/5] sm:aspect-[4/5] overflow-hidden bg-muted">
-          {adventure.img ? (
+          {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
               alt={adventure.name}
               loading={priority ? "eager" : "lazy"}
+              decoding="async"
+              onError={() => setImageFailed(true)}
               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
             />
           ) : (
-            <div className="w-full h-full grid place-items-center text-charcoal-foreground/40">
-              <span className="font-display italic text-lg">{adventure.name.charAt(0)}</span>
+            <div className="w-full h-full grid place-items-center bg-primary text-primary-foreground/45" aria-hidden="true">
+              <div className="text-center">
+                <Mountain className="mx-auto h-12 w-12" strokeWidth={1} />
+                <span className="meta-label mt-3 block text-primary-foreground/55">E2 Trails</span>
+              </div>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-card" aria-hidden="true" />
@@ -91,7 +98,7 @@ export default function AdventureCard({ adventure, priority = false }: { adventu
                 <span className="text-sm text-charcoal-foreground/60">Price on request</span>
               )}
             </div>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent transition-transform duration-200 group-hover:translate-x-0.5">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent-light transition-transform duration-200 group-hover:translate-x-0.5">
               View adventure
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </span>

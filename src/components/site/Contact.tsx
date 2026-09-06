@@ -97,18 +97,18 @@ export default function Contact() {
   return (
     <section id="contact" className="section-lg bg-muted/40">
       <div className="container">
-        <div className="text-center max-w-2xl mx-auto">
-          <p className="kicker justify-center">Get in touch</p>
+        <div className="max-w-2xl">
+          <p className="kicker">Get in touch</p>
           <h2 className="editorial-title mt-3">Plan your next escape</h2>
-          <p className="editorial-lead mx-auto">
+          <p className="editorial-lead">
             Questions about a trail, a date, or a custom group trip? Send us a note and we'll get back
             to you.
           </p>
         </div>
 
-        <div className="mt-14 grid lg:grid-cols-5 gap-8 lg:gap-12 max-w-6xl mx-auto">
+        <div className="mt-12 grid lg:grid-cols-5 gap-8 lg:gap-12 max-w-6xl">
           {/* Contact info panel */}
-          <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-gradient-forest text-charcoal-foreground p-8 md:p-10 flex flex-col justify-between min-h-[420px] shadow-trail">
+          <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-primary text-charcoal-foreground p-7 md:p-10 flex flex-col justify-between min-h-[340px] md:min-h-[420px] shadow-card">
             <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
               {[...Array(12)].map((_, i) => (
                 <path
@@ -126,17 +126,17 @@ export default function Contact() {
             </div>
 
             <div className="relative space-y-4 text-sm md:text-base">
-              <a href="mailto:hello@e2trails.in" className="flex items-center gap-3 hover:text-accent transition-colors">
-                <Mail className="w-5 h-5 text-accent" aria-hidden="true" /> hello@e2trails.in
+              <a href="mailto:hello@e2trails.in" className="link-on-dark flex min-h-11 items-center gap-3 transition-colors">
+                <Mail className="w-5 h-5 text-accent-light" aria-hidden="true" /> hello@e2trails.in
               </a>
-              <a href="https://instagram.com/e2trails.in" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-accent transition-colors">
-                <Instagram className="w-5 h-5 text-accent" aria-hidden="true" /> @e2trails.in
+              <a href="https://instagram.com/e2trails.in" target="_blank" rel="noreferrer" className="link-on-dark flex min-h-11 items-center gap-3 transition-colors">
+                <Instagram className="w-5 h-5 text-accent-light" aria-hidden="true" /> @e2trails.in
               </a>
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-accent" aria-hidden="true" /> Hyderabad, Telangana, India
+              <div className="flex min-h-11 items-center gap-3">
+                <MapPin className="w-5 h-5 text-accent-light" aria-hidden="true" /> Hyderabad, Telangana, India
               </div>
-              <a href="tel:+916303682022" className="flex items-center gap-3 hover:text-accent transition-colors">
-                <Phone className="w-5 h-5 text-accent" aria-hidden="true" /> +91 63036 82022
+              <a href="tel:+916303682022" className="link-on-dark flex min-h-11 items-center gap-3 transition-colors">
+                <Phone className="w-5 h-5 text-accent-light" aria-hidden="true" /> +91 63036 82022
               </a>
             </div>
           </div>
@@ -221,4 +221,4 @@ export default function Contact() {
       </div>
     </section>
   );
-}
+}

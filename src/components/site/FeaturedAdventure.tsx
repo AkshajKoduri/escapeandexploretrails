@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, MapPin } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, MapPin, Mountain } from "lucide-react";
 import type { Adventure } from "@/lib/treks";
 import { DIFFICULTY_STYLES, fetchAdventures, fmtDate, hasValue, inr } from "@/lib/treks";
+import { formatAdventureDescription } from "@/lib/adventureDescription";
 
 /**
  * Featured destination — always the next real adventure with photography.
@@ -11,6 +12,7 @@ import { DIFFICULTY_STYLES, fetchAdventures, fmtDate, hasValue, inr } from "@/li
 export default function FeaturedAdventure() {
   const [adventure, setAdventure] = useState<Adventure | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,32 +30,48 @@ export default function FeaturedAdventure() {
   const diff = DIFFICULTY_STYLES[adventure.diff];
   const price = adventure.startingPrice ?? (adventure.price > 0 ? adventure.price : null);
   const location = adventure.destination || adventure.location || adventure.region || "Hyderabad";
+  const nextDate = adventure.dates[0];
+  const summary = formatAdventureDescription(adventure.description, adventure.name)
+    .flatMap((section) => section.blocks)
+    .find((block) => block.type === "paragraph")?.text;
 
   return (
     <section id="featured" className="section bg-background">
       <div className="container">
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-14 items-stretch">
           <Link
             to={`/adventures/${adventure.id}`}
-            className="lg:col-span-7 group relative block overflow-hidden rounded-xl bg-charcoal min-h-[420px] md:min-h-[560px]"
+            className="lg:col-span-7 group relative block overflow-hidden rounded-xl bg-primary min-h-[340px] sm:min-h-[420px] md:min-h-[520px]"
             aria-label={`View ${adventure.name}`}
           >
-            {adventure.img ? (
+            {adventure.img && !imageFailed ? (
               <img
                 src={adventure.img}
                 alt={adventure.name}
                 loading="lazy"
+                onError={() => setImageFailed(true)}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
               />
-            ) : null}
+            ) : (
+              <div className="absolute inset-0 grid place-items-center bg-primary" aria-hidden="true">
+                <div className="text-center text-primary-foreground/45">
+                  <Mountain className="mx-auto h-16 w-16" strokeWidth={1} />
+                  <span className="meta-label mt-3 block text-primary-foreground/55">E2 Trails guided adventure</span>
+                </div>
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-card" aria-hidden="true" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-charcoal-foreground">
-              <span className="pill bg-charcoal-foreground/90 text-charcoal mb-4">
-                {adventure.isFull ? "Sold out" : "Next up"}
+            <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-4 p-6 md:p-8 text-charcoal-foreground">
+              <div>
+                <p className="meta-label text-charcoal-foreground/65">{adventure.isFull ? "Currently full" : "Next departure"}</p>
+                <p className="mt-1.5 font-display text-xl font-semibold md:text-2xl">
+                  {nextDate ? fmtDate(nextDate) : "New dates coming soon"}
+                </p>
+              </div>
+              <span className="hidden items-center gap-2 text-sm text-charcoal-foreground/75 sm:inline-flex">
+                <MapPin className="h-4 w-4 text-gold" aria-hidden="true" />
+                {location}
               </span>
-              <h3 className="font-display font-bold text-3xl md:text-5xl leading-tight text-balance">
-                {adventure.name}
-              </h3>
             </div>
           </Link>
 
@@ -80,20 +98,21 @@ export default function FeaturedAdventure() {
               </span>
             </div>
 
-            {adventure.description && (
-              <p className="mt-5 text-muted-foreground leading-relaxed line-clamp-4">
-                {adventure.description}
+            {summary && (
+              <p className="mt-5 text-muted-foreground leading-relaxed line-clamp-3">
+                {summary}
               </p>
             )}
 
-            <div className="mt-6 space-y-1">
+            <div className="mt-6 border-y border-border py-4 space-y-1">
               <p className="text-sm text-muted-foreground">
                 {adventure.isFull
                   ? "Currently full — new dates coming soon."
                   : `${adventure.seatsRemaining} seat${adventure.seatsRemaining > 1 ? "s" : ""} available across these dates`}
               </p>
               {adventure.dates.slice(0, 3).map((d) => (
-                <p key={d} className="text-sm text-muted-foreground">
+                <p key={d} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CalendarDays className="h-4 w-4 text-accent" aria-hidden="true" />
                   <span className="font-semibold text-foreground">{fmtDate(d)}</span>
                 </p>
               ))}

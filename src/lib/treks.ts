@@ -1,4 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database, Json } from "@/integrations/supabase/types";
+import ahobilamImage from "@/assets/trek-ahobilam.jpg";
+import ananthagiriImage from "@/assets/trek-ananthagiri.jpg";
+import bhongirImage from "@/assets/trek-bhongir.jpg";
+import ethipothalaImage from "@/assets/trek-ethipothala.jpg";
+import koilkondaImage from "@/assets/trek-koilkonda.jpg";
+import medakImage from "@/assets/trek-medak.jpg";
 
 /* ------------------------------------------------------------------ */
 /* Shared types                                                        */
@@ -54,6 +61,8 @@ export type SeatStat = {
   seats_taken: number;
   seats_remaining: number;
 };
+
+type TrekRow = Database["public"]["Tables"]["upcoming_treks"]["Row"];
 
 /* ------------------------------------------------------------------ */
 /* Formatters & small helpers                                          */
@@ -140,11 +149,25 @@ export const OUTSTATION_CATEGORIES = [
   "Winter Trek",
 ] as const;
 
+/** Existing, trek-specific photography used only when a published row has no image. */
+function bundledAdventureImage(...values: Array<string | null | undefined>): string {
+  const haystack = values.filter(Boolean).join(" ").toLowerCase();
+  const matches: Array<[string[], string]> = [
+    [["ahobilam", "ugrastambam"], ahobilamImage],
+    [["ananthagiri"], ananthagiriImage],
+    [["bhongir", "bhuvanagiri"], bhongirImage],
+    [["ethipothala"], ethipothalaImage],
+    [["koilkonda"], koilkondaImage],
+    [["medak"], medakImage],
+  ];
+  return matches.find(([terms]) => terms.some((term) => haystack.includes(term)))?.[1] ?? "";
+}
+
 /* ------------------------------------------------------------------ */
 /* Data fetching                                                       */
 /* ------------------------------------------------------------------ */
 
-const OUTSTATION_FIELDS: { key: string; label: string }[] = [
+const OUTSTATION_FIELDS: { key: keyof TrekRow; label: string }[] = [
   { key: "trek_difficulty", label: "Trek Difficulty" },
   { key: "trek_distance", label: "Trek Distance" },
   { key: "altitude", label: "Altitude" },
@@ -159,11 +182,23 @@ const OUTSTATION_FIELDS: { key: string; label: string }[] = [
 export async function fetchSeatStats(): Promise<Map<string, SeatStat>> {
   const { data } = await supabase.rpc("get_trek_seat_stats");
   const m = new Map<string, SeatStat>();
-  (data ?? []).forEach((s: any) => m.set(s.trek_id, s));
+  (data ?? []).forEach((s) => m.set(s.trek_id, s));
   return m;
 }
 
-function mapRow(t: any, statsMap: Map<string, SeatStat>, today: string): Adventure {
+function normalizeItineraryDays(value: Json): Adventure["itineraryDays"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const title = item.title;
+    const description = item.description;
+    return typeof title === "string" && typeof description === "string"
+      ? [{ title, description }]
+      : [];
+  });
+}
+
+function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adventure {
   const s = statsMap.get(t.id);
   const seatsTaken = s?.seats_taken ?? t.seats_taken ?? 0;
   const maxSeats = s?.max_seats ?? t.max_seats ?? 0;
@@ -172,13 +207,16 @@ function mapRow(t: any, statsMap: Map<string, SeatStat>, today: string): Adventu
   const allDates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
   const dates = allDates.filter((d) => d >= today);
   const sorted = [...dates].sort();
+  const fieldLabels = t.field_labels && typeof t.field_labels === "object" && !Array.isArray(t.field_labels)
+    ? t.field_labels
+    : {};
 
   return {
     id: t.id,
     name: t.name,
     destination: t.destination ?? null,
     location: t.location ?? null,
-    img: t.image_url || "",
+    img: t.image_url || bundledAdventureImage(t.name, t.destination, t.location, t.region),
     diff: (t.difficulty as Difficulty) ?? "Easy",
     dur: t.duration ?? "",
     dist: t.distance ?? "",
@@ -198,7 +236,7 @@ function mapRow(t: any, statsMap: Map<string, SeatStat>, today: string): Adventu
     meetingPoint: t.meeting_point ?? null,
     itineraryUrl: t.itinerary_url ?? null,
     itineraryFilePath: t.itinerary_file_path ?? null,
-    itineraryDays: Array.isArray(t.itinerary_days) ? (t.itinerary_days as any) : [],
+    itineraryDays: normalizeItineraryDays(t.itinerary_days),
     seatsRemaining: remaining,
     maxSeats: maxSeats,
     seatsTaken: seatsTaken,
@@ -208,8 +246,8 @@ function mapRow(t: any, statsMap: Map<string, SeatStat>, today: string): Adventu
     albumUrl: t.album_url ?? null,
     extras: OUTSTATION_FIELDS.map((f) => ({
       key: f.key,
-      label: (t.field_labels && t.field_labels[f.key]) || f.label,
-      value: (t[f.key] ?? "") as string,
+      label: typeof fieldLabels[f.key] === "string" ? fieldLabels[f.key] : f.label,
+      value: String(t[f.key] ?? ""),
     })).filter((x) => hasValue(x.value)),
   };
 }
@@ -231,7 +269,7 @@ export async function fetchAdventures(opts?: { includePast?: boolean }): Promise
   ]);
 
   return (trekData ?? [])
-    .map((t: any) => mapRow(t, statsMap, today))
+    .map((t) => mapRow(t, statsMap, today))
     .filter((a: Adventure) => {
       if (opts?.includePast) return true;
       if (a.allDates.length === 0) return true;
@@ -240,13 +278,16 @@ export async function fetchAdventures(opts?: { includePast?: boolean }): Promise
 }
 
 export async function fetchAdventureById(id: string): Promise<Adventure | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+    return null;
+  }
   const today = new Date().toISOString().slice(0, 10);
   const [trekRes, statsMap] = await Promise.all([
     supabase.from("upcoming_treks").select("*").eq("id", id).maybeSingle(),
     fetchSeatStats(),
   ]);
   if (trekRes.error || !trekRes.data) return null;
-  const row: any = trekRes.data;
+  const row = trekRes.data;
   if (row.is_archived || row.is_draft) return null;
   return mapRow(row, statsMap, today);
 }

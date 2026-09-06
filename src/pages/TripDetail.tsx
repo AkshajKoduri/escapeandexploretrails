@@ -12,6 +12,7 @@ import {
   Phone,
   FileText,
   MessageCircle,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -43,12 +44,14 @@ export default function TripDetail() {
   const [adventure, setAdventure] = useState<Adventure | null>(null);
   const [others, setOthers] = useState<Adventure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageFailed, setImageFailed] = useState(false);
   // Set when a visitor clicks "Book this date" — the booking panel below
   // reacts by preselecting exactly that date.
   const [requestedDate, setRequestedDate] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    setImageFailed(false);
     (async () => {
       if (!trekId) return;
       const [a, all] = await Promise.all([fetchAdventureById(trekId), fetchAdventures()]);
@@ -131,8 +134,15 @@ export default function TripDetail() {
       {/* ============ Hero ============ */}
       <section id="main-content" tabIndex={-1} className="relative bg-charcoal overflow-hidden outline-none">
         <div className={cn("relative", adventure.img ? "h-[52vh] min-h-[380px] md:h-[62vh]" : "h-[340px] md:h-[440px]")}>
-          {adventure.img ? (
-            <img src={adventure.img} alt={`${adventure.name} in ${location}`} className="w-full h-full object-cover" />
+          {adventure.img && !imageFailed ? (
+            <img
+              src={adventure.img}
+              alt={`${adventure.name} in ${location}`}
+              className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              onError={() => setImageFailed(true)}
+            />
           ) : (
             <div className="grid h-full w-full place-items-center bg-primary text-primary-foreground">
               <div className="flex flex-col items-center gap-3 text-center text-primary-foreground/55" aria-hidden="true">
@@ -167,16 +177,22 @@ export default function TripDetail() {
               {adventure.name}
             </h1>
             <p className="mt-3 flex items-center gap-2 text-charcoal-foreground/80">
-              <MapPin className="w-4 h-4 text-accent" aria-hidden="true" />
+              <MapPin className="w-4 h-4 text-accent-light" aria-hidden="true" />
               {location}
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 text-charcoal-foreground/85">
               {adventure.dates[0] && (
                 <span className="inline-flex items-center gap-2 text-sm font-semibold">
-                  <CalendarDays className="w-4 h-4 text-accent" aria-hidden="true" />
+                  <CalendarDays className="w-4 h-4 text-accent-light" aria-hidden="true" />
                   {adventure.dates.length > 1
                     ? `From ${fmtDate(adventure.dates[0])}`
                     : fmtDate(adventure.dates[0])}
+                </span>
+              )}
+              {!soldOut && adventure.seatsRemaining > 0 && (
+                <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                  <Users className="w-4 h-4 text-accent-light" aria-hidden="true" />
+                  {adventure.seatsRemaining} seat{adventure.seatsRemaining > 1 ? "s" : ""} available
                 </span>
               )}
               {price != null && (
@@ -210,7 +226,7 @@ export default function TripDetail() {
       {/* ============ Quick facts ============ */}
       {facts.length > 0 && (
         <section className="border-b border-border bg-card/70">
-          <div className="container grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
+          <div className={cn("container grid grid-cols-2 gap-px bg-border", facts.length >= 5 ? "md:grid-cols-5" : "md:grid-cols-4")}>
             {facts.map((f) => {
               const Icon = f.icon;
               return (
@@ -406,7 +422,7 @@ export default function TripDetail() {
             )}
 
             {/* Safety note */}
-            <section className="rounded-xl border border-primary/15 bg-primary/5 p-6 md:p-8">
+            <section className="border-y border-primary/20 bg-primary/5 px-1 py-6 md:px-6 md:py-8">
               <p className="kicker">Safety</p>
               <h2 className="font-display font-bold text-xl md:text-2xl text-primary mt-2">You'll know exactly what you're signing up for</h2>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-2xl">

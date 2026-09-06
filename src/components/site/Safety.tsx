@@ -71,14 +71,16 @@ export default function Safety() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-px bg-charcoal-foreground/12 border border-charcoal-foreground/12 rounded-xl overflow-hidden">
+          <div className="grid gap-px bg-charcoal-foreground/15 sm:grid-cols-2 border-y border-charcoal-foreground/15 sm:border">
             {pillars.map((p) => {
               const Icon = p.icon;
               return (
-                <div key={p.title} className="bg-charcoal p-6 md:p-7 flex flex-col gap-3">
-                  <Icon className="w-6 h-6 text-accent" strokeWidth={1.75} aria-hidden="true" />
-                  <h3 className="font-display font-bold text-lg leading-snug">{p.title}</h3>
-                  <p className="text-sm text-charcoal-foreground/70 leading-relaxed">{p.desc}</p>
+                <div key={p.title} className="bg-charcoal px-1 py-5 sm:p-6 md:p-7 flex gap-4 sm:flex-col sm:gap-3">
+                  <Icon className="mt-0.5 w-5 h-5 shrink-0 text-accent sm:mt-0 sm:h-6 sm:w-6" strokeWidth={1.75} aria-hidden="true" />
+                  <div>
+                    <h3 className="font-display font-bold text-lg leading-snug">{p.title}</h3>
+                    <p className="mt-1.5 text-sm text-charcoal-foreground/70 leading-relaxed sm:mt-0">{p.desc}</p>
+                  </div>
                 </div>
               );
             })}

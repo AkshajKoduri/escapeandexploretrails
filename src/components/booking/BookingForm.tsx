@@ -247,7 +247,7 @@ export default function BookingForm({
       <div
         id="book"
         className={cn(
-          "rounded-xl border border-primary/15 bg-card shadow-trail p-7 md:p-8 scroll-mt-24",
+          "rounded-xl border border-primary/15 border-t-2 border-t-accent bg-card shadow-card p-7 md:p-8 scroll-mt-24",
           variant === "panel" && "lg:sticky lg:top-24",
         )}
       >
@@ -605,7 +605,7 @@ export default function BookingForm({
           className="grid lg:grid-cols-[1fr_360px] gap-10 lg:gap-12 items-start"
         >
           <div className="space-y-10 min-w-0">{sections}</div>
-          <aside className="rounded-xl border border-primary/15 bg-card shadow-trail p-6 lg:sticky lg:top-20">
+          <aside className="rounded-xl border border-primary/15 border-t-2 border-t-accent bg-card shadow-card p-6 lg:sticky lg:top-20">
             <p className="kicker">Booking summary</p>
             <dl className="mt-4 space-y-2.5 text-sm">
               <div className="flex justify-between gap-3">
@@ -676,7 +676,7 @@ export default function BookingForm({
   return (
     <div
       id="book"
-      className="lg:sticky lg:top-24 rounded-xl border border-primary/15 bg-card shadow-trail p-7 md:p-8 scroll-mt-28"
+      className="lg:sticky lg:top-24 rounded-xl border border-primary/15 border-t-2 border-t-accent bg-card shadow-card p-7 md:p-8 scroll-mt-28"
     >
       {heading}
       {soldOut ? (
