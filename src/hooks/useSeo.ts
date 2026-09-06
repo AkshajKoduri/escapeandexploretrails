@@ -1,68 +1,61 @@
 import { useEffect } from "react";
 
-const SITE_URL = "https://e2trails-in.lovable.app";
+const SITE_URL = "https://e2trails.in";
+const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 
 type SeoOptions = {
   title: string;
   description: string;
   /** Route path, e.g. "/upcoming-treks" */
   path: string;
-  jsonLd?: Record<string, unknown>;
+  /** Utility routes (booking, 404, missing content) should stay out of search indexes. */
+  noindex?: boolean;
 };
 
-function upsertMeta(selector: string, create: () => HTMLMetaElement, content: string) {
+function upsertMeta(attr: "name" | "property", key: string, content: string) {
+  const selector = `meta[${attr}="${key}"]`;
   let el = document.head.querySelector<HTMLMetaElement>(selector);
   if (!el) {
-    el = create();
+    el = document.createElement("meta");
+    el.setAttribute(attr, key);
     document.head.appendChild(el);
   }
   el.setAttribute("content", content);
 }
 
 /**
- * Sets per-route head metadata: title, description, canonical and OpenGraph tags.
+ * Sets per-route head metadata: title, description, canonical and OpenGraph/Twitter tags.
  * Runs client-side, so JS-executing crawlers (Googlebot) see the per-page values.
+ * All URLs resolve to the production domain so canonicals never point at preview hosts.
  */
-export function useSeo({ title, description, path, jsonLd }: SeoOptions) {
+export function useSeo({ title, description, path, noindex = false }: SeoOptions) {
   useEffect(() => {
     const url = `${SITE_URL}${path}`;
     document.title = title;
 
-    upsertMeta('meta[name="description"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("name", "description");
-      return m;
-    }, description);
+    upsertMeta("name", "description", description);
+    upsertMeta("property", "og:title", title);
+    upsertMeta("property", "og:description", description);
+    upsertMeta("property", "og:url", url);
+    upsertMeta("property", "og:type", "website");
+    upsertMeta("property", "og:image", OG_IMAGE);
+    upsertMeta("name", "twitter:card", "summary_large_image");
+    upsertMeta("name", "twitter:title", title);
+    upsertMeta("name", "twitter:description", description);
+    upsertMeta("name", "twitter:image", OG_IMAGE);
 
-    upsertMeta('meta[property="og:title"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("property", "og:title");
-      return m;
-    }, title);
-
-    upsertMeta('meta[property="og:description"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("property", "og:description");
-      return m;
-    }, description);
-
-    upsertMeta('meta[property="og:url"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("property", "og:url");
-      return m;
-    }, url);
-
-    upsertMeta('meta[name="twitter:title"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("name", "twitter:title");
-      return m;
-    }, title);
-
-    upsertMeta('meta[name="twitter:description"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("name", "twitter:description");
-      return m;
-    }, description);
+    const robotsSelector = 'meta[name="robots"]';
+    let robots = document.head.querySelector<HTMLMetaElement>(robotsSelector);
+    if (noindex) {
+      if (!robots) {
+        robots = document.createElement("meta");
+        robots.setAttribute("name", "robots");
+        document.head.appendChild(robots);
+      }
+      robots.setAttribute("content", "noindex, nofollow");
+    } else {
+      robots?.remove();
+    }
 
     let canon = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canon) {
@@ -71,20 +64,5 @@ export function useSeo({ title, description, path, jsonLd }: SeoOptions) {
       document.head.appendChild(canon);
     }
     canon.setAttribute("href", url);
-
-    let script: HTMLScriptElement | null = null;
-    if (jsonLd) {
-      script = document.createElement("script");
-      script.type = "application/ld+json";
-      script.dataset.routeSchema = "true";
-      script.textContent = JSON.stringify(jsonLd);
-      document.head.appendChild(script);
-    }
-    return () => {
-      script?.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description, path]);
+  }, [title, description, path, noindex]);
 }
-
-export { SITE_URL };

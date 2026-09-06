@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import Navbar from "@/components/site/Navbar";
 import Hero from "@/components/site/Hero";
 import Stats from "@/components/site/Stats";
@@ -14,30 +13,16 @@ import FinalCTA from "@/components/site/FinalCTA";
 import Contact from "@/components/site/Contact";
 import Footer from "@/components/site/Footer";
 import { useReveal } from "@/hooks/useReveal";
+import { useSeo } from "@/hooks/useSeo";
 
 const Index = () => {
   useReveal();
-
-  useEffect(() => {
-    document.title = "E2 Trails — Guided Treks & Adventures from Hyderabad";
-    const desc =
-      "Join E2 Trails for safe, organized weekend treks, night camps & summit hikes across India. Built for every adventurer.";
-    let m = document.querySelector('meta[name="description"]');
-    if (!m) {
-      m = document.createElement("meta");
-      m.setAttribute("name", "description");
-      document.head.appendChild(m);
-    }
-    m.setAttribute("content", desc);
-
-    let canon = document.querySelector('link[rel="canonical"]');
-    if (!canon) {
-      canon = document.createElement("link");
-      canon.setAttribute("rel", "canonical");
-      document.head.appendChild(canon);
-    }
-    canon.setAttribute("href", window.location.origin + "/");
-  }, []);
+  useSeo({
+    title: "E2 Trails — Guided Treks & Adventures from Hyderabad",
+    description:
+      "Join E2 Trails for safe, organized weekend treks, night camps & summit hikes across India. Built for every adventurer.",
+    path: "/",
+  });
 
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">

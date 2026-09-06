@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSeo } from "@/hooks/useSeo";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 import TrailLogCard, { type TrailLogPost } from "@/components/site/TrailLogCard";
@@ -19,21 +20,14 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export default function TrailLog() {
   useReveal();
+  useSeo({
+    title: "The Trail Journal — E2 Trails",
+    description:
+      "Adventures, guides & stories from E2 Trails — trail guides, trek journals, tips and event recaps from our community.",
+    path: "/trail-log",
+  });
   const [posts, setPosts] = useState<TrailLogPost[] | null>(null);
   const [filter, setFilter] = useState<FilterKey>("All");
-
-  useEffect(() => {
-    document.title = "The Trail Journal — E2 Trails";
-    const desc =
-      "Adventures, guides & stories from E2 Trails — trail guides, trek journals, tips and event recaps from our community.";
-    let m = document.querySelector('meta[name="description"]');
-    if (!m) {
-      m = document.createElement("meta");
-      m.setAttribute("name", "description");
-      document.head.appendChild(m);
-    }
-    m.setAttribute("content", desc);
-  }, []);
 
   useEffect(() => {
     fetchTrailLogPosts().then(setPosts);

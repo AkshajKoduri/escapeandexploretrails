@@ -1,11 +1,15 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Compass } from "lucide-react";
+import { useSeo } from "@/hooks/useSeo";
 
 const NotFound = () => {
-  useEffect(() => {
-    document.title = "Page Not Found — E2 Trails";
-  }, []);
+  // A 404 render is a soft-404: keep it out of search indexes.
+  useSeo({
+    title: "Page Not Found — E2 Trails",
+    description: "The page you're looking for doesn't exist. Return to E2 Trails and find your next adventure.",
+    path: "/404",
+    noindex: true,
+  });
 
   return (
     <main className="min-h-screen bg-background grid place-items-center px-6">

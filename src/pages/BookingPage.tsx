@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type { Adventure } from "@/lib/treks";
 import { fetchAdventures, hasValue, inr } from "@/lib/treks";
 import BookingForm from "@/components/booking/BookingForm";
+import { useSeo } from "@/hooks/useSeo";
 import logo from "@/assets/logo.png";
 
 export default function BookingPage() {
@@ -15,8 +16,16 @@ export default function BookingPage() {
   const [trekId, setTrekId] = useState<string>(urlTrek);
   const [resetSignal, setResetSignal] = useState(0);
 
+  // Booking is a private utility flow: reachable, but never a search result.
+  useSeo({
+    title: "Book a Trek — E2 Trails",
+    description:
+      "Reserve your spot on an upcoming E2 Trails adventure. No online payment — our team calls you to confirm.",
+    path: "/booking",
+    noindex: true,
+  });
+
   useEffect(() => {
-    document.title = "Book a Trek — E2 Trails";
     let cancelled = false;
     fetchAdventures().then((all) => {
       if (cancelled) return;

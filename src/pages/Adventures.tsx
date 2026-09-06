@@ -8,6 +8,7 @@ import AdventureCard from "@/components/site/AdventureCard";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 import { useReveal } from "@/hooks/useReveal";
+import { useSeo } from "@/hooks/useSeo";
 
 type ActivityKey = "hike" | "cycling" | "trek" | "bike";
 type DurationKey = "half" | "one" | "multi";
@@ -51,6 +52,19 @@ function matchesDuration(a: Adventure, key: DurationKey): boolean {
 
 export default function Adventures({ initialMode = "all" }: { initialMode?: Mode } = {}) {
   useReveal();
+  useSeo({
+    title: initialMode === "outstation"
+      ? "Outstation Treks from Hyderabad — E2 Trails"
+      : initialMode === "hyderabad"
+        ? "Hyderabad Trails — Day Hikes & Rides Near Home — E2 Trails"
+        : "All Adventures — E2 Trails",
+    description: initialMode === "outstation"
+      ? "Weekend treks and adventures away from Hyderabad — real dates, real prices, guided by E2 Trails."
+      : initialMode === "hyderabad"
+        ? "Day hikes, trails and cycling rides around Hyderabad — easy weekend plans close to home, led by E2 Trails."
+        : "Browse every E2 Trails adventure — guided hikes, treks, cycling rides and bike rides with real dates and prices.",
+    path: initialMode === "outstation" ? "/upcoming-treks" : initialMode === "hyderabad" ? "/hyderabad-trails" : "/adventures",
+  });
   const [params, setParams] = useSearchParams();
   const [adventures, setAdventures] = useState<Adventure[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +80,6 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
   const [sort, setSort] = useState<SortKey>("date");
 
   useEffect(() => {
-    document.title = "All Adventures — E2 Trails";
     let cancelled = false;
     fetchAdventures().then((all) => {
       if (cancelled) return;

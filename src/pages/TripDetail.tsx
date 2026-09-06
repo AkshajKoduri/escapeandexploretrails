@@ -31,6 +31,7 @@ import AdventureCard from "@/components/site/AdventureCard";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 import BookingForm from "@/components/booking/BookingForm";
+import { useSeo } from "@/hooks/useSeo";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useReveal } from "@/hooks/useReveal";
@@ -60,9 +61,15 @@ export default function TripDetail() {
     };
   }, [trekId]);
 
-  useEffect(() => {
-    if (adventure) document.title = `${adventure.name} — E2 Trails`;
-  }, [adventure]);
+  // Dynamic metadata from the real trek record; unknown treks stay out of indexes.
+  useSeo({
+    title: adventure ? `${adventure.name} — E2 Trails` : "Adventure — E2 Trails",
+    description: adventure?.description
+      ? adventure.description.slice(0, 155)
+      : "Guided trek with E2 Trails from Hyderabad — real dates, prices and availability.",
+    path: `/adventures/${trekId ?? ""}`,
+    noindex: !adventure,
+  });
 
   if (loading) {
     return (
@@ -507,6 +514,9 @@ function CallbackButton({ adventure }: { adventure: Adventure }) {
       return;
     }
     setSubmitting(true);
+    // callback_requests is missing from the generated Database types (stale types.ts);
+    // runtime table exists and works. To fix properly: regenerate Supabase types.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("callback_requests" as any).insert({
       trip_id: adventure.id,
       trip_name: adventure.name,
