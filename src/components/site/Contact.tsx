@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Mail, Instagram, MapPin, CheckCircle2 } from "lucide-react";
+import { Mail, Instagram, MapPin, Phone, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +53,7 @@ export default function Contact() {
     setErrors({});
     setSending(true);
     const { name, email, phone, trek, message } = parsed.data;
-    const { error } = await supabase.from("callback_requests" as any).insert({
+    const { error } = await supabase.from("callback_requests").insert({
       full_name: name,
       email: email || null,
       mobile_number: phone,
@@ -71,9 +71,9 @@ export default function Contact() {
 
   if (sent) {
     return (
-      <section id="contact" className="py-24 md:py-32 bg-muted/40">
+      <section id="contact" className="section-lg bg-muted/40">
         <div className="container max-w-xl text-center">
-          <div className="inline-flex w-16 h-16 rounded-full bg-green-600/15 text-green-700 items-center justify-center mb-6">
+          <div className="inline-flex w-16 h-16 rounded-full bg-success/15 text-success items-center justify-center mb-6">
             <CheckCircle2 className="w-8 h-8" strokeWidth={2} />
           </div>
           <h2 className="editorial-title">Enquiry sent!</h2>
@@ -95,7 +95,7 @@ export default function Contact() {
   }
 
   return (
-    <section id="contact" className="py-24 md:py-32 bg-muted/40">
+    <section id="contact" className="section-lg bg-muted/40">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto">
           <p className="kicker justify-center">Get in touch</p>
@@ -136,7 +136,7 @@ export default function Contact() {
                 <MapPin className="w-5 h-5 text-accent" aria-hidden="true" /> Hyderabad, Telangana, India
               </div>
               <a href="tel:+916303682022" className="flex items-center gap-3 hover:text-accent transition-colors">
-                <span className="w-5 text-accent font-bold text-center" aria-hidden="true">☎</span> +91 63036 82022
+                <Phone className="w-5 h-5 text-accent" aria-hidden="true" /> +91 63036 82022
               </a>
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function Contact() {
               {errors.message && <p className="field-error" role="alert">{errors.message}</p>}
             </div>
 
-            <button type="submit" disabled={sending} className="btn-primary w-full disabled:opacity-60">
+            <button type="submit" disabled={sending} className="btn-accent w-full disabled:opacity-60">
               {sending ? "Sending..." : "Send enquiry"}
             </button>
             <p className="text-xs text-muted-foreground text-center">

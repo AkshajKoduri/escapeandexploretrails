@@ -41,7 +41,7 @@ const pillars = [
 
 export default function Safety() {
   return (
-    <section id="safety" className="bg-charcoal text-charcoal-foreground py-20 md:py-28 relative overflow-hidden">
+    <section id="safety" className="bg-charcoal text-charcoal-foreground section relative overflow-hidden">
       <div
         className="absolute inset-0 opacity-[0.05]"
         style={{

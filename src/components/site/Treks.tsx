@@ -65,7 +65,7 @@ export default function Treks({
   }
 
   return (
-    <section id={mode === "all" ? "upcoming" : mode === "outstation" ? "treks" : "hyderabad-trails"} className="py-20 md:py-28 bg-background">
+    <section id={mode === "all" ? "upcoming" : mode === "outstation" ? "treks" : "hyderabad-trails"} className="section bg-background">
       <div className="container">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
@@ -117,7 +117,7 @@ export default function Treks({
 
         {preview && visible.length > 0 && (
           <div className="mt-10">
-            <Link to="/adventures" className="btn-primary">
+            <Link to="/adventures" className="btn-accent">
               See all adventures
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>

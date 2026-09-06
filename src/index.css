@@ -126,6 +126,13 @@
   .section-title  { @apply editorial-title; }
   .section-blurb  { @apply editorial-lead; }
 
+  /* Section vertical rhythm — the four steps used across public pages.
+     Content bands pick a step; adjacent bands alternate surfaces (bg or
+     hairline) rather than inventing new paddings. */
+  .section-band { @apply py-16 md:py-20; }   /* utility/interactive band */
+  .section     { @apply py-20 md:py-28; }   /* standard content section */
+  .section-lg  { @apply py-24 md:py-32; }   /* generous editorial section */
+
   .meta-label {
     @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
   }
@@ -140,14 +147,8 @@
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full border border-primary/25 text-primary text-sm font-semibold tracking-wide hover:bg-primary/5 transition-colors duration-200;
   }
-  .btn-light {
-    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full bg-white text-charcoal text-sm font-semibold tracking-wide hover:bg-white/90 transition-colors duration-200;
-  }
   .btn-ghost-light {
     @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full border border-charcoal-foreground/35 text-charcoal-foreground text-sm font-semibold tracking-wide hover:bg-charcoal-foreground/10 transition-colors duration-200;
-  }
-  .btn-ghost-dark {
-    @apply inline-flex items-center justify-center gap-2 min-h-[46px] px-7 rounded-full border border-primary/25 text-primary text-sm font-semibold tracking-wide hover:bg-primary/5 transition-colors duration-200;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full bg-destructive text-destructive-foreground text-sm font-semibold hover:brightness-110 transition-all;
@@ -306,10 +307,20 @@
 }
 .animate-fade-up { animation: fade-up 0.6s var(--transition-smooth) both; }
 
+/* Mobile team-carousel nudge (About section) — declared here so the
+   one-off keyframes live with the rest of the motion language. */
+@keyframes team-nudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-20px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(-10px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; transition: none !important; }
   .tactile:hover, .tactile:active, button:active, a[role="button"]:active { transform: none !important; }
   .marquee-track, .animate-kenburns, .animate-bounce-arrow, .animate-fade-up, .animate-drawer-in, .bar-enter { animation: none !important; }
-  * { transition-duration: 0.01ms !important; }
+  /* Catch one-off keyframe animations (e.g. team-nudge) that aren't listed above. */
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

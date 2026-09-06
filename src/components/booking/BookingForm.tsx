@@ -249,7 +249,7 @@ export default function BookingForm({
           variant === "panel" && "lg:sticky lg:top-24",
         )}
       >
-        <div className="inline-flex w-14 h-14 rounded-full bg-green-600/15 text-green-700 items-center justify-center mb-5">
+        <div className="inline-flex w-14 h-14 rounded-full bg-success/15 text-success items-center justify-center mb-5">
           <CheckCircle2 className="w-7 h-7" strokeWidth={2} aria-hidden="true" />
         </div>
         <p className="kicker">Booking received</p>

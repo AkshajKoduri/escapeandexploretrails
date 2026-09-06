@@ -39,7 +39,7 @@ export default function DiscoverSection() {
   const ready = activity || duration || difficulty;
 
   return (
-    <section id="find-your-adventure" className="border-y border-border bg-card/60 py-16 md:py-20">
+    <section id="find-your-adventure" className="border-y border-border bg-card/60 section-band">
       <div className="container">
         <div className="max-w-2xl">
           <p className="kicker">Find your adventure</p>

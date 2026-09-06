@@ -607,7 +607,7 @@ function CallbackButton({ adventure }: { adventure: Adventure }) {
                 <option>Anytime</option>
               </select>
             </div>
-            <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60">
+            <button type="submit" disabled={submitting} className="btn-accent w-full disabled:opacity-60">
               {submitting ? "Submitting…" : "Submit request"}
             </button>
           </form>

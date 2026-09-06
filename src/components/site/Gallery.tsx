@@ -21,6 +21,17 @@ type GalleryItem = {
   category: Category;
 };
 
+type GalleryRow = {
+  id: string;
+  image_url: string | null;
+  storage_path: string | null;
+  category: string | null;
+  display_order: number | null;
+  alt_text: string | null;
+};
+
+type SignedUrlRow = { path: string; signedUrl: string | null };
+
 const FALLBACK_ITEMS: GalleryItem[] = [
   { id: "static-1", url: g1, alt: "Adventure trail moment with E2 Trails", category: "General" },
   { id: "static-2", url: g2, alt: "Adventure trail moment with E2 Trails", category: "General" },
@@ -52,19 +63,20 @@ export default function Gallery() {
         .order("display_order", { ascending: true });
       if (error || !data) return;
 
-      const paths = data.map((r: any) => r.storage_path).filter(Boolean) as string[];
-      let urlMap: Record<string, string> = {};
+      const rows = data as unknown as GalleryRow[];
+      const paths = rows.map((r) => r.storage_path).filter(Boolean) as string[];
+      const urlMap: Record<string, string> = {};
       if (paths.length) {
         const { data: signed } = await supabase.storage
           .from("gallery-images")
           .createSignedUrls(paths, 60 * 60 * 6);
-        (signed ?? []).forEach((s: any) => {
+        (signed ?? []).forEach((s: SignedUrlRow) => {
           if (s.path && s.signedUrl) urlMap[s.path] = s.signedUrl;
         });
       }
 
-      const mapped: GalleryItem[] = data
-        .map((r: any) => ({
+      const mapped: GalleryItem[] = rows
+        .map((r) => ({
           id: r.id,
           url: (r.storage_path && urlMap[r.storage_path]) || r.image_url || "",
           alt: r.alt_text || "Gallery image",
@@ -96,7 +108,7 @@ export default function Gallery() {
   };
 
   return (
-    <section id="gallery" className="py-24 md:py-32 bg-muted/30">
+    <section id="gallery" className="section-lg bg-muted/30">
       <div className="container">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">

@@ -31,7 +31,9 @@ export default function About() {
         .select("*")
         .order("display_order", { ascending: true });
       if (cancelled) return;
-      const rows = (data ?? []) as any as TeamMember[];
+      // team_members rows: DB JSON types don't perfectly match the richer
+      // domain shape (badges/display_order), so normalize through unknown.
+      const rows = (data ?? []) as unknown as TeamMember[];
       rows.sort((a, b) => {
         if (a.is_founder && !b.is_founder) return -1;
         if (!a.is_founder && b.is_founder) return 1;
@@ -43,7 +45,9 @@ export default function About() {
       if (paths.length) {
         const { data: s } = await supabase.storage.from("team-photos").createSignedUrls(paths, 60 * 60);
         const map: Record<string, string> = {};
-        (s ?? []).forEach((it: any) => { if (it.path && it.signedUrl) map[it.path] = it.signedUrl; });
+        (s ?? []).forEach((it: { path: string; signedUrl: string | null }) => {
+          if (it.path && it.signedUrl) map[it.path] = it.signedUrl;
+        });
         if (!cancelled) setSigned(map);
       }
     })();
@@ -128,7 +132,7 @@ export default function About() {
   };
 
   return (
-    <section id="story" className="py-24 md:py-32 bg-background">
+    <section id="story" className="section-lg bg-background">
       <div className="container grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         <div className="reveal-left relative">
           <div className="relative overflow-hidden rounded-xl shadow-trail">
@@ -171,7 +175,7 @@ export default function About() {
               <span key={p} className="pill bg-primary/10 text-primary border border-primary/15">{p}</span>
             ))}
           </div>
-          <a href="#contact" className="btn-primary mt-9">
+          <a href="#contact" className="btn-accent mt-9">
             Meet E2 Trails
             <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </a>
@@ -242,15 +246,6 @@ export default function About() {
         </div>
       )}
 
-      <style>{`
-        @keyframes team-nudge {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-20px); }
-          50% { transform: translateX(0); }
-          75% { transform: translateX(-10px); }
-          100% { transform: translateX(0); }
-        }
-      `}</style>
     </section>
   );
 }

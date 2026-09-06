@@ -16,7 +16,7 @@ export default function AdventureCard({ adventure, priority = false }: { adventu
   return (
     <Link
       to={`/adventures/${adventure.id}`}
-      className="group block h-full focus:outline-none"
+      className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       aria-label={`View ${adventure.name}`}
     >
       <article className="relative h-full overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col">

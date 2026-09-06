@@ -30,7 +30,7 @@ export default function FeaturedAdventure() {
   const location = adventure.destination || adventure.location || adventure.region || "Hyderabad";
 
   return (
-    <section id="featured" className="py-20 md:py-28 bg-background">
+    <section id="featured" className="section bg-background">
       <div className="container">
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
           <Link

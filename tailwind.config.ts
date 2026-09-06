@@ -29,6 +29,7 @@ export default {
         muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
         accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
         gold: { DEFAULT: "hsl(var(--gold))", deep: "hsl(var(--gold-deep))", foreground: "hsl(var(--gold-foreground))" },
+        success: { DEFAULT: "hsl(var(--success))" },
         charcoal: { DEFAULT: "hsl(var(--charcoal))", foreground: "hsl(var(--charcoal-foreground))" },
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },

@@ -34,7 +34,9 @@ export default function Itinerary() {
         .eq("id", trekId)
         .maybeSingle();
       if (cancelled) return;
-      setTrek(data as any);
+      // upcoming_treks rows are typed (itinerary_days is Json in the DB
+      // schema); normalize to the page's Day[]-based shape here.
+      setTrek(data as unknown as TrekRow);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -45,7 +47,11 @@ export default function Itinerary() {
     if (!trek?.itinerary_file_path || !trek.id) return;
     supabase.functions
       .invoke("itinerary-signed-url", { body: { trekId: trek.id } })
-      .then(({ data }) => { if (!cancelled) setPdfUrl((data as any)?.url ?? null); })
+      .then(({ data }) => {
+        if (cancelled) return;
+        const res = data as { url?: string | null } | null;
+        setPdfUrl(res?.url ?? null);
+      })
       .catch(() => { if (!cancelled) setPdfUrl(null); });
     return () => { cancelled = true; };
   }, [trek?.id, trek?.itinerary_file_path]);
@@ -66,9 +72,9 @@ export default function Itinerary() {
   const share = async () => {
     const url = window.location.href;
     const title = trek?.name ? `${trek.name} — Itinerary` : "Trip Itinerary";
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
-        await (navigator as any).share({ title, url });
+        await navigator.share({ title, url });
         return;
       } catch { /* user cancelled */ }
     }
@@ -124,7 +130,7 @@ export default function Itinerary() {
 
             {hasDays && !showPdf && (
               <>
-                <Accordion type="single" collapsible className="w-full rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
+                <Accordion type="single" collapsible className="w-full rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                   {days.map((d, i) => (
                     <AccordionItem key={i} value={`day-${i}`} className="border-b-0 px-4 sm:px-6">
                       <AccordionTrigger className="min-h-[44px] py-4 font-heading font-bold text-primary text-left hover:no-underline">
@@ -164,7 +170,7 @@ export default function Itinerary() {
                 )}
                 {pdfHref ? (
                   <>
-                    <div className="w-full rounded-2xl overflow-hidden border border-border bg-muted">
+                    <div className="w-full rounded-xl overflow-hidden border border-border bg-muted">
                       <object data={`${pdfHref}#view=FitH`} type="application/pdf" className="w-full h-[80vh]">
                         <iframe
                           src={`https://docs.google.com/viewer?url=${encodeURIComponent(pdfHref)}&embedded=true`}

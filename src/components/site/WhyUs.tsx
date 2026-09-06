@@ -23,7 +23,7 @@ const pillars = [
 
 export default function WhyUs() {
   return (
-    <section id="why-e2" className="py-20 md:py-28 bg-muted/40">
+    <section id="why-e2" className="section bg-muted/40">
       <div className="container max-w-6xl">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           <div className="lg:col-span-5 lg:sticky lg:top-28">
