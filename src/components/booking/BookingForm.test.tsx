@@ -110,11 +110,14 @@ describe("BookingForm", () => {
 
   it("shows inline validation errors instead of submitting when fields are missing", async () => {
     render(<BookingForm adventure={makeAdventure()} />);
-    fireEvent.click(screen.getByRole("button", { name: /Confirm booking/ }));
+    fireEvent.click(screen.getByRole("button", { name: /booking request/i }));
     await waitFor(() =>
       expect(screen.getByText(/lead traveller's full name/)).toBeInTheDocument(),
     );
     expect(screen.getByText(/valid phone number/)).toBeInTheDocument();
+    const nameField = screen.getByLabelText(/Full name/);
+    await waitFor(() => expect(nameField).toHaveFocus());
+    expect(nameField).toHaveAttribute("aria-describedby");
     expect(submitBookingMock).not.toHaveBeenCalled();
   });
 
@@ -127,7 +130,7 @@ describe("BookingForm", () => {
     fireEvent.change(screen.getByLabelText(/^Gender/), { target: { value: "Male" } });
     fireEvent.change(screen.getByLabelText(/^Phone/), { target: { value: "9876543210" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Confirm booking/ }));
+    fireEvent.click(screen.getByRole("button", { name: /booking request/i }));
     await waitFor(() => expect(submitBookingMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText(/You're on the trail, Ravi!/)).toBeInTheDocument());
     expect(onSuccess).toHaveBeenCalledWith(

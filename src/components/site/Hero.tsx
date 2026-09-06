@@ -23,7 +23,7 @@ export default function Hero() {
   }, [reducedMotion]);
 
   return (
-    <section id="home" className="relative h-[94vh] min-h-[620px] w-full overflow-hidden bg-charcoal">
+    <section id="main-content" tabIndex={-1} className="relative h-[94vh] min-h-[620px] w-full overflow-hidden bg-charcoal outline-none">
       {/* Ken Burns + parallax */}
       <div
         className="absolute inset-0 will-change-transform animate-kenburns"
@@ -35,7 +35,6 @@ export default function Hero() {
           className="w-full h-full object-cover"
           width={1920}
           height={1080}
-          fetchPriority="high"
           decoding="async"
         />
       </div>
@@ -90,4 +89,4 @@ export default function Hero() {
       </a>
     </section>
   );
-}
+}

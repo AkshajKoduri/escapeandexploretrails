@@ -35,6 +35,7 @@ import { useSeo } from "@/hooks/useSeo";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useReveal } from "@/hooks/useReveal";
+import { formatAdventureDescription } from "@/lib/adventureDescription";
 
 export default function TripDetail() {
   useReveal();
@@ -75,7 +76,7 @@ export default function TripDetail() {
     return (
       <main className="min-h-screen bg-background">
         <Navbar />
-        <div className="container pt-32 pb-20">
+        <div id="main-content" tabIndex={-1} className="container pt-32 pb-20 outline-none">
           <div className="aspect-[16/9] md:aspect-[21/9] rounded-xl bg-muted animate-pulse" />
           <div className="mt-8 h-10 w-2/3 bg-muted animate-pulse rounded" />
           <div className="mt-4 h-5 w-1/3 bg-muted animate-pulse rounded" />
@@ -88,7 +89,7 @@ export default function TripDetail() {
     return (
       <main className="min-h-screen bg-background">
         <Navbar />
-        <div className="container pt-32 pb-24 text-center">
+        <div id="main-content" tabIndex={-1} className="container pt-32 pb-24 text-center outline-none">
           <Mountain className="w-12 h-12 text-muted-foreground/50 mx-auto mb-5" strokeWidth={1.5} aria-hidden="true" />
           <h1 className="font-display font-bold text-3xl text-primary">This adventure isn't available</h1>
           <p className="mt-3 text-muted-foreground">It may have been archived or its dates may have passed.</p>
@@ -108,9 +109,15 @@ export default function TripDetail() {
   const hasItineraryDays = adventure.itineraryDays.length > 0;
   const hasItineraryFile = !!(adventure.itineraryUrl || adventure.itineraryFilePath);
   const soldOut = adventure.isFull || adventure.seatsRemaining <= 0;
+  const descriptionSections = formatAdventureDescription(adventure.description, adventure.name);
+  const distanceHasContext = /[a-z]/i.test(adventure.dist);
 
   const facts = [
-    hasValue(adventure.dist) && { label: "Distance", value: adventure.dist, icon: Ruler },
+    hasValue(adventure.dist) && {
+      label: distanceHasContext ? "Distance" : "Distance (as listed)",
+      value: adventure.dist,
+      icon: Ruler,
+    },
     hasValue(adventure.dur) && { label: "Duration", value: adventure.dur, icon: Clock },
     { label: "Difficulty", value: adventure.diff, icon: Mountain },
     hasValue(adventure.meetingPoint) && { label: "Starting point", value: adventure.meetingPoint, icon: Flag },
@@ -122,13 +129,16 @@ export default function TripDetail() {
       <Navbar />
 
       {/* ============ Hero ============ */}
-      <section className="relative bg-charcoal overflow-hidden">
-        <div className="relative h-[52vh] min-h-[380px] md:h-[62vh]">
+      <section id="main-content" tabIndex={-1} className="relative bg-charcoal overflow-hidden outline-none">
+        <div className={cn("relative", adventure.img ? "h-[52vh] min-h-[380px] md:h-[62vh]" : "h-[340px] md:h-[440px]")}>
           {adventure.img ? (
-            <img src={adventure.img} alt={adventure.name} className="w-full h-full object-cover" />
+            <img src={adventure.img} alt={`${adventure.name} in ${location}`} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-charcoal grid place-items-center">
-              <span className="font-display italic text-4xl text-charcoal-foreground/40">{adventure.name}</span>
+            <div className="grid h-full w-full place-items-center bg-primary text-primary-foreground">
+              <div className="flex flex-col items-center gap-3 text-center text-primary-foreground/55" aria-hidden="true">
+                <Mountain className="h-16 w-16" strokeWidth={1} />
+                <span className="meta-label text-primary-foreground/55">E2 Trails guided adventure</span>
+              </div>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-hero" aria-hidden="true" />
@@ -221,7 +231,7 @@ export default function TripDetail() {
           <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
             <span className="font-semibold text-primary">Is this for you? </span>
             {DIFFICULTY_NOTES[adventure.diff]}{" "}
-            {hasValue(adventure.dist) && (
+            {hasValue(adventure.dist) && distanceHasContext && (
               <>At {adventure.dist.toLowerCase()}, it's a proper day out — check the trail facts below for full details.</>
             )}{" "}
             <a
@@ -240,11 +250,39 @@ export default function TripDetail() {
       <section className="py-14 md:py-20">
         <div className="container grid lg:grid-cols-[1fr_400px] gap-12 lg:gap-16 items-start">
           <div className="min-w-0 space-y-14">
-            {adventure.description && (
+            {descriptionSections.length > 0 && (
               <section>
                 <p className="kicker">The experience</p>
                 <h2 className="font-display font-bold text-2xl md:text-3xl text-primary mt-3">What this adventure is</h2>
-                <p className="mt-4 text-muted-foreground leading-relaxed whitespace-pre-wrap">{adventure.description}</p>
+                <div className="mt-5 space-y-8">
+                  {descriptionSections.map((section, sectionIndex) => (
+                    <div key={`${section.heading ?? "overview"}-${sectionIndex}`}>
+                      {section.heading && (
+                        <h3 className="font-display text-xl font-bold text-foreground">{section.heading}</h3>
+                      )}
+                      <div className={cn("space-y-4", section.heading && "mt-3")}>
+                        {section.blocks.map((block, blockIndex) =>
+                          block.type === "list" ? (
+                            <ul key={blockIndex} className="space-y-2 text-muted-foreground">
+                              {block.items.map((item, itemIndex) => (
+                                <li key={itemIndex} className="flex gap-3 leading-relaxed">
+                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : block.type === "subheading" ? (
+                            <h4 key={blockIndex} className="font-display text-lg font-semibold text-primary">
+                              {block.text}
+                            </h4>
+                          ) : (
+                            <p key={blockIndex} className="text-muted-foreground leading-relaxed">{block.text}</p>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
 

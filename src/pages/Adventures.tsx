@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, X, Compass, ArrowLeft } from "lucide-react";
+import { Search, X, Compass, ArrowLeft, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Adventure } from "@/lib/treks";
 import { fetchAdventures } from "@/lib/treks";
@@ -9,6 +9,15 @@ import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 import { useReveal } from "@/hooks/useReveal";
 import { useSeo } from "@/hooks/useSeo";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type ActivityKey = "hike" | "cycling" | "trek" | "bike";
 type DurationKey = "half" | "one" | "multi";
@@ -78,6 +87,7 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
   const mode: Mode = modeParam === "all" ? "all" : (modeParam as Mode | null) ?? initialMode;
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("date");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,7 +114,11 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
   };
 
   const activeFilterCount =
-    (activity ? 1 : 0) + (duration ? 1 : 0) + (difficulty ? 1 : 0) + (mode !== "all" ? 1 : 0);
+    (query.trim() ? 1 : 0) +
+    (activity ? 1 : 0) +
+    (duration ? 1 : 0) +
+    (difficulty ? 1 : 0) +
+    (mode !== "all" ? 1 : 0);
 
   const visible = useMemo(() => {
     let list = adventures;
@@ -147,10 +161,117 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
   const modeLabel =
     mode === "outstation" ? "Outstation treks" : mode === "hyderabad" ? "Hyderabad trails" : "All adventures";
 
+  const activeFilterSummary = [
+    mode !== "all" ? modeLabel : null,
+    activity ? ACTIVITIES.find((item) => item.key === activity)?.label : null,
+    duration ? DURATIONS.find((item) => item.key === duration)?.label : null,
+    difficulty,
+    query.trim() ? `“${query.trim()}”` : null,
+  ].filter(Boolean).join(" · ");
+
+  const filterControls = (compact = false) => (
+    <div className={cn("space-y-4", compact && "space-y-5")}>
+      <div className={cn("flex flex-wrap items-center gap-3", compact && "block space-y-5")}>
+        <div className={cn("relative flex-1 min-w-[220px] max-w-sm", compact && "min-w-0 max-w-none")}>
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search treks, places…"
+            aria-label="Search adventures"
+            className="field-input pl-10"
+          />
+        </div>
+
+        <div>
+          {compact && <p className="meta-label mb-2">Location</p>}
+          <div className="flex w-fit max-w-full rounded-full border border-border bg-card p-0.5" role="group" aria-label="Filter by location">
+            {([['all', 'All'], ['outstation', 'Outstation'], ['hyderabad', 'Hyderabad']] as [Mode, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setParam("mode", key)}
+                aria-pressed={mode === key}
+                className={cn(
+                  "min-h-[44px] px-3 sm:px-4 py-2 rounded-full text-xs font-semibold transition-colors",
+                  mode === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={cn("flex flex-wrap items-center gap-x-6 gap-y-3", compact && "block space-y-5")}>
+        <div>
+          {compact && <p className="meta-label mb-2">Activity</p>}
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by activity">
+            {ACTIVITIES.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                aria-pressed={activity === item.key}
+                onClick={() => setParam("activity", activity === item.key ? null : item.key)}
+                className={cn("filter-pill text-xs", activity === item.key ? "filter-pill-active" : "filter-pill-idle")}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          {compact && <p className="meta-label mb-2">Duration</p>}
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by duration">
+            {DURATIONS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                aria-pressed={duration === item.key}
+                onClick={() => setParam("duration", duration === item.key ? null : item.key)}
+                className={cn("filter-pill text-xs", duration === item.key ? "filter-pill-active" : "filter-pill-idle")}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          {compact && <p className="meta-label mb-2">Difficulty</p>}
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by difficulty">
+            {DIFFICULTIES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-pressed={difficulty === item}
+                onClick={() => setParam("difficulty", difficulty === item ? null : item)}
+                className={cn("filter-pill text-xs", difficulty === item ? "filter-pill-active" : "filter-pill-idle")}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+        {activeFilterCount > 0 && !compact && (
+          <button
+            type="button"
+            onClick={clearAll}
+            className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+          >
+            <X className="w-3.5 h-3.5" aria-hidden="true" />
+            Clear filters ({activeFilterCount})
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
-      <section className="pt-28 md:pt-36 pb-10 bg-background">
+      <section id="main-content" tabIndex={-1} className="pt-28 md:pt-36 pb-10 bg-background outline-none">
         <div className="container">
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
             <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to home
@@ -165,102 +286,83 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
         </div>
       </section>
 
-      {/* Filter bar */}
-      <section className="sticky top-[61px] z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="container py-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[220px] max-w-sm">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search treks, places…"
-                aria-label="Search adventures"
-                className="field-input pl-10"
-              />
-            </div>
-
-            <div className="flex rounded-full border border-border bg-card p-0.5" role="group" aria-label="Filter by type">
-              {([["all", "All"], ["outstation", "Outstation"], ["hyderabad", "Hyderabad"]] as [Mode, string][]).map(([k, label]) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setParam("mode", k)}
-                  aria-pressed={mode === k}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-xs font-semibold transition-colors",
-                    mode === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+      {/* Mobile: compact controls stay sticky; the full filters live in a portal-backed dialog. */}
+      <section className="sticky top-[61px] z-40 border-b border-border bg-background/95 backdrop-blur-md lg:hidden">
+        <div className="container py-3">
+          <div className="flex items-center gap-2">
+            <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <DialogTrigger asChild>
+                <button type="button" className="btn-outline h-11 min-h-11 flex-1 px-4" aria-label={`Filters${activeFilterCount ? `, ${activeFilterCount} active` : ""}`}>
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
+                      {activeFilterCount}
+                    </span>
                   )}
-                >
-                  {label}
                 </button>
-              ))}
-            </div>
+              </DialogTrigger>
+              <DialogContent className="bottom-0 left-0 right-0 top-auto z-[101] max-h-[calc(100dvh-4rem)] w-full max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-b-none rounded-t-2xl border-x-0 border-b-0 p-0 [&>button]:right-4 [&>button]:top-4 [&>button]:inline-flex [&>button]:h-11 [&>button]:w-11 [&>button]:items-center [&>button]:justify-center [&>button_svg]:h-5 [&>button_svg]:w-5">
+                <DialogHeader className="border-b border-border px-5 pb-4 pt-6 text-left">
+                  <DialogTitle className="font-display text-2xl font-bold text-primary">Filter adventures</DialogTitle>
+                  <DialogDescription>Choose only what matters. Your selections stay in the page URL.</DialogDescription>
+                </DialogHeader>
+                <div className="px-5 py-5">{filterControls(true)}</div>
+                <div className="sticky bottom-0 flex gap-3 border-t border-border bg-card px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  {activeFilterCount > 0 && (
+                    <button type="button" onClick={clearAll} className="btn-outline min-h-[44px] flex-1">
+                      Clear all
+                    </button>
+                  )}
+                  <DialogClose asChild>
+                    <button type="button" className="btn-accent min-h-[44px] flex-1">
+                      Show {visible.length} {visible.length === 1 ? "adventure" : "adventures"}
+                    </button>
+                  </DialogClose>
+                </div>
+              </DialogContent>
+            </Dialog>
 
+            <label className="sr-only" htmlFor="mobile-adventure-sort">Sort adventures</label>
+            <select
+              id="mobile-adventure-sort"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="field-input h-11 w-[46%] min-w-0 py-2 text-sm"
+            >
+              <option value="date">Soonest</option>
+              <option value="price-asc">Lowest price</option>
+              <option value="price-desc">Highest price</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </div>
+          {activeFilterSummary && (
+            <div className="mt-2 flex min-h-6 items-center justify-between gap-3">
+              <p className="truncate text-xs text-muted-foreground" aria-live="polite">{activeFilterSummary}</p>
+              <button type="button" onClick={clearAll} className="shrink-0 text-xs font-semibold text-accent hover:underline">
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Desktop filter bar */}
+      <section className="sticky top-[61px] z-40 hidden border-b border-border bg-background/95 backdrop-blur-md lg:block">
+        <div className="container py-4">
+          <div className="flex items-start justify-between gap-5">
+            <div className="flex-1">{filterControls()}</div>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
               aria-label="Sort adventures"
-              className="field-input w-auto min-w-[150px] py-2"
+              className="field-input w-auto min-w-[170px] py-2"
             >
               <option value="date">Soonest first</option>
               <option value="price-asc">Price: low to high</option>
               <option value="price-desc">Price: high to low</option>
               <option value="name">Name A–Z</option>
             </select>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by activity">
-              {ACTIVITIES.map((a) => (
-                <button
-                  key={a.key}
-                  type="button"
-                  aria-pressed={activity === a.key}
-                  onClick={() => setParam("activity", activity === a.key ? null : a.key)}
-                  className={cn("filter-pill text-xs", activity === a.key ? "filter-pill-active" : "filter-pill-idle")}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by duration">
-              {DURATIONS.map((d) => (
-                <button
-                  key={d.key}
-                  type="button"
-                  aria-pressed={duration === d.key}
-                  onClick={() => setParam("duration", duration === d.key ? null : d.key)}
-                  className={cn("filter-pill text-xs", duration === d.key ? "filter-pill-active" : "filter-pill-idle")}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by difficulty">
-              {DIFFICULTIES.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  aria-pressed={difficulty === d}
-                  onClick={() => setParam("difficulty", difficulty === d ? null : d)}
-                  className={cn("filter-pill text-xs", difficulty === d ? "filter-pill-active" : "filter-pill-idle")}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearAll}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
-              >
-                <X className="w-3.5 h-3.5" aria-hidden="true" />
-                Clear filters ({activeFilterCount})
-              </button>
-            )}
           </div>
         </div>
       </section>

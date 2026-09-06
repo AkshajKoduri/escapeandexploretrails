@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Phone, ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,26 +16,10 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [adventuresOpen, setAdventuresOpen] = useState(false);
   const adventuresRef = useRef<HTMLDivElement>(null);
+  const adventuresBtnRef = useRef<HTMLButtonElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const { pathname } = useLocation();
   const isHome = pathname === "/";
-
-  // Mobile drawer: Escape closes it, background scroll is locked while open,
-  // and focus moves into the panel so keyboard users don't tab behind it.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeBtnRef.current?.focus();
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -49,8 +34,19 @@ export default function Navbar() {
         setAdventuresOpen(false);
       }
     };
-    if (adventuresOpen) document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setAdventuresOpen(false);
+      adventuresBtnRef.current?.focus();
+    };
+    if (adventuresOpen) {
+      document.addEventListener("mousedown", onClick);
+      document.addEventListener("keydown", onKey);
+    }
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [adventuresOpen]);
 
   // Close the mobile menu on navigation
@@ -67,6 +63,12 @@ export default function Navbar() {
           : "bg-gradient-to-b from-charcoal/50 to-transparent py-5",
       )}
     >
+      <a
+        href="#main-content"
+        className="fixed left-4 top-3 z-[120] -translate-y-24 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-trail transition-transform focus:translate-y-0"
+      >
+        Skip to main content
+      </a>
       <div className="container flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-3 text-charcoal-foreground" aria-label="E2 Trails home">
           <img
@@ -83,6 +85,7 @@ export default function Navbar() {
         <nav className="hidden lg:flex items-center gap-7" aria-label="Primary">
           <div ref={adventuresRef} className="relative">
             <button
+              ref={adventuresBtnRef}
               type="button"
               aria-expanded={adventuresOpen}
               aria-haspopup="menu"
@@ -140,100 +143,106 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <button
-          type="button"
-          aria-label="Open menu"
-          aria-expanded={open}
-          className="lg:hidden text-charcoal-foreground p-2 -mr-2"
-          onClick={() => setOpen(true)}
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-      </div>
+        <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
+          <DialogPrimitive.Trigger asChild>
+            <button
+              type="button"
+              aria-label="Open menu"
+              className="lg:hidden inline-flex h-11 w-11 items-center justify-center -mr-2 rounded-full text-charcoal-foreground hover:bg-charcoal-foreground/10"
+            >
+              <Menu className="w-6 h-6" aria-hidden="true" />
+            </button>
+          </DialogPrimitive.Trigger>
 
-      {/* Mobile menu */}
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-charcoal/70 backdrop-blur-sm" onClick={() => setOpen(false)} aria-hidden="true" />
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile menu"
-            className="absolute top-0 right-0 h-full w-[85%] max-w-sm bg-charcoal text-charcoal-foreground p-7 animate-drawer-in flex flex-col overflow-y-auto"
-          >
-            <div className="flex items-center justify-between mb-10">
-              <div className="flex items-center gap-3">
-                <img src={logo} alt="E2 Trails logo" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
-                <span className="font-display font-bold text-lg">
-                  E2 <span className="text-accent">TRAILS</span>
-                </span>
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay className="fixed inset-0 z-[100] bg-charcoal/70 backdrop-blur-sm lg:hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+            <DialogPrimitive.Content
+              onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                closeBtnRef.current?.focus();
+              }}
+              className="fixed inset-y-0 right-0 z-[101] flex h-[100dvh] w-[88vw] max-w-sm flex-col overflow-y-auto bg-charcoal px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] text-charcoal-foreground shadow-trail outline-none lg:hidden data-[state=open]:animate-drawer-in"
+            >
+              <DialogPrimitive.Description className="sr-only">
+                Navigate E2 Trails adventures and contact options.
+              </DialogPrimitive.Description>
+              <div className="flex items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-3">
+                  <img src={logo} alt="" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
+                  <DialogPrimitive.Title className="font-display font-bold text-lg">
+                    E2 <span className="text-accent">TRAILS</span>
+                  </DialogPrimitive.Title>
+                </div>
+                <DialogPrimitive.Close asChild>
+                  <button
+                    ref={closeBtnRef}
+                    type="button"
+                    aria-label="Close menu"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-charcoal-foreground/10"
+                  >
+                    <X className="w-6 h-6" aria-hidden="true" />
+                  </button>
+                </DialogPrimitive.Close>
               </div>
-              <button ref={closeBtnRef} type="button" aria-label="Close menu" onClick={() => setOpen(false)} className="p-2">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
 
-            <p className="meta-label text-charcoal-foreground/50 mb-3">Adventures</p>
-            <nav className="flex flex-col" aria-label="Mobile">
-              {ADVENTURE_LINKS.map((l) => (
-                <Link
-                  key={l.href}
-                  to={l.href}
-                  onClick={() => setOpen(false)}
-                  className="py-3 flex items-center justify-between border-b border-charcoal-foreground/10"
-                >
-                  <span>
-                    <span className="block text-lg font-medium">{l.label}</span>
-                    <span className="block text-xs text-charcoal-foreground/55 mt-0.5">{l.note}</span>
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-accent" aria-hidden="true" />
-                </Link>
-              ))}
-
-              <p className="meta-label text-charcoal-foreground/50 mt-8 mb-3">Explore</p>
-              {[
-                { label: "Trail Journal", to: "/trail-log" },
-                { label: "About E2 Trails", href: "/#story" },
-                { label: "Contact", href: "/#contact" },
-              ].map((l) =>
-                "to" in l ? (
+              <p className="meta-label text-charcoal-foreground/50 mb-2">Adventures</p>
+              <nav className="flex flex-col" aria-label="Mobile">
+                {ADVENTURE_LINKS.map((l) => (
                   <Link
-                    key={l.label}
-                    to={l.to}
+                    key={l.href}
+                    to={l.href}
                     onClick={() => setOpen(false)}
-                    className="py-3 text-lg font-medium hover:text-accent transition-colors border-b border-charcoal-foreground/10"
+                    className="min-h-[64px] py-3 flex items-center justify-between gap-4 border-b border-charcoal-foreground/10"
                   >
-                    {l.label}
+                    <span>
+                      <span className="block text-lg font-medium">{l.label}</span>
+                      <span className="block text-xs text-charcoal-foreground/55 mt-0.5">{l.note}</span>
+                    </span>
+                    <ArrowRight className="w-4 h-4 shrink-0 text-accent" aria-hidden="true" />
                   </Link>
-                ) : (
-                  <a
-                    key={l.label}
-                    href={l.href}
-                    onClick={() => setOpen(false)}
-                    className="py-3 text-lg font-medium hover:text-accent transition-colors border-b border-charcoal-foreground/10"
-                  >
-                    {l.label}
-                  </a>
-                ),
-              )}
-            </nav>
+                ))}
 
-            <div className="mt-auto pt-8 space-y-3">
-              <Link to="/adventures" onClick={() => setOpen(false)} className="btn-accent w-full">
-                Book a trip
-              </Link>
-              <a
-                href="tel:+916303682022"
-                onClick={() => setOpen(false)}
-                className="btn-ghost-light w-full"
-              >
-                <Phone className="w-4 h-4" aria-hidden="true" />
-                +91 63036 82022
-              </a>
-            </div>
-          </aside>
-        </div>
-      )}
+                <p className="meta-label text-charcoal-foreground/50 mt-7 mb-2">Explore</p>
+                {[
+                  { label: "Trail Journal", to: "/trail-log" },
+                  { label: "About E2 Trails", href: "/#story" },
+                  { label: "Contact", href: "/#contact" },
+                ].map((l) =>
+                  "to" in l ? (
+                    <Link
+                      key={l.label}
+                      to={l.to}
+                      onClick={() => setOpen(false)}
+                      className="min-h-[52px] py-3 text-lg font-medium hover:text-accent transition-colors border-b border-charcoal-foreground/10"
+                    >
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <a
+                      key={l.label}
+                      href={l.href}
+                      onClick={() => setOpen(false)}
+                      className="min-h-[52px] py-3 text-lg font-medium hover:text-accent transition-colors border-b border-charcoal-foreground/10"
+                    >
+                      {l.label}
+                    </a>
+                  ),
+                )}
+              </nav>
+
+              <div className="mt-auto pt-7 space-y-3">
+                <Link to="/adventures" onClick={() => setOpen(false)} className="btn-accent w-full">
+                  Book a trip
+                </Link>
+                <a href="tel:+916303682022" onClick={() => setOpen(false)} className="btn-ghost-light w-full">
+                  <Phone className="w-4 h-4" aria-hidden="true" />
+                  +91 63036 82022
+                </a>
+              </div>
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
+      </div>
     </header>
   );
-}
+}

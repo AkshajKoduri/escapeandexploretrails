@@ -43,7 +43,7 @@ export default function TrailLog() {
     <main className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
 
-      <section className="pt-32 md:pt-40 pb-20 md:pb-28">
+      <section id="main-content" tabIndex={-1} className="pt-32 md:pt-40 pb-20 md:pb-28 outline-none">
         <div className="container">
           <div className="max-w-2xl">
             <p className="kicker">Adventures, guides &amp; stories</p>
@@ -101,4 +101,4 @@ export default function TrailLog() {
       <Footer />
     </main>
   );
-}
+}

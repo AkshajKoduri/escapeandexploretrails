@@ -15,6 +15,8 @@ export default function BookingPage() {
   const [adventures, setAdventures] = useState<Adventure[]>([]);
   const [trekId, setTrekId] = useState<string>(urlTrek);
   const [resetSignal, setResetSignal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // Booking is a private utility flow: reachable, but never a search result.
   useSeo({
@@ -27,12 +29,19 @@ export default function BookingPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchAdventures().then((all) => {
-      if (cancelled) return;
-      setAdventures(all);
-      // Fall back to the first open adventure if the deep link no longer exists.
-      if (urlTrek && !all.some((a) => a.id === urlTrek)) setTrekId(all[0]?.id ?? "");
-    });
+    fetchAdventures()
+      .then((all) => {
+        if (cancelled) return;
+        setAdventures(all);
+        // Fall back to the first open adventure if the deep link no longer exists.
+        if (urlTrek && !all.some((a) => a.id === urlTrek)) setTrekId(all[0]?.id ?? "");
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -45,6 +54,12 @@ export default function BookingPage() {
   return (
     <main className="min-h-screen bg-background">
       <header className="bg-card border-b border-border sticky top-0 z-40">
+        <a
+          href="#main-content"
+          className="fixed left-4 top-3 z-50 -translate-y-24 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-trail transition-transform focus:translate-y-0"
+        >
+          Skip to main content
+        </a>
         <div className="container flex items-center justify-between py-3.5">
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="E2 Trails" className="w-8 h-8 rounded-full bg-white object-contain p-0.5" />
@@ -59,7 +74,7 @@ export default function BookingPage() {
         </div>
       </header>
 
-      <div className="container py-10 md:py-14 max-w-6xl">
+      <div id="main-content" tabIndex={-1} className="container py-10 md:py-14 max-w-6xl outline-none">
         <div className="max-w-2xl">
           <p className="kicker">Reserve your spot</p>
           <h1 className="font-display font-extrabold text-3xl md:text-5xl mt-3 text-primary">
@@ -76,7 +91,17 @@ export default function BookingPage() {
           <h2 className="font-display font-bold text-xl md:text-2xl text-primary mb-4">
             Choose your adventure
           </h2>
-          {adventures.length === 0 ? (
+          {loading ? (
+            <div className="grid gap-3 sm:grid-cols-2" role="status" aria-live="polite" aria-label="Loading available adventures">
+              {[0, 1].map((item) => (
+                <div key={item} className="h-28 animate-pulse rounded-xl border border-border bg-muted/70" />
+              ))}
+            </div>
+          ) : loadFailed ? (
+            <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground" role="alert">
+              We couldn't load the available adventures. Please refresh the page and try again.
+            </div>
+          ) : adventures.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No adventures are open for booking right now. Check back soon.
             </p>

@@ -97,6 +97,8 @@ export default function BookingForm({
   const [stickyVisible, setStickyVisible] = useState(false);
 
   const formRef = useRef<HTMLFormElement>(null);
+  const SectionHeading = variant === "panel" ? "h4" : "h2";
+  const SuccessHeading = variant === "panel" ? "h3" : "h2";
 
   // Fresh state whenever the adventure changes (e.g. re-picked from the list).
   useEffect(() => {
@@ -173,8 +175,8 @@ export default function BookingForm({
 
   const errId = (field: string) => (errors[field] ? `${uid}-${field}-error` : undefined);
 
-  const focusFirstInvalid = (order: string[]) => {
-    const first = order.find((f) => errors[f]);
+  const focusFirstInvalid = (validationErrors: Record<string, string>, order: string[]) => {
+    const first = order.find((field) => validationErrors[field]);
     if (!first) return;
     const el = document.getElementById(`${uid}-${first}`) as HTMLElement | null;
     el?.focus();
@@ -201,7 +203,7 @@ export default function BookingForm({
       }
       setErrors(next);
       requestAnimationFrame(() =>
-        focusFirstInvalid(["date", "name", "age", "gender", "phone", "email", ...memberNames.map((_, i) => `member-${i}`)]),
+        focusFirstInvalid(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
       );
       return;
     }
@@ -209,7 +211,7 @@ export default function BookingForm({
     if (Object.keys(next).length > 0) {
       setErrors(next);
       requestAnimationFrame(() =>
-        focusFirstInvalid(["date", "name", "age", "gender", "phone", "email", ...memberNames.map((_, i) => `member-${i}`)]),
+        focusFirstInvalid(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
       );
       return;
     }
@@ -253,9 +255,9 @@ export default function BookingForm({
           <CheckCircle2 className="w-7 h-7" strokeWidth={2} aria-hidden="true" />
         </div>
         <p className="kicker">Booking received</p>
-        <h3 className="font-display font-bold text-2xl md:text-3xl text-primary mt-2">
+        <SuccessHeading className="font-display font-bold text-2xl md:text-3xl text-primary mt-2">
           You're on the trail, {name.trim().split(" ")[0] || "friend"}!
-        </h3>
+        </SuccessHeading>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
           Your booking for{" "}
           <span className="font-semibold text-foreground">{adventure.name}</span>
@@ -324,7 +326,7 @@ export default function BookingForm({
     <>
       {/* Date */}
       <section>
-        <h2 className="field-label text-base mb-3">Choose your date</h2>
+        <SectionHeading className="field-label text-base mb-3">Choose your date</SectionHeading>
         <p className="text-sm text-muted-foreground mb-3">
           {soldOut
             ? "This adventure is currently full."
@@ -333,7 +335,14 @@ export default function BookingForm({
               : `${adventure.seatsRemaining} seat${adventure.seatsRemaining > 1 ? "s" : ""} available across these dates (shared pool).`}
         </p>
         {adventure.dates.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+          <div
+            id={`${uid}-date`}
+            role="group"
+            aria-label="Available dates"
+            aria-describedby={errId("date")}
+            tabIndex={-1}
+            className="flex flex-wrap gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             {adventure.dates.map((d) => (
               <button
                 key={d}
@@ -356,7 +365,7 @@ export default function BookingForm({
 
       {/* People */}
       <section>
-        <h2 className="field-label text-base mb-3">Who's coming?</h2>
+        <SectionHeading className="field-label text-base mb-3">Who's coming?</SectionHeading>
         <div className="rounded-lg bg-muted/50 border border-border p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -373,7 +382,7 @@ export default function BookingForm({
                 aria-label="Fewer people"
                 onClick={() => setPeople((p) => Math.max(1, p - 1))}
                 disabled={people <= 1 || soldOut}
-                className="w-9 h-9 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted disabled:opacity-40"
+                className="w-11 h-11 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted disabled:opacity-40"
               >
                 <Minus className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -385,7 +394,7 @@ export default function BookingForm({
                 aria-label="More people"
                 onClick={() => setPeople((p) => Math.min(maxPeople, p + 1))}
                 disabled={people >= maxPeople || soldOut}
-                className="w-9 h-9 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted disabled:opacity-40"
+                className="w-11 h-11 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted disabled:opacity-40"
               >
                 <Plus className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -428,7 +437,7 @@ export default function BookingForm({
 
       {/* Lead traveller details */}
       <section>
-        <h2 className="field-label text-base mb-3">Your details</h2>
+        <SectionHeading className="field-label text-base mb-3">Your details</SectionHeading>
         <p className="text-xs text-muted-foreground -mt-1.5 mb-4">
           Age and gender help us plan the group and keep everyone safe on the trail.
         </p>
@@ -566,7 +575,7 @@ export default function BookingForm({
         : soldOut
           ? "Sold out"
           : price != null
-            ? `Confirm booking${people > 1 ? ` — ${inr(price * people)}` : ""}`
+            ? `Send booking request${people > 1 ? ` — ${inr(price * people)}` : ""}`
             : "Request booking"}
       {!submitting && !soldOut && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
     </button>
@@ -574,7 +583,7 @@ export default function BookingForm({
 
   const trustNote = (
     <p className="text-xs text-muted-foreground text-center leading-relaxed">
-      No payment is taken online. Our team reviews your booking and calls you to confirm.
+      No payment is taken on this site. Our team reviews your request, then calls to confirm and share any payment details.
     </p>
   );
 
@@ -654,7 +663,7 @@ export default function BookingForm({
                 disabled={submitting || soldOut}
                 className="btn-accent shrink-0 min-h-[44px] px-5"
               >
-                {submitting ? "Sending…" : price != null ? `Confirm — ${inr(price * people)}` : "Request booking"}
+                {submitting ? "Sending…" : price != null ? `Request — ${inr(price * people)}` : "Request booking"}
               </button>
             </div>
           </div>

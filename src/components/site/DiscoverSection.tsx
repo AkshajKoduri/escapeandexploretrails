@@ -33,7 +33,8 @@ export default function DiscoverSection() {
     if (activity) params.set("activity", activity);
     if (duration) params.set("duration", duration);
     if (difficulty) params.set("difficulty", difficulty);
-    navigate(`/adventures?${params.toString()}`);
+    const query = params.toString();
+    navigate(query ? `/adventures?${query}` : "/adventures");
   };
 
   const ready = activity || duration || difficulty;
@@ -110,18 +111,14 @@ export default function DiscoverSection() {
             <button
               type="button"
               onClick={go}
-              disabled={!ready}
-              className={cn(
-                "btn-accent w-full lg:w-auto",
-                !ready && "opacity-50",
-              )}
+              className="btn-accent w-full lg:w-auto"
             >
-              Show me adventures
+              {ready ? "Show matching adventures" : "Browse all adventures"}
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </button>
             {!ready && (
               <p className="mt-2 text-xs text-muted-foreground text-center lg:text-left">
-                Pick any option above — or browse everything.
+                Browse everything now, or choose any preference to narrow the list.
               </p>
             )}
           </div>
