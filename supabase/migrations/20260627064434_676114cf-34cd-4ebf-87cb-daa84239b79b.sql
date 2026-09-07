@@ -14,5 +14,8 @@ FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
-INSERT INTO public.admin_users (user_id) VALUES ('387ec9d1-b7dd-4ebc-8d20-7fdedf7517ef')
+INSERT INTO public.admin_users (user_id)
+SELECT id
+FROM auth.users
+WHERE id = '387ec9d1-b7dd-4ebc-8d20-7fdedf7517ef'
 ON CONFLICT (user_id) DO NOTHING;
