@@ -85,41 +85,43 @@ export default function TrailLog() {
             })}
           </div>
 
-          {loadFailed ? (
-            <div role="alert" className="mt-16 rounded-xl border border-border bg-card px-6 py-8 text-center">
-              <p className="font-display text-xl font-semibold text-primary">The journal couldn’t load.</p>
-              <p className="mt-2 text-sm text-muted-foreground">Please check your connection and try again.</p>
-              <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline mt-5">
-                Try again
-              </button>
-            </div>
-          ) : posts === null ? (
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-72 rounded-xl bg-muted animate-pulse" />
-              ))}
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="mt-20 text-center reveal">
-              <BookOpen className="w-12 h-12 text-accent/60 mx-auto mb-5" strokeWidth={1.5} aria-hidden="true" />
-              <p className="text-muted-foreground max-w-md mx-auto text-lg">
-                Stories from the trail are coming soon. Check back after our next adventure!
-              </p>
-            </div>
-          ) : visible.length === 0 ? (
-            <p className="mt-14 text-center text-muted-foreground">No posts in this category yet.</p>
-          ) : (
-            <div className="mt-12 grid grid-cols-1 gap-x-6 gap-y-9 md:grid-cols-2 lg:grid-cols-3 lg:gap-x-8 lg:gap-y-12">
-              {visible.map((p, index) => {
-                const featured = index === 0 && filter === "All";
-                return (
-                  <div key={p.id} className={cn("min-w-0", featured && "md:col-span-2")}>
-                    <TrailLogCard post={p} featured={featured} />
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <div className="min-h-[32rem]">
+            {loadFailed ? (
+              <div role="alert" className="mt-16 rounded-xl border border-border bg-card px-6 py-8 text-center">
+                <p className="font-display text-xl font-semibold text-primary">The journal couldn’t load.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Please check your connection and try again.</p>
+                <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline mt-5">
+                  Try again
+                </button>
+              </div>
+            ) : posts === null ? (
+              <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-72 rounded-xl bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="mt-20 text-center reveal">
+                <BookOpen className="w-12 h-12 text-accent/60 mx-auto mb-5" strokeWidth={1.5} aria-hidden="true" />
+                <p className="text-muted-foreground max-w-md mx-auto text-lg">
+                  Stories from the trail are coming soon. Check back after our next adventure!
+                </p>
+              </div>
+            ) : visible.length === 0 ? (
+              <p className="mt-14 text-center text-muted-foreground">No posts in this category yet.</p>
+            ) : (
+              <div className="mt-12 grid grid-cols-1 gap-x-6 gap-y-9 md:grid-cols-2 lg:grid-cols-3 lg:gap-x-8 lg:gap-y-12">
+                {visible.map((p, index) => {
+                  const featured = index === 0 && filter === "All";
+                  return (
+                    <div key={p.id} className={cn("min-w-0", featured && "md:col-span-2")}>
+                      <TrailLogCard post={p} featured={featured} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

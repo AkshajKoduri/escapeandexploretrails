@@ -83,6 +83,7 @@ export default function Itinerary() {
       ? `Day-wise itinerary for the ${trek.name} trip with E2 Trails — plan, schedule and what to expect on the trail.`
       : "Day-wise itineraries for E2 Trails trips — plan, schedule and what to expect on the trail.",
     path: `/itinerary/${trekId ?? ""}`,
+    noindex: !loading && !trek,
   });
 
   const days: Day[] = Array.isArray(trek?.itinerary_days) ? (trek!.itinerary_days as Day[]) : [];

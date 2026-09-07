@@ -115,8 +115,14 @@ describe("BookingForm", () => {
       expect(screen.getByText(/lead traveller's full name/)).toBeInTheDocument(),
     );
     expect(screen.getByText(/valid phone number/)).toBeInTheDocument();
+    const summary = screen.getByRole("alert");
+    await waitFor(() => expect(summary).toHaveFocus());
+    expect(summary).toHaveAttribute("tabindex", "-1");
     const nameField = screen.getByLabelText(/Full name/);
-    await waitFor(() => expect(nameField).toHaveFocus());
+    expect(screen.getByRole("link", { name: /Full name — fix this field/ })).toHaveAttribute(
+      "href",
+      `#${nameField.id}`,
+    );
     expect(nameField).toHaveAttribute("aria-describedby");
     expect(submitBookingMock).not.toHaveBeenCalled();
   });

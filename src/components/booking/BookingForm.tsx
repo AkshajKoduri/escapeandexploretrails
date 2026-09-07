@@ -97,6 +97,7 @@ export default function BookingForm({
   const [stickyVisible, setStickyVisible] = useState(false);
 
   const formRef = useRef<HTMLFormElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
   const SectionHeading = variant === "panel" ? "h4" : "h2";
   const SuccessHeading = variant === "panel" ? "h3" : "h2";
 
@@ -175,7 +176,12 @@ export default function BookingForm({
 
   const errId = (field: string) => (errors[field] ? `${uid}-${field}-error` : undefined);
 
-  const focusFirstInvalid = (validationErrors: Record<string, string>, order: string[]) => {
+  const focusValidationError = (validationErrors: Record<string, string>, order: string[]) => {
+    if (Object.keys(validationErrors).length > 1) {
+      errorSummaryRef.current?.focus();
+      errorSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const first = order.find((field) => validationErrors[field]);
     if (!first) return;
     const el = document.getElementById(`${uid}-${first}`) as HTMLElement | null;
@@ -203,7 +209,7 @@ export default function BookingForm({
       }
       setErrors(next);
       requestAnimationFrame(() =>
-        focusFirstInvalid(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
+        focusValidationError(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
       );
       return;
     }
@@ -211,7 +217,7 @@ export default function BookingForm({
     if (Object.keys(next).length > 0) {
       setErrors(next);
       requestAnimationFrame(() =>
-        focusFirstInvalid(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
+        focusValidationError(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
       );
       return;
     }
@@ -341,7 +347,13 @@ export default function BookingForm({
   const sections = (
     <>
       {errorEntries.length > 0 && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4" role="alert" aria-labelledby={`${uid}-error-summary-title`}>
+        <div
+          ref={errorSummaryRef}
+          tabIndex={-1}
+          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          role="alert"
+          aria-labelledby={`${uid}-error-summary-title`}
+        >
           <p id={`${uid}-error-summary-title`} className="font-semibold text-destructive">
             Check {errorEntries.length === 1 ? "this detail" : `${errorEntries.length} details`} before sending your request.
           </p>
