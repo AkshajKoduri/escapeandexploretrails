@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import about from "@/assets/about.jpg";
-import founderAshok from "@/assets/founder-ashok.png";
+import about640 from "@/assets/about-640.webp";
+import about960 from "@/assets/about-960.webp";
+import founderAshok from "@/assets/founder-ashok.webp";
 import { supabase } from "@/integrations/supabase/client";
 
 type Badge = { icon?: string; label: string };
@@ -78,13 +79,6 @@ export default function About() {
   const prev = () => setIndex((i) => (total ? (i - 1 + total) % total : 0));
   const next = () => setIndex((i) => (total ? (i + 1) % total : 0));
 
-  const photoSrc = useMemo(() => {
-    if (!current) return founderAshok;
-    if (current.photo_url && signed[current.photo_url]) return signed[current.photo_url];
-    if (current.is_founder) return founderAshok;
-    return "";
-  }, [current, signed]);
-
   const renderTeamCard = (member: TeamMember) => {
     const src = member.photo_url && signed[member.photo_url]
       ? signed[member.photo_url]
@@ -100,6 +94,9 @@ export default function About() {
                 src={src}
                 alt={`${member.full_name}, ${member.role_title} at E2 Trails`}
                 loading="lazy"
+                decoding="async"
+                width={member.is_founder && !signed[member.photo_url ?? ""] ? 292 : undefined}
+                height={member.is_founder && !signed[member.photo_url ?? ""] ? 812 : undefined}
                 className="w-full h-full object-cover object-top"
               />
             ) : (
@@ -137,11 +134,14 @@ export default function About() {
         <div className="reveal-left relative">
           <div className="relative overflow-hidden rounded-xl shadow-trail">
             <img
-              src={about}
+              src={about960}
+              srcSet={`${about640} 640w, ${about960} 960w`}
+              sizes="(min-width: 1024px) 50vw, 100vw"
               alt="Trekkers laughing on a forest trail"
               loading="lazy"
-              width={1280}
-              height={1280}
+              decoding="async"
+              width={960}
+              height={947}
               className="w-full h-[420px] md:h-[520px] object-cover hover:scale-[1.03] transition-transform duration-700"
             />
           </div>
@@ -235,8 +235,11 @@ export default function About() {
                       key={m.id}
                       onClick={() => setIndex(i)}
                       aria-label={`Show ${m.full_name}`}
-                      className={`h-2 rounded-full transition-all ${i === index ? "w-8 bg-primary" : "w-2 bg-primary/30"}`}
-                    />
+                      aria-pressed={i === index}
+                      className="grid h-8 min-w-8 place-items-center rounded-full"
+                    >
+                      <span aria-hidden="true" className={`h-2 rounded-full transition-all ${i === index ? "w-8 bg-primary" : "w-2 bg-primary/30"}`} />
+                    </button>
                   ))}
                 </div>
                 <div className="mt-5 flex items-center justify-between md:hidden">

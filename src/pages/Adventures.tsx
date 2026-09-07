@@ -77,6 +77,8 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
   const [params, setParams] = useSearchParams();
   const [adventures, setAdventures] = useState<Adventure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Filters (kept in sync with URL so links from the homepage work)
   const activity = (params.get("activity") as ActivityKey | null) ?? null;
@@ -91,13 +93,20 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
 
   useEffect(() => {
     let cancelled = false;
-    fetchAdventures().then((all) => {
-      if (cancelled) return;
-      setAdventures(all);
-      setLoading(false);
-    });
+    setLoading(true);
+    setLoadFailed(false);
+    fetchAdventures()
+      .then((all) => {
+        if (!cancelled) setAdventures(all);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => { cancelled = true; };
-  }, []);
+  }, [retryKey]);
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -369,7 +378,13 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
 
       <section className="pt-10 pb-20 md:pt-14 md:pb-24">
         <div className="container">
-          {loading ? (
+          {loadFailed ? (
+            <div role="alert" className="rounded-xl border border-border bg-card px-6 py-10 text-center">
+              <h2 className="font-display text-2xl font-bold text-primary">Adventures couldn’t load.</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Please check your connection and try again.</p>
+              <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-accent mt-6">Try again</button>
+            </div>
+          ) : loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="aspect-[4/5] rounded-xl bg-muted animate-pulse" />
@@ -389,9 +404,9 @@ export default function Adventures({ initialMode = "all" }: { initialMode?: Mode
           ) : (
             <>
               <div className="mb-7 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-4" role="status">
-                <p className="font-display text-lg font-semibold text-primary">
+                <h2 className="font-display text-lg font-semibold text-primary">
                   {visible.length} adventure{visible.length > 1 ? "s" : ""}
-                </p>
+                </h2>
                 <p className="text-xs text-muted-foreground">
                   {activeFilterSummary || "All current adventures"}
                 </p>

@@ -6,7 +6,7 @@ import type { Adventure } from "@/lib/treks";
 import { fetchAdventures, hasValue, inr } from "@/lib/treks";
 import BookingForm from "@/components/booking/BookingForm";
 import { useSeo } from "@/hooks/useSeo";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo-128.webp";
 
 export default function BookingPage() {
   const [params] = useSearchParams();
@@ -17,6 +17,7 @@ export default function BookingPage() {
   const [resetSignal, setResetSignal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Booking is a private utility flow: reachable, but never a search result.
   useSeo({
@@ -29,6 +30,8 @@ export default function BookingPage() {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadFailed(false);
     fetchAdventures()
       .then((all) => {
         if (cancelled) return;
@@ -46,7 +49,7 @@ export default function BookingPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [retryKey]);
 
   const selected = useMemo(() => adventures.find((a) => a.id === trekId), [adventures, trekId]);
   const makeAnotherBooking = () => setResetSignal((n) => n + 1);
@@ -62,7 +65,7 @@ export default function BookingPage() {
         </a>
         <div className="container flex items-center justify-between py-3.5">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="E2 Trails" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
+            <img src={logo} alt="E2 Trails" width={128} height={128} className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
             <span className="font-display font-bold text-base tracking-wide text-primary">E2 TRAILS</span>
           </Link>
           <Link
@@ -99,7 +102,8 @@ export default function BookingPage() {
             </div>
           ) : loadFailed ? (
             <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground" role="alert">
-              We couldn't load the available adventures. Please refresh the page and try again.
+              <p>We couldn't load the available adventures. Please check your connection and try again.</p>
+              <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline btn-sm mt-4">Try again</button>
             </div>
           ) : adventures.length === 0 ? (
             <p className="text-sm text-muted-foreground">

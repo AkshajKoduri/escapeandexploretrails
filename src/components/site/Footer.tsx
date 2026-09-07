@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Heart, Instagram, Mail, Phone, MapPin } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo-128.webp";
 
 export default function Footer() {
   return (
@@ -9,7 +9,7 @@ export default function Footer() {
         {/* Brand */}
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="E2 Trails logo" className="w-10 h-10 rounded-full bg-white object-contain p-0.5" />
+            <img src={logo} alt="E2 Trails logo" width={128} height={128} className="w-10 h-10 rounded-full bg-white object-contain p-0.5" />
             <span className="font-display font-bold text-lg">
               E2 <span className="text-accent-light">TRAILS</span>
             </span>
@@ -23,7 +23,7 @@ export default function Footer() {
 
         {/* Adventures */}
         <nav aria-label="Adventures">
-          <h4 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Adventures</h4>
+          <h2 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Adventures</h2>
           <ul className="text-sm text-charcoal-foreground/65">
             <li><Link to="/adventures" className="link-on-dark inline-flex min-h-10 items-center transition-colors">All Adventures</Link></li>
             <li><Link to="/upcoming-treks" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Outstation Treks</Link></li>
@@ -34,7 +34,7 @@ export default function Footer() {
 
         {/* Company */}
         <nav aria-label="Company">
-          <h4 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Company</h4>
+          <h2 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Company</h2>
           <ul className="text-sm text-charcoal-foreground/65">
             <li><a href="/#story" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Our Story</a></li>
             <li><Link to="/trail-log" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Trail Journal</Link></li>
@@ -45,7 +45,7 @@ export default function Footer() {
 
         {/* Contact */}
         <div className="col-span-2 md:col-span-1">
-          <h4 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Contact</h4>
+          <h2 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Contact</h2>
           <ul className="grid gap-x-5 text-sm text-charcoal-foreground/65 sm:grid-cols-2 md:block">
             <li>
               <a href="mailto:hello@e2trails.in" className="link-on-dark inline-flex min-h-10 items-center gap-2.5 transition-colors">

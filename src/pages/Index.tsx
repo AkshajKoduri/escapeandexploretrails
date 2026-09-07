@@ -1,19 +1,12 @@
+import { lazy, Suspense } from "react";
 import Navbar from "@/components/site/Navbar";
 import Hero from "@/components/site/Hero";
 import Stats from "@/components/site/Stats";
-import Treks from "@/components/site/Treks";
-import DiscoverSection from "@/components/site/DiscoverSection";
 import FeaturedAdventure from "@/components/site/FeaturedAdventure";
-import WhyUs from "@/components/site/WhyUs";
-import Safety from "@/components/site/Safety";
-import TrailLogPreview from "@/components/site/TrailLogPreview";
-import Gallery from "@/components/site/Gallery";
-import About from "@/components/site/About";
-import FinalCTA from "@/components/site/FinalCTA";
-import Contact from "@/components/site/Contact";
-import Footer from "@/components/site/Footer";
 import { useReveal } from "@/hooks/useReveal";
 import { useSeo } from "@/hooks/useSeo";
+
+const HomeBelowFold = lazy(() => import("@/components/site/HomeBelowFold"));
 
 const Index = () => {
   useReveal();
@@ -33,26 +26,13 @@ const Index = () => {
       <FeaturedAdventure />
       {/* 3. Proof the business can stand behind (no invented numbers). */}
       <Stats />
-      {/* 4. The people — founder story early builds trust for a trust purchase. */}
-      <About />
-      {/* 5. Why E2 Trails, concretely. */}
-      <WhyUs />
-      {/* 6. Browse by interest (drives the catalog when more trips exist). */}
-      <DiscoverSection />
-      {/* 7. Catalog grid — hidden on home until 2+ adventures exist to avoid
-             duplicating the featured departure. */}
-      <Treks mode="all" preview />
-      {/* 8. The safety promise — shown after desire, before the ask. */}
-      <Safety />
-      {/* 9. Real memories (hidden entirely when the journal is empty). */}
-      <Gallery />
-      <TrailLogPreview />
-      {/* 10. The specific ask. */}
-      <FinalCTA />
-      <Contact />
-      <Footer />
+      {/* Below-the-fold editorial sections load in their own chunk without
+          delaying the hero or the next-departure content. */}
+      <Suspense fallback={null}>
+        <HomeBelowFold />
+      </Suspense>
     </main>
   );
 };
 
-export default Index;
+export default Index;

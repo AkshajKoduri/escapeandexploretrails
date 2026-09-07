@@ -44,6 +44,8 @@ export default function TripDetail() {
   const [adventure, setAdventure] = useState<Adventure | null>(null);
   const [others, setOthers] = useState<Adventure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [imageFailed, setImageFailed] = useState(false);
   // Set when a visitor clicks "Book this date" — the booking panel below
   // reacts by preselecting exactly that date.
@@ -52,18 +54,28 @@ export default function TripDetail() {
   useEffect(() => {
     let cancelled = false;
     setImageFailed(false);
+    setLoading(true);
+    setLoadFailed(false);
     (async () => {
-      if (!trekId) return;
-      const [a, all] = await Promise.all([fetchAdventureById(trekId), fetchAdventures()]);
-      if (cancelled) return;
-      setAdventure(a);
-      setOthers(all.filter((x) => x.id !== trekId).slice(0, 3));
-      setLoading(false);
+      if (!trekId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const [a, all] = await Promise.all([fetchAdventureById(trekId), fetchAdventures()]);
+        if (cancelled) return;
+        setAdventure(a);
+        setOthers(all.filter((x) => x.id !== trekId).slice(0, 3));
+      } catch {
+        if (!cancelled) setLoadFailed(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [trekId]);
+  }, [trekId, retryKey]);
 
   // Dynamic metadata from the real trek record; unknown treks stay out of indexes.
   useSeo({
@@ -94,12 +106,20 @@ export default function TripDetail() {
         <Navbar />
         <div id="main-content" tabIndex={-1} className="container pt-32 pb-24 text-center outline-none">
           <Mountain className="w-12 h-12 text-muted-foreground/50 mx-auto mb-5" strokeWidth={1.5} aria-hidden="true" />
-          <h1 className="font-display font-bold text-3xl text-primary">This adventure isn't available</h1>
-          <p className="mt-3 text-muted-foreground">It may have been archived or its dates may have passed.</p>
-          <Link to="/adventures" className="btn-accent mt-8">
-            Browse all adventures
-            <ArrowRight className="w-4 h-4" aria-hidden="true" />
-          </Link>
+          <h1 className="font-display font-bold text-3xl text-primary">
+            {loadFailed ? "This adventure couldn’t load" : "This adventure isn't available"}
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            {loadFailed ? "Please check your connection and try again." : "It may have been archived or its dates may have passed."}
+          </p>
+          {loadFailed ? (
+            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-accent mt-8">Try again</button>
+          ) : (
+            <Link to="/adventures" className="btn-accent mt-8">
+              Browse all adventures
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Link>
+          )}
         </div>
         <Footer />
       </main>
@@ -137,10 +157,15 @@ export default function TripDetail() {
           {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
+              srcSet={adventure.imgSrcSet ?? undefined}
+              sizes="100vw"
               alt={`${adventure.name} in ${location}`}
+              width={adventure.imgWidth ?? undefined}
+              height={adventure.imgHeight ?? undefined}
               className="w-full h-full object-cover"
               loading="eager"
               decoding="async"
+              fetchPriority="high"
               onError={() => setImageFailed(true)}
             />
           ) : (

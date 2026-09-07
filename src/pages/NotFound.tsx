@@ -12,7 +12,7 @@ const NotFound = () => {
   });
 
   return (
-    <main className="min-h-screen bg-background grid place-items-center px-6">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-background grid place-items-center px-6 outline-none">
       <div className="text-center max-w-md">
         <Compass className="w-12 h-12 text-accent/60 mx-auto mb-6" strokeWidth={1.5} aria-hidden="true" />
         <p className="kicker justify-center">Lost your way</p>
@@ -31,4 +31,4 @@ const NotFound = () => {
   );
 };
 
-export default NotFound;
+export default NotFound;

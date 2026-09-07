@@ -14,12 +14,19 @@ export default function Treks({
 }: { mode?: Mode; preview?: boolean } = {}) {
   const [treks, setTreks] = useState<Adventure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const all = await fetchAdventures();
-    setTreks(all);
-    setLoading(false);
+    setLoadFailed(false);
+    try {
+      const all = await fetchAdventures();
+      setTreks(all);
+    } catch {
+      setLoadFailed(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -61,6 +68,7 @@ export default function Treks({
   // the grid.
   if (isHomeSection) {
     if (loading && treks.length === 0) return null;
+    if (loadFailed && treks.length === 0) return null;
     if (visible.length < 2) return null;
   }
 
@@ -81,7 +89,12 @@ export default function Treks({
           )}
         </div>
 
-        {loading && treks.length === 0 ? (
+        {loadFailed && treks.length === 0 ? (
+          <div role="alert" className="mt-14 rounded-xl border border-border bg-card px-6 py-8 text-center">
+            <p className="font-display text-lg font-semibold text-primary">Adventures couldn’t load.</p>
+            <button type="button" onClick={load} className="btn-outline btn-sm mt-4">Try again</button>
+          </div>
+        ) : loading && treks.length === 0 ? (
           <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[0, 1, 2].map((i) => (
               <div key={i} className="aspect-[4/5] rounded-xl bg-muted animate-pulse" />
@@ -126,4 +139,4 @@ export default function Treks({
       </div>
     </section>
   );
-}
+}

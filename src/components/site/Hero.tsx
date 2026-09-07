@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight, ShieldCheck, Users } from "lucide-react";
 import hero from "@/assets/hero.webp";
+import hero768 from "@/assets/hero-768.webp";
+import hero1440 from "@/assets/hero-1440.webp";
 
 export default function Hero() {
-  const [offset, setOffset] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const parallaxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -16,27 +18,47 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
-    if (reducedMotion) return;
-    const onScroll = () => setOffset(window.scrollY * 0.28);
+    const element = parallaxRef.current;
+    if (!element || reducedMotion) {
+      if (element) element.style.transform = "";
+      return;
+    }
+    let frame = 0;
+    const update = () => {
+      element.style.transform = `translate3d(0, ${window.scrollY * 0.28}px, 0)`;
+      frame = 0;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [reducedMotion]);
 
   return (
     <section id="main-content" tabIndex={-1} className="relative h-[100svh] min-h-[660px] max-h-[920px] w-full overflow-hidden bg-charcoal outline-none">
       {/* Ken Burns + parallax */}
       <div
-        className="absolute inset-0 will-change-transform animate-kenburns"
-        style={{ transform: reducedMotion ? undefined : `translate3d(0, ${offset}px, 0)` }}
+        ref={parallaxRef}
+        className="absolute inset-0 will-change-transform"
       >
-        <img
-          src={hero}
-          alt="Golden-hour view across a South Indian fort hilltop"
-          className="w-full h-full object-cover object-[58%_center] sm:object-center"
-          width={1920}
-          height={1080}
-          decoding="async"
-        />
+        <div className="h-full w-full animate-kenburns">
+          <img
+            src={hero}
+            srcSet={`${hero768} 768w, ${hero1440} 1440w, ${hero} 1920w`}
+            sizes="100vw"
+            alt="Golden-hour view across a South Indian fort hilltop"
+            className="w-full h-full object-cover object-[58%_center] sm:object-center"
+            width={1920}
+            height={1080}
+            decoding="async"
+            fetchPriority="high"
+          />
+        </div>
       </div>
       <div className="absolute inset-0 bg-gradient-hero" aria-hidden="true" />
 
@@ -85,7 +107,7 @@ export default function Hero() {
         aria-label="Scroll to the next departure"
         className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 text-charcoal-foreground/70 animate-bounce-arrow"
       >
-        <ChevronDown className="w-6 h-6" />
+        <ChevronDown className="w-6 h-6" aria-hidden="true" />
       </a>
     </section>
   );

@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Instagram, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import g1 from "@/assets/gallery-1.jpg";
-import g2 from "@/assets/gallery-2.jpg";
-import g3 from "@/assets/gallery-3.jpg";
-import g4 from "@/assets/gallery-4.jpg";
-import g5 from "@/assets/gallery-5.jpg";
-import g6 from "@/assets/gallery-6.jpg";
-import g7 from "@/assets/gallery-7.jpg";
+import g1 from "@/assets/gallery-1-960.webp";
+import g1Small from "@/assets/gallery-1-480.webp";
+import g2 from "@/assets/gallery-2-960.webp";
+import g2Small from "@/assets/gallery-2-480.webp";
+import g3 from "@/assets/gallery-3-960.webp";
+import g3Small from "@/assets/gallery-3-480.webp";
+import g4 from "@/assets/gallery-4-960.webp";
+import g4Small from "@/assets/gallery-4-480.webp";
+import g5 from "@/assets/gallery-5-960.webp";
+import g5Small from "@/assets/gallery-5-480.webp";
+import g6 from "@/assets/gallery-6-960.webp";
+import g6Small from "@/assets/gallery-6-480.webp";
+import g7 from "@/assets/gallery-7-960.webp";
+import g7Small from "@/assets/gallery-7-480.webp";
 
 type Category = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride" | "General";
 type FilterType = "All" | Category;
@@ -19,6 +26,9 @@ type GalleryItem = {
   url: string;
   alt: string;
   category: Category;
+  srcSet?: string;
+  width?: number;
+  height?: number;
 };
 
 type GalleryRow = {
@@ -33,13 +43,13 @@ type GalleryRow = {
 type SignedUrlRow = { path: string; signedUrl: string | null };
 
 const FALLBACK_ITEMS: GalleryItem[] = [
-  { id: "static-1", url: g1, alt: "Adventure trail moment with E2 Trails", category: "General" },
-  { id: "static-2", url: g2, alt: "Adventure trail moment with E2 Trails", category: "General" },
-  { id: "static-3", url: g3, alt: "Adventure trail moment with E2 Trails", category: "General" },
-  { id: "static-4", url: g4, alt: "Adventure trail moment with E2 Trails", category: "General" },
-  { id: "static-5", url: g5, alt: "Adventure trail moment with E2 Trails", category: "General" },
-  { id: "static-6", url: g6, alt: "Adventure trail moment with E2 Trails", category: "General" },
-  { id: "static-7", url: g7, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-1", url: g1, srcSet: `${g1Small} 480w, ${g1} 848w`, width: 848, height: 1024, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-2", url: g2, srcSet: `${g2Small} 480w, ${g2} 960w`, width: 960, height: 908, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-3", url: g3, srcSet: `${g3Small} 480w, ${g3} 960w`, width: 960, height: 802, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-4", url: g4, srcSet: `${g4Small} 480w, ${g4} 960w`, width: 960, height: 957, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-5", url: g5, srcSet: `${g5Small} 480w, ${g5} 960w`, width: 960, height: 609, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-6", url: g6, srcSet: `${g6Small} 480w, ${g6} 960w`, width: 960, height: 610, alt: "Adventure trail moment with E2 Trails", category: "General" },
+  { id: "static-7", url: g7, srcSet: `${g7Small} 480w, ${g7} 960w`, width: 960, height: 565, alt: "Adventure trail moment with E2 Trails", category: "General" },
 ];
 
 const FILTERS: { key: FilterType; label: string }[] = [
@@ -54,6 +64,8 @@ export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>(FALLBACK_ITEMS);
   const [filter, setFilter] = useState<FilterType>("All");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const dialogWasOpenRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -97,6 +109,17 @@ export default function Gallery() {
   const active = activeIndex !== null ? visible[activeIndex] : null;
   const prev = () => setActiveIndex((i) => (i === null ? i : (i - 1 + visible.length) % visible.length));
   const next = () => setActiveIndex((i) => (i === null ? i : (i + 1) % visible.length));
+
+  useEffect(() => {
+    if (open) {
+      dialogWasOpenRef.current = true;
+      return;
+    }
+    if (!dialogWasOpenRef.current) return;
+    dialogWasOpenRef.current = false;
+    const frame = requestAnimationFrame(() => lastTriggerRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
 
   /** Editorial layout: index 0 gets a large feature cell, then a rhythm of shapes. */
   const cellClass = (i: number) => {
@@ -158,7 +181,10 @@ export default function Gallery() {
               <button
                 type="button"
                 key={img.id}
-                onClick={() => setActiveIndex(i)}
+                onClick={(event) => {
+                  lastTriggerRef.current = event.currentTarget;
+                  setActiveIndex(i);
+                }}
                 aria-label={`View photo: ${img.alt}`}
                 className={cn(
                   "reveal group relative overflow-hidden rounded-lg cursor-pointer bg-muted",
@@ -168,8 +194,13 @@ export default function Gallery() {
               >
                 <img
                   src={img.url}
+                  srcSet={img.srcSet}
+                  sizes="(min-width: 768px) 25vw, 50vw"
                   alt={img.alt}
                   loading="lazy"
+                  decoding="async"
+                  width={img.width}
+                  height={img.height}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
                 />
                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition-colors duration-500 flex items-center justify-center">
@@ -190,17 +221,34 @@ export default function Gallery() {
       </div>
 
       <Dialog open={open} onOpenChange={(o) => !o && setActiveIndex(null)}>
-        <DialogContent className="max-w-[95vw] md:max-w-5xl p-0 border-0 bg-black/95 overflow-hidden">
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            lastTriggerRef.current?.focus();
+          }}
+          className="max-w-[95vw] md:max-w-5xl p-0 border-0 bg-black/95 overflow-hidden"
+        >
+          <DialogTitle className="sr-only">Trail photo viewer</DialogTitle>
+          <DialogDescription className="sr-only">Browse enlarged photos from E2 Trails outings.</DialogDescription>
           {active && (
             <div className="relative flex items-center justify-center w-full h-[85vh]">
-              <img src={active.url} alt={active.alt} className="max-w-full max-h-full object-contain" />
+              <img
+                src={active.url}
+                srcSet={active.srcSet}
+                sizes="95vw"
+                width={active.width}
+                height={active.height}
+                alt={active.alt}
+                decoding="async"
+                className="max-w-full max-h-full object-contain"
+              />
               <button
                 type="button"
                 onClick={prev}
                 aria-label="Previous photo"
                 className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors"
               >
-                <ChevronLeft className="w-6 h-6" />
+                <ChevronLeft className="w-6 h-6" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -208,7 +256,7 @@ export default function Gallery() {
                 aria-label="Next photo"
                 className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors"
               >
-                <ChevronRight className="w-6 h-6" />
+                <ChevronRight className="w-6 h-6" aria-hidden="true" />
               </button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/50 text-white text-xs">
                 {(activeIndex ?? 0) + 1} / {visible.length}
@@ -219,4 +267,4 @@ export default function Gallery() {
       </Dialog>
     </section>
   );
-}
+}

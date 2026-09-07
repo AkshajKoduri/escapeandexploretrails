@@ -18,7 +18,8 @@ export async function fetchTrailLogPosts(limit?: number): Promise<TrailLogPost[]
     .order("created_at", { ascending: false });
   if (limit) q = q.limit(limit);
   const { data, error } = await q;
-  if (error || !data) return [];
+  if (error) throw error;
+  if (!data) return [];
 
   const rows = data as Row[];
   const paths = rows.map((r) => r.pdf_storage_path).filter(Boolean) as string[];
@@ -27,7 +28,7 @@ export async function fetchTrailLogPosts(limit?: number): Promise<TrailLogPost[]
     const { data: signed } = await supabase.storage
       .from("trail-log-pdfs")
       .createSignedUrls(paths, 60 * 60 * 6);
-    (signed ?? []).forEach((s: any) => {
+    (signed ?? []).forEach((s: { path: string; signedUrl: string | null }) => {
       if (s.path && s.signedUrl) urlMap[s.path] = s.signedUrl;
     });
   }

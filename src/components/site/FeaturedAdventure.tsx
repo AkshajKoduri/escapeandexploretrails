@@ -12,20 +12,43 @@ import { formatAdventureDescription } from "@/lib/adventureDescription";
 export default function FeaturedAdventure() {
   const [adventure, setAdventure] = useState<Adventure | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetchAdventures().then((all) => {
-      if (cancelled) return;
-      const featured = all.find((a) => a.img) ?? all[0] ?? null;
-      setAdventure(featured);
-      setLoading(false);
-    });
+    setLoading(true);
+    setLoadFailed(false);
+    fetchAdventures()
+      .then((all) => {
+        if (cancelled) return;
+        setAdventure(all.find((a) => a.img) ?? all[0] ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => { cancelled = true; };
-  }, []);
+  }, [retryKey]);
 
-  if (loading || !adventure) return null;
+  if (loading) return null;
+  if (loadFailed) {
+    return (
+      <section id="featured" className="section bg-background">
+        <div role="alert" className="container text-center">
+          <div className="rounded-xl border border-border bg-card px-6 py-9">
+            <p className="font-display text-xl font-semibold text-primary">The next departure couldn’t load.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Please check your connection and try again.</p>
+            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline mt-5">Try again</button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  if (!adventure) return null;
 
   const diff = DIFFICULTY_STYLES[adventure.diff];
   const price = adventure.startingPrice ?? (adventure.price > 0 ? adventure.price : null);
@@ -47,8 +70,13 @@ export default function FeaturedAdventure() {
             {adventure.img && !imageFailed ? (
               <img
                 src={adventure.img}
+                srcSet={adventure.imgSrcSet ?? undefined}
+                sizes="(min-width: 1024px) 58vw, 100vw"
                 alt={adventure.name}
                 loading="lazy"
+                decoding="async"
+                width={adventure.imgWidth ?? undefined}
+                height={adventure.imgHeight ?? undefined}
                 onError={() => setImageFailed(true)}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
               />

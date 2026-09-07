@@ -3,7 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Phone, ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo-128.webp";
 
 const ADVENTURE_LINKS = [
   { label: "All Adventures", href: "/adventures", note: "Browse every trail" },
@@ -18,6 +18,8 @@ export default function Navbar() {
   const adventuresRef = useRef<HTMLDivElement>(null);
   const adventuresBtnRef = useRef<HTMLButtonElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuBtnRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuWasOpenRef = useRef(false);
   const { pathname } = useLocation();
   const isHome = pathname === "/";
   const adventureActive = pathname.startsWith("/adventures") || pathname === "/upcoming-treks" || pathname === "/hyderabad-trails";
@@ -55,6 +57,17 @@ export default function Navbar() {
   // Close the mobile menu on navigation
   useEffect(() => setOpen(false), [pathname]);
 
+  useEffect(() => {
+    if (open) {
+      mobileMenuWasOpenRef.current = true;
+      return;
+    }
+    if (!mobileMenuWasOpenRef.current) return;
+    mobileMenuWasOpenRef.current = false;
+    const frame = requestAnimationFrame(() => mobileMenuBtnRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
+
   const solid = !isHome || scrolled || open;
 
   return (
@@ -77,6 +90,8 @@ export default function Navbar() {
           <img
             src={logo}
             alt="E2 Trails logo"
+            width={128}
+            height={128}
             className="w-10 h-10 rounded-full bg-white object-contain p-0.5 shadow-card"
           />
           <span className="font-display font-bold text-[1.15rem] tracking-wide leading-none">
@@ -91,7 +106,7 @@ export default function Navbar() {
               ref={adventuresBtnRef}
               type="button"
               aria-expanded={adventuresOpen}
-              aria-haspopup="menu"
+              aria-controls="adventure-menu"
               onClick={() => setAdventuresOpen((v) => !v)}
               className={cn(
                 "link-on-dark inline-flex items-center gap-1 text-sm font-medium transition-colors min-h-[44px]",
@@ -102,7 +117,7 @@ export default function Navbar() {
               <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", adventuresOpen && "rotate-180")} aria-hidden="true" />
             </button>
             <div
-              role="menu"
+              id="adventure-menu"
               className={cn(
                 "absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 rounded-xl border border-charcoal-foreground/10 bg-charcoal text-charcoal-foreground shadow-trail overflow-hidden transition-all duration-200",
                 adventuresOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none",
@@ -112,7 +127,6 @@ export default function Navbar() {
                 <Link
                   key={l.href}
                   to={l.href}
-                  role="menuitem"
                   aria-current={linkIsActive(l.href) ? "page" : undefined}
                   onClick={() => setAdventuresOpen(false)}
                   className={cn(
@@ -163,6 +177,7 @@ export default function Navbar() {
         <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
           <DialogPrimitive.Trigger asChild>
             <button
+              ref={mobileMenuBtnRef}
               type="button"
               aria-label="Open menu"
               className="lg:hidden inline-flex h-11 w-11 items-center justify-center -mr-2 rounded-full text-charcoal-foreground hover:bg-charcoal-foreground/10"
@@ -178,6 +193,10 @@ export default function Navbar() {
                 event.preventDefault();
                 closeBtnRef.current?.focus();
               }}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                mobileMenuBtnRef.current?.focus();
+              }}
               className="fixed inset-y-0 right-0 z-[101] flex h-[100dvh] w-[88vw] max-w-sm flex-col overflow-y-auto bg-charcoal px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] text-charcoal-foreground shadow-trail outline-none lg:hidden data-[state=open]:animate-drawer-in"
             >
               <DialogPrimitive.Description className="sr-only">
@@ -185,7 +204,7 @@ export default function Navbar() {
               </DialogPrimitive.Description>
               <div className="flex items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-3">
-                  <img src={logo} alt="" className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
+                  <img src={logo} alt="" width={128} height={128} className="w-9 h-9 rounded-full bg-white object-contain p-0.5" />
                   <DialogPrimitive.Title className="font-display font-bold text-lg">
                     E2 <span className="text-accent-light">TRAILS</span>
                   </DialogPrimitive.Title>

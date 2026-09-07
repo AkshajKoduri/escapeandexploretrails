@@ -9,9 +9,12 @@ import { fmtDate } from "@/lib/treks";
  */
 export default function Stats() {
   const [metrics, setMetrics] = useState<{ explorers: number; trails: number; upcoming: number; nextDate: string | null } | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoadFailed(false);
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
       // get_explorer_count() is a purpose-built, counts-only server function:
@@ -21,6 +24,10 @@ export default function Stats() {
         supabase.rpc("get_explorer_count"),
       ]);
       if (cancelled) return;
+      if (trekRes.error || explorerRes.error) {
+        setLoadFailed(true);
+        return;
+      }
 
       type TrekRow = {
         id: string;
@@ -52,7 +59,18 @@ export default function Stats() {
       setMetrics({ explorers, trails: treks.length, upcoming: upcomingTreks.length, nextDate });
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [retryKey]);
+
+  if (loadFailed) {
+    return (
+      <section className="border-y border-border bg-muted/40 py-8" role="alert">
+        <div className="container flex flex-wrap items-center justify-center gap-3 text-center text-sm text-muted-foreground">
+          <span>Live trip numbers are temporarily unavailable.</span>
+          <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="font-semibold text-accent underline underline-offset-2">Try again</button>
+        </div>
+      </section>
+    );
+  }
 
   if (!metrics || (metrics.explorers === 0 && metrics.trails === 0 && metrics.upcoming === 0)) {
     return null;

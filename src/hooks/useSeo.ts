@@ -39,10 +39,14 @@ export function useSeo({ title, description, path, noindex = false }: SeoOptions
     upsertMeta("property", "og:url", url);
     upsertMeta("property", "og:type", "website");
     upsertMeta("property", "og:image", OG_IMAGE);
+    upsertMeta("property", "og:image:width", "1200");
+    upsertMeta("property", "og:image:height", "630");
+    upsertMeta("property", "og:image:alt", "E2 Trails guided adventures from Hyderabad");
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", title);
     upsertMeta("name", "twitter:description", description);
     upsertMeta("name", "twitter:image", OG_IMAGE);
+    upsertMeta("name", "twitter:image:alt", "E2 Trails guided adventures from Hyderabad");
 
     const robotsSelector = 'meta[name="robots"]';
     let robots = document.head.querySelector<HTMLMetaElement>(robotsSelector);

@@ -22,16 +22,22 @@ export function useReveal() {
       { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
     );
 
-    const observeAll = () => {
-      document
-        .querySelectorAll<HTMLElement>(".reveal:not(.in-view), .reveal-left:not(.in-view), .reveal-right:not(.in-view)")
-        .forEach((el) => io.observe(el));
+    const selector = ".reveal:not(.in-view), .reveal-left:not(.in-view), .reveal-right:not(.in-view)";
+    const observeWithin = (root: ParentNode) => {
+      if (root instanceof HTMLElement && root.matches(selector)) io.observe(root);
+      root.querySelectorAll<HTMLElement>(selector).forEach((el) => io.observe(el));
     };
 
-    observeAll();
+    observeWithin(document);
 
     // Re-observe when new nodes (e.g. async-loaded trek cards) appear.
-    const mo = new MutationObserver(() => observeAll());
+    const mo = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof HTMLElement) observeWithin(node);
+        });
+      });
+    });
     mo.observe(document.body, { childList: true, subtree: true });
 
     return () => {

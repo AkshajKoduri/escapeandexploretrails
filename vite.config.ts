@@ -19,4 +19,17 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Stable service clients and notifications change far less often than
+        // page code, so keep them cacheable and out of the public entry chunk.
+        manualChunks(id) {
+          if (id.includes("node_modules/@supabase/")) return "supabase";
+          if (id.includes("node_modules/sonner/")) return "sonner-vendor";
+          return undefined;
+        },
+      },
+    },
+  },
 }));

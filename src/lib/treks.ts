@@ -1,11 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
-import ahobilamImage from "@/assets/trek-ahobilam.jpg";
-import ananthagiriImage from "@/assets/trek-ananthagiri.jpg";
-import bhongirImage from "@/assets/trek-bhongir.jpg";
-import ethipothalaImage from "@/assets/trek-ethipothala.jpg";
-import koilkondaImage from "@/assets/trek-koilkonda.jpg";
-import medakImage from "@/assets/trek-medak.jpg";
+import ahobilam640 from "@/assets/trek-ahobilam-640.webp";
+import ahobilam1280 from "@/assets/trek-ahobilam-1280.webp";
+import ananthagiri640 from "@/assets/trek-ananthagiri-640.webp";
+import ananthagiri1280 from "@/assets/trek-ananthagiri-1280.webp";
+import bhongir640 from "@/assets/trek-bhongir-640.webp";
+import bhongir1280 from "@/assets/trek-bhongir-1280.webp";
+import ethipothala640 from "@/assets/trek-ethipothala-640.webp";
+import ethipothala1280 from "@/assets/trek-ethipothala-1280.webp";
+import koilkonda640 from "@/assets/trek-koilkonda-640.webp";
+import koilkonda1280 from "@/assets/trek-koilkonda-1280.webp";
+import medak640 from "@/assets/trek-medak-640.webp";
+import medak1280 from "@/assets/trek-medak-1280.webp";
 
 /* ------------------------------------------------------------------ */
 /* Shared types                                                        */
@@ -23,6 +29,9 @@ export type Adventure = {
   destination: string | null;
   location: string | null;
   img: string;
+  imgSrcSet: string | null;
+  imgWidth: number | null;
+  imgHeight: number | null;
   diff: Difficulty;
   dur: string;
   dist: string;
@@ -150,17 +159,19 @@ export const OUTSTATION_CATEGORIES = [
 ] as const;
 
 /** Existing, trek-specific photography used only when a published row has no image. */
-function bundledAdventureImage(...values: Array<string | null | undefined>): string {
+type BundledImage = { src: string; srcSet: string; width: number; height: number };
+
+function bundledAdventureImage(...values: Array<string | null | undefined>): BundledImage | null {
   const haystack = values.filter(Boolean).join(" ").toLowerCase();
-  const matches: Array<[string[], string]> = [
-    [["ahobilam", "ugrastambam"], ahobilamImage],
-    [["ananthagiri"], ananthagiriImage],
-    [["bhongir", "bhuvanagiri"], bhongirImage],
-    [["ethipothala"], ethipothalaImage],
-    [["koilkonda"], koilkondaImage],
-    [["medak"], medakImage],
+  const matches: Array<[string[], BundledImage]> = [
+    [["ahobilam", "ugrastambam"], { src: ahobilam1280, srcSet: `${ahobilam640} 640w, ${ahobilam1280} 1280w`, width: 1280, height: 854 }],
+    [["ananthagiri"], { src: ananthagiri1280, srcSet: `${ananthagiri640} 640w, ${ananthagiri1280} 1280w`, width: 1280, height: 960 }],
+    [["bhongir", "bhuvanagiri"], { src: bhongir1280, srcSet: `${bhongir640} 640w, ${bhongir1280} 1280w`, width: 1280, height: 854 }],
+    [["ethipothala"], { src: ethipothala1280, srcSet: `${ethipothala640} 640w, ${ethipothala1280} 1280w`, width: 1280, height: 720 }],
+    [["koilkonda"], { src: koilkonda1280, srcSet: `${koilkonda640} 640w, ${koilkonda1280} 1280w`, width: 1280, height: 854 }],
+    [["medak"], { src: medak1280, srcSet: `${medak640} 640w, ${medak1280} 1280w`, width: 1280, height: 960 }],
   ];
-  return matches.find(([terms]) => terms.some((term) => haystack.includes(term)))?.[1] ?? "";
+  return matches.find(([terms]) => terms.some((term) => haystack.includes(term)))?.[1] ?? null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -179,11 +190,24 @@ const OUTSTATION_FIELDS: { key: keyof TrekRow; label: string }[] = [
   { key: "stay_location", label: "Stay Location" },
 ];
 
-export async function fetchSeatStats(): Promise<Map<string, SeatStat>> {
-  const { data } = await supabase.rpc("get_trek_seat_stats");
+let seatStatsInFlight: Promise<Map<string, SeatStat>> | null = null;
+let adventuresInFlight: Promise<Adventure[]> | null = null;
+
+async function loadSeatStats(): Promise<Map<string, SeatStat>> {
+  const { data, error } = await supabase.rpc("get_trek_seat_stats");
+  if (error) throw error;
   const m = new Map<string, SeatStat>();
   (data ?? []).forEach((s) => m.set(s.trek_id, s));
   return m;
+}
+
+export function fetchSeatStats(): Promise<Map<string, SeatStat>> {
+  if (!seatStatsInFlight) {
+    seatStatsInFlight = loadSeatStats().finally(() => {
+      seatStatsInFlight = null;
+    });
+  }
+  return seatStatsInFlight;
 }
 
 function normalizeItineraryDays(value: Json): Adventure["itineraryDays"] {
@@ -210,13 +234,17 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adv
   const fieldLabels = t.field_labels && typeof t.field_labels === "object" && !Array.isArray(t.field_labels)
     ? t.field_labels
     : {};
+  const bundledImage = t.image_url ? null : bundledAdventureImage(t.name, t.destination, t.location, t.region);
 
   return {
     id: t.id,
     name: t.name,
     destination: t.destination ?? null,
     location: t.location ?? null,
-    img: t.image_url || bundledAdventureImage(t.name, t.destination, t.location, t.region),
+    img: t.image_url || bundledImage?.src || "",
+    imgSrcSet: bundledImage?.srcSet ?? null,
+    imgWidth: bundledImage?.width ?? null,
+    imgHeight: bundledImage?.height ?? null,
     diff: (t.difficulty as Difficulty) ?? "Easy",
     dur: t.duration ?? "",
     dist: t.distance ?? "",
@@ -256,9 +284,9 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adv
  * Fetch all published adventures with real seat stats.
  * Set includePast to true when the admin needs history.
  */
-export async function fetchAdventures(opts?: { includePast?: boolean }): Promise<Adventure[]> {
+async function loadAdventures(includePast = false): Promise<Adventure[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: trekData }, statsMap] = await Promise.all([
+  const [trekResult, statsMap] = await Promise.all([
     supabase
       .from("upcoming_treks")
       .select("*")
@@ -267,14 +295,26 @@ export async function fetchAdventures(opts?: { includePast?: boolean }): Promise
       .order("trek_date", { ascending: true, nullsFirst: false }),
     fetchSeatStats(),
   ]);
+  if (trekResult.error) throw trekResult.error;
+  const trekData = trekResult.data;
 
   return (trekData ?? [])
     .map((t) => mapRow(t, statsMap, today))
     .filter((a: Adventure) => {
-      if (opts?.includePast) return true;
+      if (includePast) return true;
       if (a.allDates.length === 0) return true;
       return a.allDates.some((d) => d >= today);
     });
+}
+
+export function fetchAdventures(opts?: { includePast?: boolean }): Promise<Adventure[]> {
+  if (opts?.includePast) return loadAdventures(true);
+  if (!adventuresInFlight) {
+    adventuresInFlight = loadAdventures().finally(() => {
+      adventuresInFlight = null;
+    });
+  }
+  return adventuresInFlight;
 }
 
 export async function fetchAdventureById(id: string): Promise<Adventure | null> {
@@ -286,7 +326,8 @@ export async function fetchAdventureById(id: string): Promise<Adventure | null> 
     supabase.from("upcoming_treks").select("*").eq("id", id).maybeSingle(),
     fetchSeatStats(),
   ]);
-  if (trekRes.error || !trekRes.data) return null;
+  if (trekRes.error) throw trekRes.error;
+  if (!trekRes.data) return null;
   const row = trekRes.data;
   if (row.is_archived || row.is_draft) return null;
   return mapRow(row, statsMap, today);

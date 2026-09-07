@@ -26,9 +26,14 @@ export default function AdventureCard({ adventure, priority = false }: { adventu
           {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
+              srcSet={adventure.imgSrcSet ?? undefined}
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
               alt={adventure.name}
               loading={priority ? "eager" : "lazy"}
               decoding="async"
+              fetchPriority={priority ? "high" : "auto"}
+              width={adventure.imgWidth ?? undefined}
+              height={adventure.imgHeight ?? undefined}
               onError={() => setImageFailed(true)}
               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
             />

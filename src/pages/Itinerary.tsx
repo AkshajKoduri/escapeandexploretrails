@@ -21,40 +21,61 @@ export default function Itinerary() {
   const { trekId } = useParams<{ trekId: string }>();
   const [trek, setTrek] = useState<TrekRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfFailed, setPdfFailed] = useState(false);
+  const [pdfRetryKey, setPdfRetryKey] = useState(0);
   const [showPdf, setShowPdf] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadFailed(false);
     (async () => {
-      if (!trekId) return;
-      const { data } = await supabase
+      if (!trekId) {
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
         .from("upcoming_treks")
         .select("id,name,image_url,itinerary_days,itinerary_file_path,itinerary_url")
         .eq("id", trekId)
         .maybeSingle();
       if (cancelled) return;
+      if (error) {
+        setLoadFailed(true);
+        setLoading(false);
+        return;
+      }
       // upcoming_treks rows are typed (itinerary_days is Json in the DB
       // schema); normalize to the page's Day[]-based shape here.
       setTrek(data as unknown as TrekRow);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [trekId]);
+  }, [trekId, retryKey]);
 
   useEffect(() => {
     let cancelled = false;
     if (!trek?.itinerary_file_path || !trek.id) return;
+    setPdfFailed(false);
+    setPdfUrl(null);
     supabase.functions
       .invoke("itinerary-signed-url", { body: { trekId: trek.id } })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
+        if (error) {
+          setPdfFailed(true);
+          return;
+        }
         const res = data as { url?: string | null } | null;
-        setPdfUrl(res?.url ?? null);
+        if (res?.url) setPdfUrl(res.url);
+        else setPdfFailed(true);
       })
-      .catch(() => { if (!cancelled) setPdfUrl(null); });
+      .catch(() => { if (!cancelled) setPdfFailed(true); });
     return () => { cancelled = true; };
-  }, [trek?.id, trek?.itinerary_file_path]);
+  }, [trek?.id, trek?.itinerary_file_path, pdfRetryKey]);
 
   useSeo({
     title: trek?.name ? `${trek.name} — Itinerary | E2 Trails` : "Trip Itinerary | E2 Trails",
@@ -96,7 +117,7 @@ export default function Itinerary() {
             to="/adventures"
             className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-charcoal-foreground/10 hover:bg-charcoal-foreground/20 text-sm font-semibold text-charcoal-foreground transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back
           </Link>
           <h1 className="font-display font-bold text-base sm:text-lg text-charcoal-foreground truncate">
             {trek?.name ?? "Itinerary"}
@@ -106,15 +127,20 @@ export default function Itinerary() {
             onClick={share}
             className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:brightness-110 transition-all"
           >
-            <Share2 className="w-4 h-4" /> Share
+            <Share2 className="w-4 h-4" aria-hidden="true" /> Share
           </button>
         </div>
       </header>
 
 
-      <main className="container py-8 max-w-4xl">
+      <main id="main-content" tabIndex={-1} className="container py-8 max-w-4xl outline-none">
         {loading ? (
           <p className="text-muted-foreground text-center py-16">Loading itinerary…</p>
+        ) : loadFailed ? (
+          <div className="py-16 text-center" role="alert">
+            <p className="font-display text-xl font-semibold text-primary">The itinerary couldn’t load.</p>
+            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline mt-5">Try again</button>
+          </div>
         ) : !trek ? (
           <p className="text-muted-foreground text-center py-16">Trip not found.</p>
         ) : !hasDays && !hasPdf ? (
@@ -150,7 +176,7 @@ export default function Itinerary() {
                       onClick={() => setShowPdf(true)}
                       className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                     >
-                      <FileText className="w-4 h-4" /> View as PDF
+                      <FileText className="w-4 h-4" aria-hidden="true" /> View as PDF
                     </button>
                   </div>
                 )}
@@ -165,7 +191,7 @@ export default function Itinerary() {
                     onClick={() => setShowPdf(false)}
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                   >
-                    <ArrowLeft className="w-4 h-4" /> Back to day-wise view
+                    <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to day-wise view
                   </button>
                 )}
                 {pdfHref ? (
@@ -186,9 +212,14 @@ export default function Itinerary() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90"
                     >
-                      <Download className="w-4 h-4" /> Download PDF
+                      <Download className="w-4 h-4" aria-hidden="true" /> Download PDF
                     </a>
                   </>
+                ) : pdfFailed ? (
+                  <div className="py-8 text-center" role="alert">
+                    <p className="text-muted-foreground">The PDF couldn’t load.</p>
+                    <button type="button" onClick={() => setPdfRetryKey((key) => key + 1)} className="btn-outline btn-sm mt-4">Try again</button>
+                  </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-8">Loading PDF…</p>
                 )}

@@ -27,11 +27,23 @@ export default function TrailLog() {
     path: "/trail-log",
   });
   const [posts, setPosts] = useState<TrailLogPost[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [filter, setFilter] = useState<FilterKey>("All");
 
   useEffect(() => {
-    fetchTrailLogPosts().then(setPosts);
-  }, []);
+    let cancelled = false;
+    setLoadFailed(false);
+    setPosts(null);
+    fetchTrailLogPosts()
+      .then((nextPosts) => {
+        if (!cancelled) setPosts(nextPosts);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, [retryKey]);
 
   const visible = useMemo(() => {
     if (!posts) return [];
@@ -73,7 +85,15 @@ export default function TrailLog() {
             })}
           </div>
 
-          {posts === null ? (
+          {loadFailed ? (
+            <div role="alert" className="mt-16 rounded-xl border border-border bg-card px-6 py-8 text-center">
+              <p className="font-display text-xl font-semibold text-primary">The journal couldn’t load.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Please check your connection and try again.</p>
+              <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline mt-5">
+                Try again
+              </button>
+            </div>
+          ) : posts === null ? (
             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="h-72 rounded-xl bg-muted animate-pulse" />

@@ -23,10 +23,14 @@ export default function Contact() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchAdventures().then((all) => {
-      if (cancelled) return;
-      setTrekNames(Array.from(new Set(all.map((a) => a.name))).slice(0, 12));
-    });
+    fetchAdventures()
+      .then((all) => {
+        if (cancelled) return;
+        setTrekNames(Array.from(new Set(all.map((a) => a.name))).slice(0, 12));
+      })
+      .catch(() => {
+        // The adventure choice is optional; the enquiry form remains usable.
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -48,6 +52,8 @@ export default function Contact() {
         if (!next[key]) next[key] = issue.message;
       }
       setErrors(next);
+      const first = ["name", "email", "phone", "message"].find((field) => next[field as keyof Errors]);
+      requestAnimationFrame(() => document.getElementById(`contact-${first}`)?.focus());
       return;
     }
     setErrors({});
@@ -74,7 +80,7 @@ export default function Contact() {
       <section id="contact" className="section-lg bg-muted/40">
         <div className="container max-w-xl text-center">
           <div className="inline-flex w-16 h-16 rounded-full bg-success/15 text-success items-center justify-center mb-6">
-            <CheckCircle2 className="w-8 h-8" strokeWidth={2} />
+            <CheckCircle2 className="w-8 h-8" strokeWidth={2} aria-hidden="true" />
           </div>
           <h2 className="editorial-title">Enquiry sent!</h2>
           <p className="editorial-lead mx-auto">
@@ -143,6 +149,20 @@ export default function Contact() {
 
           {/* Form */}
           <form onSubmit={onSubmit} noValidate className="lg:col-span-3 bg-background rounded-xl p-7 md:p-10 shadow-card border border-border space-y-5">
+            {Object.keys(errors).length > 0 && (
+              <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                <p className="font-semibold text-destructive">Check the highlighted details and try again.</p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {Object.entries(errors).map(([field, message]) => (
+                    <li key={field}>
+                      <a href={`#contact-${field}`} className="font-medium text-destructive underline underline-offset-2">
+                        {message}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div>
               <label htmlFor="contact-name" className="field-label">Full Name</label>
               <input
@@ -154,8 +174,9 @@ export default function Contact() {
                 className="field-input"
                 placeholder="Aarav Reddy"
                 aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? "contact-name-error" : undefined}
               />
-              {errors.name && <p className="field-error" role="alert">{errors.name}</p>}
+              {errors.name && <p id="contact-name-error" className="field-error">{errors.name}</p>}
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
@@ -169,8 +190,9 @@ export default function Contact() {
                   className="field-input"
                   placeholder="you@example.com"
                   aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? "contact-email-error" : undefined}
                 />
-                {errors.email && <p className="field-error" role="alert">{errors.email}</p>}
+                {errors.email && <p id="contact-email-error" className="field-error">{errors.email}</p>}
               </div>
               <div>
                 <label htmlFor="contact-phone" className="field-label">Phone</label>
@@ -183,8 +205,9 @@ export default function Contact() {
                   className="field-input"
                   placeholder="+91 98765 43210"
                   aria-invalid={!!errors.phone}
+                  aria-describedby={errors.phone ? "contact-phone-error" : undefined}
                 />
-                {errors.phone && <p className="field-error" role="alert">{errors.phone}</p>}
+                {errors.phone && <p id="contact-phone-error" className="field-error">{errors.phone}</p>}
               </div>
             </div>
             <div>
@@ -206,8 +229,9 @@ export default function Contact() {
                 className="field-input resize-none"
                 placeholder="Tell us about your group, dates, or anything we should know"
                 aria-invalid={!!errors.message}
+                aria-describedby={errors.message ? "contact-message-error" : undefined}
               />
-              {errors.message && <p className="field-error" role="alert">{errors.message}</p>}
+              {errors.message && <p id="contact-message-error" className="field-error">{errors.message}</p>}
             </div>
 
             <button type="submit" disabled={sending} className="btn-accent w-full disabled:opacity-60">

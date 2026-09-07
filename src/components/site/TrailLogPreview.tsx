@@ -6,10 +6,22 @@ import { fetchTrailLogPosts } from "@/lib/trailLog";
 
 export default function TrailLogPreview() {
   const [posts, setPosts] = useState<TrailLogPost[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
-    fetchTrailLogPosts(4).then(setPosts);
-  }, []);
+    let cancelled = false;
+    setLoadFailed(false);
+    setPosts(null);
+    fetchTrailLogPosts(4)
+      .then((nextPosts) => {
+        if (!cancelled) setPosts(nextPosts);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, [retryKey]);
 
   // No stories yet? Don't occupy a third of the homepage with an empty shell.
   // The journal's own page (/trail-log) renders a proper empty state instead.
@@ -35,7 +47,14 @@ export default function TrailLogPreview() {
           </Link>
         </div>
 
-        {posts === null ? (
+        {loadFailed ? (
+          <div role="alert" className="mt-12 rounded-xl border border-border bg-card px-6 py-8 text-center">
+            <p className="font-display text-lg font-semibold text-primary">Trail stories are temporarily unavailable.</p>
+            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline btn-sm mt-4">
+              Try again
+            </button>
+          </div>
+        ) : posts === null ? (
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
             {[0, 1, 2].map((i) => (
               <div key={i} className="h-64 rounded-xl bg-muted animate-pulse" />
@@ -64,4 +83,4 @@ export default function TrailLogPreview() {
       </div>
     </section>
   );
-}
+}

@@ -1,10 +1,8 @@
 import { lazy, Suspense } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminRoute from "@/components/AdminRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import RouteFocus from "@/components/RouteFocus";
 import FloatingWhatsApp from "@/components/site/FloatingWhatsApp";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -20,48 +18,50 @@ const TrailLog = lazy(() => import("./pages/TrailLog.tsx"));
 const UpcomingTreks = lazy(() => import("./pages/UpcomingTreks.tsx"));
 const HyderabadTrails = lazy(() => import("./pages/HyderabadTrails.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
+const Sonner = lazy(() =>
+  import("@/components/ui/sonner").then((module) => ({ default: module.Toaster })),
+);
 
 const routeFallback = (
-  <div className="min-h-screen grid place-items-center bg-background text-sm text-muted-foreground">
+  <main data-route-fallback id="main-content" tabIndex={-1} className="min-h-screen grid place-items-center bg-background text-sm text-muted-foreground outline-none">
     Loading…
-  </div>
+  </main>
 );
-
-const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  <>
+    <Suspense fallback={null}>
       <Sonner />
-      <BrowserRouter>
-        <ErrorBoundary>
-          <Suspense fallback={routeFallback}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/adventures" element={<Adventures />} />
-              <Route path="/adventures/:trekId" element={<TripDetail />} />
-              <Route path="/booking" element={<BookingPage />} />
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <Admin />
-                  </AdminRoute>
-                }
-              />
-              <Route path="/itinerary/:trekId" element={<Itinerary />} />
-              <Route path="/trail-log" element={<TrailLog />} />
-              <Route path="/upcoming-treks" element={<UpcomingTreks />} />
-              <Route path="/hyderabad-trails" element={<HyderabadTrails />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </ErrorBoundary>
-        <FloatingWhatsApp />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+    </Suspense>
+    <BrowserRouter>
+      <RouteFocus />
+      <ErrorBoundary>
+        <Suspense fallback={routeFallback}>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/adventures" element={<Adventures />} />
+            <Route path="/adventures/:trekId" element={<TripDetail />} />
+            <Route path="/booking" element={<BookingPage />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <Admin />
+                </AdminRoute>
+              }
+            />
+            <Route path="/itinerary/:trekId" element={<Itinerary />} />
+            <Route path="/trail-log" element={<TrailLog />} />
+            <Route path="/upcoming-treks" element={<UpcomingTreks />} />
+            <Route path="/hyderabad-trails" element={<HyderabadTrails />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
+      <FloatingWhatsApp />
+    </BrowserRouter>
+  </>
 );
 
-export default App;
+export default App;

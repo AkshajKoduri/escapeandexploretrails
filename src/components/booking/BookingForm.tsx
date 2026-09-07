@@ -322,8 +322,47 @@ export default function BookingForm({
   }
 
   /* ------------------------------ Form body ----------------------------- */
+  const errorOrder = [
+    "date",
+    ...memberNames.map((_, index) => `member-${index}`),
+    "name",
+    "age",
+    "gender",
+    "phone",
+    "email",
+  ];
+  const errorLabel = (field: string) => {
+    if (field === "date") return "Date";
+    if (field.startsWith("member-")) return `Traveller ${Number(field.split("-")[1]) + 2}`;
+    return ({ name: "Full name", age: "Age", gender: "Gender", phone: "Phone", email: "Email" } as Record<string, string>)[field] ?? field;
+  };
+  const errorEntries = errorOrder.flatMap((field) => errors[field] ? [[field, errors[field]] as const] : []);
+
   const sections = (
     <>
+      {errorEntries.length > 0 && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4" role="alert" aria-labelledby={`${uid}-error-summary-title`}>
+          <p id={`${uid}-error-summary-title`} className="font-semibold text-destructive">
+            Check {errorEntries.length === 1 ? "this detail" : `${errorEntries.length} details`} before sending your request.
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {errorEntries.map(([field]) => (
+              <li key={field}>
+                <a
+                  href={`#${uid}-${field}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    document.getElementById(`${uid}-${field}`)?.focus();
+                  }}
+                  className="font-medium text-destructive underline underline-offset-2"
+                >
+                  {errorLabel(field)} — fix this field
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {/* Date */}
       <section>
         <SectionHeading className="field-label text-base mb-3">Choose your date</SectionHeading>
@@ -357,7 +396,7 @@ export default function BookingForm({
           </div>
         ) : null}
         {errors.date && (
-          <p id={errId("date")} className="field-error" role="alert">
+          <p id={errId("date")} className="field-error">
             {errors.date}
           </p>
         )}
@@ -424,7 +463,7 @@ export default function BookingForm({
                     aria-describedby={errId(`member-${i}`)}
                   />
                   {errors[`member-${i}`] && (
-                    <p id={errId(`member-${i}`)} className="field-error" role="alert">
+                    <p id={errId(`member-${i}`)} className="field-error">
                       {errors[`member-${i}`]}
                     </p>
                   )}
@@ -458,7 +497,7 @@ export default function BookingForm({
               aria-describedby={errId("name")}
             />
             {errors.name && (
-              <p id={errId("name")} className="field-error" role="alert">
+              <p id={errId("name")} className="field-error">
                 {errors.name}
               </p>
             )}
@@ -483,7 +522,7 @@ export default function BookingForm({
                 aria-describedby={errId("age")}
               />
               {errors.age && (
-                <p id={errId("age")} className="field-error" role="alert">
+                <p id={errId("age")} className="field-error">
                   {errors.age}
                 </p>
               )}
@@ -508,7 +547,7 @@ export default function BookingForm({
                 <option>Prefer not to say</option>
               </select>
               {errors.gender && (
-                <p id={errId("gender")} className="field-error" role="alert">
+                <p id={errId("gender")} className="field-error">
                   {errors.gender}
                 </p>
               )}
@@ -532,7 +571,7 @@ export default function BookingForm({
               aria-describedby={errId("phone")}
             />
             {errors.phone && (
-              <p id={errId("phone")} className="field-error" role="alert">
+              <p id={errId("phone")} className="field-error">
                 {errors.phone}
               </p>
             )}
@@ -554,7 +593,7 @@ export default function BookingForm({
               aria-describedby={errId("email")}
             />
             {errors.email && (
-              <p id={errId("email")} className="field-error" role="alert">
+              <p id={errId("email")} className="field-error">
                 {errors.email}
               </p>
             )}
