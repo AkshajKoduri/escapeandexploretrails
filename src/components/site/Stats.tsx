@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { fmtDate } from "@/lib/treks";
 
 type Metrics = {
-  explorers: number;
-  trails: number;
-  upcoming: number;
+  seatsBooked: number;
+  currentAdventures: number;
   nextDate: string | null;
 };
 
@@ -31,46 +30,42 @@ export default function Stats() {
         is_draft: boolean;
       };
 
-      const treks = ((trekRes.data ?? []) as TrekRow[]).filter((trek) => !trek.is_archived && !trek.is_draft);
-      const upcomingTreks = treks.filter((trek) => {
+      const publishedTreks = ((trekRes.data ?? []) as TrekRow[]).filter((trek) => !trek.is_archived && !trek.is_draft);
+      const currentTreks = publishedTreks.filter((trek) => {
         const dates = [trek.trek_date, ...(trek.additional_dates ?? [])].filter(Boolean) as string[];
         return dates.length === 0 || dates.some((date) => date >= today);
       });
-      const nextDate = upcomingTreks
+      const nextDate = currentTreks
         .flatMap((trek) => [trek.trek_date, ...(trek.additional_dates ?? [])])
         .filter((date): date is string => Boolean(date && date >= today))
         .sort()[0] ?? null;
 
       setMetrics({
-        explorers: Number(explorerRes.data ?? 0),
-        trails: treks.length,
-        upcoming: upcomingTreks.length,
+        seatsBooked: Number(explorerRes.data ?? 0),
+        currentAdventures: currentTreks.length,
         nextDate,
       });
     })();
     return () => { cancelled = true; };
   }, []);
 
-  if (!metrics || (metrics.explorers === 0 && metrics.trails === 0 && metrics.upcoming === 0)) return null;
+  if (!metrics) return null;
 
   const items = [
-    ...(metrics.explorers > 0
-      ? [{ value: `${metrics.explorers.toLocaleString("en-IN")}+`, label: "Explorers guided" }]
-      : []),
-    ...(metrics.trails > 0 ? [{ value: metrics.trails.toLocaleString("en-IN"), label: "Adventures offered" }] : []),
-    ...(metrics.upcoming > 0 ? [{ value: metrics.upcoming.toLocaleString("en-IN"), label: "Upcoming now" }] : []),
-    ...(metrics.nextDate ? [{ value: fmtDate(metrics.nextDate), label: "Next trail out" }] : []),
+    { value: metrics.seatsBooked.toLocaleString("en-IN"), label: "Seats booked", compactValue: false },
+    { value: metrics.currentAdventures.toLocaleString("en-IN"), label: "Current adventure", compactValue: false },
+    { value: metrics.nextDate ? fmtDate(metrics.nextDate) : "—", label: "Next listed date", compactValue: true },
   ];
 
   return (
-    <dl aria-label="Live E2 Trails statistics" className="mt-8 grid grid-cols-3 border-y border-charcoal-foreground/15 sm:mt-10 sm:grid-cols-4">
-      {items.map((item, index) => (
+    <dl aria-label="Live E2 Trails statistics" className="mt-8 grid grid-cols-3 divide-x divide-charcoal-foreground/15 border-y border-charcoal-foreground/15 sm:mt-10">
+      {items.map((item) => (
         <div
           key={item.label}
-          className={`${index === 3 ? "hidden sm:flex" : "flex"} flex-col px-2 py-4 text-center sm:border-l sm:px-3 sm:py-5 sm:first:border-l-0 sm:border-charcoal-foreground/15`}
+          className="flex min-w-0 flex-col px-1 py-4 text-center sm:px-4 sm:py-5"
         >
-          <dt className="order-2 mt-2 text-xs font-medium text-charcoal-foreground/65">{item.label}</dt>
-          <dd className="order-1 font-display text-xl font-bold leading-none text-gold sm:text-2xl md:text-3xl">{item.value}</dd>
+          <dt className="order-2 mt-2 text-xs font-medium leading-snug text-charcoal-foreground/65">{item.label}</dt>
+          <dd className={`order-1 whitespace-nowrap font-display font-bold leading-none tabular-nums text-gold ${item.compactValue ? "text-[clamp(0.875rem,4vw,1.875rem)]" : "text-xl sm:text-2xl md:text-3xl"}`}>{item.value}</dd>
         </div>
       ))}
     </dl>
