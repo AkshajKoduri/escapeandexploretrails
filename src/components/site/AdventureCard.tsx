@@ -28,11 +28,11 @@ export default function AdventureCard({
   return (
     <Link
       to={`/adventures/${adventure.id}`}
-      className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:h-full"
       aria-label={`View ${adventure.name}`}
     >
-      <article className={`relative h-full overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col ${wide ? "md:grid md:h-[380px] md:min-h-0 md:grid-cols-[1.15fr_0.85fr]" : ""}`}>
-        <div className={`relative overflow-hidden bg-muted ${compact ? "aspect-[4/3]" : "aspect-[4/5]"} ${wide ? "md:h-full md:aspect-auto" : ""}`}>
+      <article className={`relative overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col ${wide ? "md:grid md:h-[380px] md:min-h-0 md:grid-cols-[1.15fr_0.85fr]" : "md:h-full"}`}>
+        <div className={`relative overflow-hidden bg-muted ${compact ? "h-44" : "aspect-[4/5]"} ${wide ? "md:h-full md:aspect-auto" : compact ? "md:h-auto md:aspect-[4/3]" : ""}`}>
           {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
@@ -82,7 +82,7 @@ export default function AdventureCard({
           )}
         </div>
 
-        <div className={`flex flex-1 flex-col text-charcoal-foreground bg-charcoal ${compact ? "gap-2.5 p-4" : "gap-3 p-5"}`}>
+        <div className={`flex flex-col text-charcoal-foreground bg-charcoal md:flex-1 ${compact ? "gap-2 px-4 py-3.5" : "gap-3 p-5"}`}>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-charcoal-foreground/60">
             {EVENT_TYPE_LABELS[adventure.eventType]}
             {adventure.trekCategory ? ` · ${adventure.trekCategory}` : ""}
@@ -102,7 +102,7 @@ export default function AdventureCard({
             </span>
           </div>
 
-          <div className="mt-auto flex items-end justify-between gap-3 pt-1">
+          <div className="mt-1 flex items-center justify-between gap-3 md:mt-auto">
             <div>
               {price != null ? (
                 <>
@@ -113,7 +113,7 @@ export default function AdventureCard({
                 <span className="text-sm text-charcoal-foreground/60">Price on request</span>
               )}
             </div>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent-light transition-transform duration-200 group-hover:translate-x-0.5">
+            <span className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent-light transition-transform duration-200 group-hover:translate-x-0.5">
               View adventure
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </span>
