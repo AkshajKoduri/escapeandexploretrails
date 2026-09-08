@@ -25,10 +25,10 @@ export default function Footer() {
         <nav aria-label="Adventures">
           <h2 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Adventures</h2>
           <ul className="text-sm text-charcoal-foreground/65">
-            <li><Link to="/adventures" className="link-on-dark inline-flex min-h-10 items-center transition-colors">All Adventures</Link></li>
-            <li><Link to="/upcoming-treks" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Outstation Treks</Link></li>
-            <li><Link to="/hyderabad-trails" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Hyderabad Trails</Link></li>
-            <li><Link to="/booking" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Book a Trip</Link></li>
+            <li><Link to="/adventures" className="link-on-dark inline-flex min-h-11 items-center transition-colors">All Adventures</Link></li>
+            <li><Link to="/upcoming-treks" className="link-on-dark inline-flex min-h-11 items-center transition-colors">Outstation Treks</Link></li>
+            <li><Link to="/hyderabad-trails" className="link-on-dark inline-flex min-h-11 items-center transition-colors">Hyderabad Trails</Link></li>
+            <li><Link to="/booking" className="link-on-dark inline-flex min-h-11 items-center transition-colors">Book a Trip</Link></li>
           </ul>
         </nav>
 
@@ -36,10 +36,10 @@ export default function Footer() {
         <nav aria-label="Company">
           <h2 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Company</h2>
           <ul className="text-sm text-charcoal-foreground/65">
-            <li><a href="/#story" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Our Story</a></li>
-            <li><Link to="/trail-log" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Trail Journal</Link></li>
-            <li><a href="/#gallery" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Life Out There</a></li>
-            <li><a href="/#contact" className="link-on-dark inline-flex min-h-10 items-center transition-colors">Contact</a></li>
+            <li><a href="/#story" className="link-on-dark inline-flex min-h-11 items-center transition-colors">Our Story</a></li>
+            <li><Link to="/trail-log" className="link-on-dark inline-flex min-h-11 items-center transition-colors">Trail Journal</Link></li>
+            <li><a href="/#gallery" className="link-on-dark inline-flex min-h-11 items-center transition-colors">Life Out There</a></li>
+            <li><a href="/#contact" className="link-on-dark inline-flex min-h-11 items-center transition-colors">Contact</a></li>
           </ul>
         </nav>
 
@@ -48,16 +48,16 @@ export default function Footer() {
           <h2 className="font-display font-bold text-sm uppercase tracking-[0.18em] mb-4">Contact</h2>
           <ul className="grid gap-x-5 text-sm text-charcoal-foreground/65 sm:grid-cols-2 md:block">
             <li>
-              <a href="mailto:hello@e2trails.in" className="link-on-dark inline-flex min-h-10 items-center gap-2.5 transition-colors">
+              <a href="mailto:hello@e2trails.in" className="link-on-dark inline-flex min-h-11 items-center gap-2.5 transition-colors">
                 <Mail className="w-4 h-4 text-accent-light" aria-hidden="true" /> hello@e2trails.in
               </a>
             </li>
             <li>
-              <a href="tel:+916303682022" className="link-on-dark inline-flex min-h-10 items-center gap-2.5 transition-colors">
+              <a href="tel:+916303682022" className="link-on-dark inline-flex min-h-11 items-center gap-2.5 transition-colors">
                 <Phone className="w-4 h-4 text-accent-light" aria-hidden="true" /> +91 63036 82022
               </a>
             </li>
-            <li className="inline-flex min-h-10 items-center gap-2.5">
+            <li className="inline-flex min-h-11 items-center gap-2.5">
               <MapPin className="w-4 h-4 text-accent-light" aria-hidden="true" /> Hyderabad, India
             </li>
             <li>
@@ -65,7 +65,7 @@ export default function Footer() {
                 href="https://instagram.com/e2trails.in"
                 target="_blank"
                 rel="noreferrer"
-                className="link-on-dark inline-flex min-h-10 items-center gap-2.5 transition-colors"
+                className="link-on-dark inline-flex min-h-11 items-center gap-2.5 transition-colors"
               >
                 <Instagram className="w-4 h-4 text-accent-light" aria-hidden="true" /> @e2trails.in
               </a>

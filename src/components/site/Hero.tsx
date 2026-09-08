@@ -40,7 +40,7 @@ export default function Hero() {
   }, [reducedMotion]);
 
   return (
-    <section id="main-content" tabIndex={-1} className="relative h-[100svh] min-h-[660px] max-h-[920px] w-full overflow-hidden bg-charcoal outline-none">
+    <section id="main-content" tabIndex={-1} className="relative h-[88svh] min-h-[580px] max-h-[840px] w-full overflow-hidden bg-charcoal outline-none sm:min-h-[640px] md:h-[92svh]">
       {/* Ken Burns + parallax */}
       <div
         ref={parallaxRef}
@@ -105,7 +105,7 @@ export default function Hero() {
       <a
         href="#featured"
         aria-label="Scroll to the next departure"
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 text-charcoal-foreground/70 animate-bounce-arrow"
+        className="absolute bottom-4 left-1/2 z-10 grid h-11 w-11 -translate-x-1/2 place-items-center text-charcoal-foreground/70 animate-bounce-arrow sm:bottom-6"
       >
         <ChevronDown className="w-6 h-6" aria-hidden="true" />
       </a>

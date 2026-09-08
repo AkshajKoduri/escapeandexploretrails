@@ -1,167 +1,174 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, Clock, MapPin, Mountain } from "lucide-react";
+import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
+import AdventureCard from "@/components/site/AdventureCard";
+import { supabase } from "@/integrations/supabase/client";
 import type { Adventure } from "@/lib/treks";
-import { DIFFICULTY_STYLES, fetchAdventures, fmtDate, hasValue, inr } from "@/lib/treks";
-import { formatAdventureDescription } from "@/lib/adventureDescription";
+import { fetchAdventures } from "@/lib/treks";
 
 /**
- * Featured destination — always the next real adventure with photography.
- * Hidden entirely when there is no data.
+ * One stable homepage product section. The nearest departure leads the list,
+ * followed by the next real adventures; there is no duplicate featured card.
  */
 export default function FeaturedAdventure() {
-  const [adventure, setAdventure] = useState<Adventure | null>(null);
+  const [adventures, setAdventures] = useState<Adventure[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
-  const [imageFailed, setImageFailed] = useState(false);
+  const [canScrollBack, setCanScrollBack] = useState(false);
+  const [canScrollForward, setCanScrollForward] = useState(false);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setLoadFailed(false);
-    fetchAdventures()
-      .then((all) => {
-        if (cancelled) return;
-        setAdventure(all.find((a) => a.img) ?? all[0] ?? null);
-      })
-      .catch(() => {
+
+    const load = async () => {
+      setLoading(true);
+      setLoadFailed(false);
+      try {
+        const next = await fetchAdventures();
+        if (!cancelled) setAdventures(next);
+      } catch {
         if (!cancelled) setLoadFailed(true);
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
+      }
+    };
+
+    load();
+    const channel = supabase
+      .channel(`home-adventures-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "upcoming_treks" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, load)
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, [retryKey]);
 
-  if (loading) return null;
-  if (loadFailed) {
-    return (
-      <section id="featured" className="section bg-background">
-        <div role="alert" className="container text-center">
-          <div className="rounded-xl border border-border bg-card px-6 py-9">
-            <p className="font-display text-xl font-semibold text-primary">The next departure couldn’t load.</p>
-            <p className="mt-2 text-sm text-muted-foreground">Please check your connection and try again.</p>
-            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline mt-5">Try again</button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-  if (!adventure) return null;
+  const updateScrollState = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    setCanScrollBack(scroller.scrollLeft > 8);
+    setCanScrollForward(scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 8);
+  };
 
-  const diff = DIFFICULTY_STYLES[adventure.diff];
-  const price = adventure.startingPrice ?? (adventure.price > 0 ? adventure.price : null);
-  const location = adventure.destination || adventure.location || adventure.region || "Hyderabad";
-  const nextDate = adventure.dates[0];
-  const summary = formatAdventureDescription(adventure.description, adventure.name)
-    .flatMap((section) => section.blocks)
-    .find((block) => block.type === "paragraph")?.text;
+  useEffect(() => {
+    const frame = requestAnimationFrame(updateScrollState);
+    window.addEventListener("resize", updateScrollState);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [adventures.length]);
+
+  const scroll = (direction: -1 | 1) => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    scroller.scrollBy({
+      left: direction * scroller.clientWidth * 0.86,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  };
+
+  const visible = adventures.slice(0, 4);
 
   return (
-    <section id="featured" className="section bg-background">
+    <section id="featured" className="border-b border-border bg-background py-14 md:py-20 lg:py-24">
       <div className="container">
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-14 items-stretch">
-          <Link
-            to={`/adventures/${adventure.id}`}
-            className="lg:col-span-7 group relative block overflow-hidden rounded-xl bg-primary min-h-[340px] sm:min-h-[420px] md:min-h-[520px]"
-            aria-label={`View ${adventure.name}`}
-          >
-            {adventure.img && !imageFailed ? (
-              <img
-                src={adventure.img}
-                srcSet={adventure.imgSrcSet ?? undefined}
-                sizes="(min-width: 1024px) 58vw, 100vw"
-                alt={adventure.name}
-                loading="lazy"
-                decoding="async"
-                width={adventure.imgWidth ?? undefined}
-                height={adventure.imgHeight ?? undefined}
-                onError={() => setImageFailed(true)}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-              />
-            ) : (
-              <div className="absolute inset-0 grid place-items-center bg-primary" aria-hidden="true">
-                <div className="text-center text-primary-foreground/45">
-                  <Mountain className="mx-auto h-16 w-16" strokeWidth={1} />
-                  <span className="meta-label mt-3 block text-primary-foreground/55">E2 Trails guided adventure</span>
+        <div className="flex items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="kicker">Upcoming adventures</p>
+            <h2 className="editorial-title mt-3">
+              Your next trail,
+              <span className="font-script text-accent"> already planned.</span>
+            </h2>
+            <p className="editorial-lead">
+              Real departures, clear details and small-group outings from Hyderabad.
+            </p>
+          </div>
+          <Link to="/adventures" className="btn-outline hidden shrink-0 md:inline-flex">
+            See all adventures
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+
+        {loadFailed && adventures.length === 0 ? (
+          <div role="alert" className="mt-10 rounded-xl border border-border bg-card px-6 py-9 text-center">
+            <p className="font-display text-xl font-semibold text-primary">The next departures couldn’t load.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Please check your connection and try again.</p>
+            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="btn-outline mt-5">
+              Try again
+            </button>
+          </div>
+        ) : loading && adventures.length === 0 ? (
+          <div className="mt-10 flex gap-4 overflow-hidden md:grid md:grid-cols-2 lg:grid-cols-4" aria-label="Loading upcoming adventures" role="status">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="h-[430px] w-[86%] shrink-0 animate-pulse rounded-xl bg-muted sm:w-[55%] md:w-auto" />
+            ))}
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="mt-10 border-y border-border py-10 text-center">
+            <Compass className="mx-auto h-9 w-9 text-muted-foreground/50" strokeWidth={1.5} aria-hidden="true" />
+            <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+              New departure dates are being prepared. Browse the adventure collection while you wait.
+            </p>
+            <Link to="/adventures" className="btn-outline mt-5">Browse adventures</Link>
+          </div>
+        ) : (
+          <>
+            <div
+              ref={scrollerRef}
+              onScroll={updateScrollState}
+              role="region"
+              aria-label="Upcoming adventures"
+              className="no-scrollbar -mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 sm:-mx-8 sm:px-8 md:mx-0 md:grid md:grid-cols-2 md:gap-6 md:overflow-visible md:px-0 lg:grid-cols-4"
+            >
+              {visible.map((adventure, index) => (
+                <div
+                  key={adventure.id}
+                  className={`${visible.length === 1 ? "w-full md:col-span-2 lg:col-span-4" : "w-[86%] sm:w-[55%]"} shrink-0 snap-start md:w-auto md:shrink`}
+                >
+                  <AdventureCard adventure={adventure} priority={index === 0} compact wide={visible.length === 1} />
+                </div>
+              ))}
+            </div>
+
+            {visible.length > 1 && (
+              <div className="mt-4 flex items-center justify-between md:hidden">
+                <p className="text-sm text-muted-foreground">Swipe or use the controls</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => scroll(-1)}
+                    disabled={!canScrollBack}
+                    aria-label="Previous adventures"
+                    className="grid h-11 w-11 place-items-center rounded-full border border-border text-primary transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-35"
+                  >
+                    <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scroll(1)}
+                    disabled={!canScrollForward}
+                    aria-label="Next adventures"
+                    className="grid h-11 w-11 place-items-center rounded-full border border-border text-primary transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-35"
+                  >
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
                 </div>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-card" aria-hidden="true" />
-            <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-4 p-6 md:p-8 text-charcoal-foreground">
-              <div>
-                <p className="meta-label text-charcoal-foreground/65">{adventure.isFull ? "Currently full" : "Next departure"}</p>
-                <p className="mt-1.5 font-display text-xl font-semibold md:text-2xl">
-                  {nextDate ? fmtDate(nextDate) : "New dates coming soon"}
-                </p>
-              </div>
-              <span className="hidden items-center gap-2 text-sm text-charcoal-foreground/75 sm:inline-flex">
-                <MapPin className="h-4 w-4 text-gold" aria-hidden="true" />
-                {location}
-              </span>
-            </div>
-          </Link>
 
-          <div className="lg:col-span-5 flex flex-col justify-center py-2 lg:py-8">
-            <p className="kicker">Featured adventure</p>
-            <h2 className="editorial-title mt-3 text-3xl md:text-4xl">
-              {adventure.name}
-            </h2>
-
-            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-accent" aria-hidden="true" />
-                {location}
-              </span>
-              {hasValue(adventure.dur) && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-accent" aria-hidden="true" />
-                  {adventure.dur}
-                </span>
-              )}
-              <span className={`pill ${diff.chip}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${diff.dot}`} aria-hidden="true" />
-                {diff.label}
-              </span>
-            </div>
-
-            {summary && (
-              <p className="mt-5 text-muted-foreground leading-relaxed line-clamp-3">
-                {summary}
-              </p>
-            )}
-
-            <div className="mt-6 border-y border-border py-4 space-y-1">
-              <p className="text-sm text-muted-foreground">
-                {adventure.isFull
-                  ? "Currently full — new dates coming soon."
-                  : `${adventure.seatsRemaining} seat${adventure.seatsRemaining > 1 ? "s" : ""} available across these dates`}
-              </p>
-              {adventure.dates.slice(0, 3).map((d) => (
-                <p key={d} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CalendarDays className="h-4 w-4 text-accent" aria-hidden="true" />
-                  <span className="font-semibold text-foreground">{fmtDate(d)}</span>
-                </p>
-              ))}
-              {price != null && (
-                <p className="pt-2 font-display font-bold text-2xl text-primary">
-                  {inr(price)} <span className="text-sm font-normal text-muted-foreground">/ person</span>
-                </p>
-              )}
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to={`/adventures/${adventure.id}`} className="btn-accent">
-                Book your spot
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </Link>
-              <Link to="/adventures" className="btn-outline">
-                See all adventures
-              </Link>
-            </div>
-          </div>
-        </div>
+            <Link to="/adventures" className="btn-accent mt-7 w-full md:hidden">
+              See all adventures
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </>
+        )}
       </div>
     </section>
   );

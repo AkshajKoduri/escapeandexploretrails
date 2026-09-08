@@ -81,12 +81,12 @@ export default function Navbar() {
     >
       <a
         href="#main-content"
-        className="fixed left-4 top-3 z-[120] -translate-y-24 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-trail transition-transform focus:translate-y-0"
+        className="fixed left-4 top-3 z-[120] inline-flex min-h-11 -translate-y-24 items-center rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-trail transition-transform focus:translate-y-0"
       >
         Skip to main content
       </a>
       <div className="container flex items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-3 text-charcoal-foreground" aria-label="E2 Trails home">
+        <Link to="/" className="flex min-h-11 items-center gap-3 text-charcoal-foreground" aria-label="E2 Trails home">
           <img
             src={logo}
             alt="E2 Trails logo"
@@ -153,7 +153,7 @@ export default function Navbar() {
           >
             Trail Journal
           </Link>
-          <a href="/#story" className="link-on-dark text-sm font-medium text-charcoal-foreground/90 transition-colors min-h-[44px] inline-flex items-center">
+          <a href="/#story" className="link-on-dark min-h-[44px] min-w-11 px-1 text-sm font-medium text-charcoal-foreground/90 transition-colors inline-flex items-center">
             About
           </a>
           <a href="/#contact" className="link-on-dark text-sm font-medium text-charcoal-foreground/90 transition-colors min-h-[44px] inline-flex items-center">
@@ -169,7 +169,7 @@ export default function Navbar() {
             <Phone className="w-4 h-4" aria-hidden="true" />
             +91 63036 82022
           </a>
-          <Link to="/adventures" className="btn-accent btn-sm">
+          <Link to="/adventures" className="btn-accent btn-sm min-h-11">
             Book a trip
           </Link>
         </div>

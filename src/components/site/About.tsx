@@ -1,274 +1,97 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, MapPinned, ShieldCheck, Users } from "lucide-react";
+import Stats from "@/components/site/Stats";
 import about640 from "@/assets/about-640.webp";
 import about960 from "@/assets/about-960.webp";
-import founderAshok from "@/assets/founder-ashok.webp";
-import { supabase } from "@/integrations/supabase/client";
 
-type Badge = { icon?: string; label: string };
-type TeamMember = {
-  id: string;
-  full_name: string;
-  role_title: string;
-  bio: string;
-  photo_url: string | null;
-  badges: Badge[];
-  display_order: number;
-  is_founder: boolean;
-};
+const assurances = [
+  {
+    icon: MapPinned,
+    title: "Routes we know",
+    description: "Handpicked trails, clear difficulty and the practical details shared before you sign up.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Prepared leadership",
+    description: "Experienced leaders, first-aid kits and a plan for the unexpected on every outing.",
+  },
+  {
+    icon: Users,
+    title: "Small, managed groups",
+    description: "Enough attention for first-timers and enough room for real friendships to form.",
+  },
+];
 
+/** One story-led trust section, replacing four repetitive homepage bands. */
 export default function About() {
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [signed, setSigned] = useState<Record<string, string>>({});
-  const [index, setIndex] = useState(0);
-  const [hasNudged, setHasNudged] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  return (
+    <section id="story" className="relative overflow-hidden bg-charcoal py-16 text-charcoal-foreground md:py-24 lg:py-28">
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(hsl(40 30% 97% / 0.35) 1px, transparent 1px), linear-gradient(90deg, hsl(40 30% 97% / 0.35) 1px, transparent 1px)",
+          backgroundSize: "72px 72px",
+        }}
+        aria-hidden="true"
+      />
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("team_members")
-        .select("*")
-        .order("display_order", { ascending: true });
-      if (cancelled) return;
-      // team_members rows: DB JSON types don't perfectly match the richer
-      // domain shape (badges/display_order), so normalize through unknown.
-      const rows = (data ?? []) as unknown as TeamMember[];
-      rows.sort((a, b) => {
-        if (a.is_founder && !b.is_founder) return -1;
-        if (!a.is_founder && b.is_founder) return 1;
-        return a.display_order - b.display_order;
-      });
-      setMembers(rows);
-
-      const paths = rows.map((r) => r.photo_url).filter(Boolean) as string[];
-      if (paths.length) {
-        const { data: s } = await supabase.storage.from("team-photos").createSignedUrls(paths, 60 * 60);
-        const map: Record<string, string> = {};
-        (s ?? []).forEach((it: { path: string; signedUrl: string | null }) => {
-          if (it.path && it.signedUrl) map[it.path] = it.signedUrl;
-        });
-        if (!cancelled) setSigned(map);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    if (members.length <= 1 || hasNudged) return;
-    const section = sectionRef.current;
-    if (!section) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && window.innerWidth < 768) {
-            setHasNudged(true);
-            observer.disconnect();
-          }
-        });
-      },
-      { threshold: 0.25 },
-    );
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, [members.length, hasNudged]);
-
-  const current = members[index];
-  const total = members.length;
-  const prev = () => setIndex((i) => (total ? (i - 1 + total) % total : 0));
-  const next = () => setIndex((i) => (total ? (i + 1) % total : 0));
-
-  const renderTeamCard = (member: TeamMember) => {
-    const src = member.photo_url && signed[member.photo_url]
-      ? signed[member.photo_url]
-      : member.is_founder
-        ? founderAshok
-        : "";
-    return (
-      <div className="grid items-start gap-8 border-y border-border py-7 md:grid-cols-[220px,1fr] md:gap-10 md:py-10">
-        <div className="relative mx-auto md:mx-0">
-          <div className="relative aspect-[4/5] w-44 overflow-hidden rounded-lg bg-muted shadow-card md:w-[220px]">
-            {src ? (
+      <div className="container relative">
+        <div className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div className="reveal-left relative">
+            <div className="relative h-[340px] overflow-hidden rounded-xl bg-primary shadow-trail sm:h-[430px] lg:h-[540px]">
               <img
-                src={src}
-                alt={`${member.full_name}, ${member.role_title} at E2 Trails`}
+                src={about960}
+                srcSet={`${about640} 640w, ${about960} 960w`}
+                sizes="(min-width: 1024px) 42vw, 100vw"
+                alt="Trekkers laughing together on a forest trail"
                 loading="lazy"
                 decoding="async"
-                width={member.is_founder && !signed[member.photo_url ?? ""] ? 292 : undefined}
-                height={member.is_founder && !signed[member.photo_url ?? ""] ? 812 : undefined}
-                className="w-full h-full object-cover object-top"
+                width={960}
+                height={947}
+                className="h-full w-full object-cover"
               />
-            ) : (
-              <div className="w-full h-full grid place-items-center font-display text-3xl text-muted-foreground">
-                {member.full_name.charAt(0)}
-              </div>
-            )}
-          </div>
-        </div>
-        <div>
-          <p className="meta-label">{member.is_founder ? "Founder" : member.role_title}</p>
-          <h3 className="font-display font-bold text-2xl md:text-3xl mt-2 text-primary">{member.full_name}</h3>
-          {member.bio.split(/\n\s*\n/).map((para, i) => (
-            <p key={i} className={`${i === 0 ? "mt-4" : "mt-3"} text-base text-muted-foreground leading-relaxed whitespace-pre-line`}>
-              {para}
-            </p>
-          ))}
-          {member.badges?.length > 0 && (
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              {member.badges.slice(0, 3).map((b, i) => (
-                <span key={i} className="pill bg-primary/10 text-primary border border-primary/15">
-                  {b.icon ? `${b.icon} ` : ""}{b.label}
-                </span>
-              ))}
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal/55 via-transparent to-transparent" aria-hidden="true" />
+              <p className="absolute bottom-5 left-5 font-script text-xl text-gold">Since day one</p>
             </div>
-          )}
+          </div>
+
+          <div className="reveal-right">
+            <p className="kicker kicker-light">Our story · Your safety</p>
+            <h2 className="editorial-title editorial-title-light mt-3">
+              Built on encouragement.
+              <span className="font-script text-gold"> Led with care.</span>
+            </h2>
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-charcoal-foreground/80 md:text-lg">
+              E2 Trails began on a climb where strangers refused to let one another quit. That same spirit now shapes every outing from Hyderabad: honest trip information, prepared routes and leaders who keep the group together.
+            </p>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-charcoal-foreground/62 md:text-base">
+              Whether it is your first trail or your next summit, you arrive knowing the distance, difficulty, meeting point and what to carry.
+            </p>
+            <Link to="/adventures" className="btn-ghost-light mt-7">
+              See how trips are planned
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
+
+        <div id="safety" className="mt-12 grid border-y border-charcoal-foreground/15 sm:grid-cols-3 lg:mt-16">
+          {assurances.map((assurance) => {
+            const Icon = assurance.icon;
+            return (
+              <article key={assurance.title} className="flex gap-4 border-b border-charcoal-foreground/15 py-6 last:border-b-0 sm:block sm:border-b-0 sm:border-l sm:px-6 sm:first:border-l-0 sm:first:pl-0 sm:last:pr-0">
+                <Icon className="mt-0.5 h-6 w-6 shrink-0 text-accent-light" strokeWidth={1.75} aria-hidden="true" />
+                <div>
+                  <h3 className="font-display text-lg font-bold">{assurance.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-charcoal-foreground/70">{assurance.description}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <Stats />
       </div>
-    );
-  };
-
-  return (
-    <section id="story" className="section-lg bg-background">
-      <div className="container grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-        <div className="reveal-left relative">
-          <div className="relative overflow-hidden rounded-xl shadow-trail">
-            <img
-              src={about960}
-              srcSet={`${about640} 640w, ${about960} 960w`}
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              alt="Trekkers laughing on a forest trail"
-              loading="lazy"
-              decoding="async"
-              width={960}
-              height={947}
-              className="w-full h-[420px] md:h-[520px] object-cover hover:scale-[1.03] transition-transform duration-700"
-            />
-          </div>
-          <div className="absolute -bottom-5 -left-5 bg-accent text-accent-foreground px-5 py-3 font-display font-bold shadow-card">
-            Since Day One
-          </div>
-        </div>
-
-        <div className="reveal-right">
-          <p className="kicker">Our story</p>
-          <h2 className="editorial-title mt-3">
-            From one climb
-            <br />
-            <span className="font-script text-accent">to a community.</span>
-          </h2>
-          <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
-            E2 Trails was born on a trail — not in a boardroom. On one of my first climbs, legs burning
-            and lungs struggling, it wasn't the view that kept me going. It was the people beside me —
-            strangers who cheered, encouraged and refused to let me quit. That moment made one thing
-            clear: the right community can make you capable of things you never imagined.
-          </p>
-          <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed">
-            So we built one. E2 Trails started in Hyderabad as a weekend escape for people who wanted
-            more than a desk and a screen. Two years and hundreds of adventurers later, it has grown
-            into something far bigger — a tribe of cyclists, hikers and explorers who show up every
-            weekend not just for the trail, but for each other. Whether you're stepping onto your first
-            trail or chasing your next summit — you belong here.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-2.5">
-            {["Safety first", "Eco-conscious", "Community driven"].map((p) => (
-              <span key={p} className="pill bg-primary/10 text-primary border border-primary/15">{p}</span>
-            ))}
-          </div>
-          <a href="#contact" className="btn-accent mt-9">
-            Meet E2 Trails
-            <ArrowRight className="w-4 h-4" aria-hidden="true" />
-          </a>
-        </div>
-      </div>
-
-      {/* ============ Team ============ */}
-      {current && (
-        <div className="container mt-16 md:mt-24" ref={sectionRef}>
-          <div className="max-w-5xl mx-auto mb-8 md:mb-10">
-            <p className="kicker">The people behind E2 Trails</p>
-            <h2 className="editorial-title mt-3">Our team</h2>
-          </div>
-          <div className="max-w-5xl mx-auto relative">
-            {total > 1 && (
-              <>
-                <button
-                  onClick={prev}
-                  aria-label="Previous team member"
-                  className="hidden md:grid absolute -left-5 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-card border border-border text-primary shadow-card place-items-center hover:bg-muted transition"
-                >
-                  <ChevronLeft className="w-5 h-5" strokeWidth={2} />
-                </button>
-                <button
-                  onClick={next}
-                  aria-label="Next team member"
-                  className="hidden md:grid absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-card border border-border text-primary shadow-card place-items-center hover:bg-muted transition"
-                >
-                  <ChevronRight className="w-5 h-5" strokeWidth={2} />
-                </button>
-              </>
-            )}
-
-            <div className="hidden md:block">{renderTeamCard(current)}</div>
-
-            {total > 1 && (
-              <div className="md:hidden overflow-visible">
-                <div
-                  className="flex gap-5 transition-transform duration-300 ease-out"
-                  style={{ transform: `translateX(calc(${-index} * (100% - 20px)))` }}
-                >
-                  {members.map((m, i) => (
-                    <div key={m.id} className={`w-[calc(100%-40px)] flex-shrink-0 ${hasNudged && i === 0 ? "animate-[team-nudge_0.7s_ease-in-out]" : ""}`}>
-                      {renderTeamCard(m)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {total === 1 && <div className="md:hidden">{renderTeamCard(current)}</div>}
-
-            {total > 1 && (
-              <>
-                <div className="mt-6 hidden justify-center gap-2 md:flex">
-                  {members.map((m, i) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setIndex(i)}
-                      aria-label={`Show ${m.full_name}`}
-                      aria-pressed={i === index}
-                      className="grid h-8 min-w-8 place-items-center rounded-full"
-                    >
-                      <span aria-hidden="true" className={`h-2 rounded-full transition-all ${i === index ? "w-8 bg-primary" : "w-2 bg-primary/30"}`} />
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-5 flex items-center justify-between md:hidden">
-                  <button
-                    type="button"
-                    onClick={prev}
-                    aria-label="Previous team member"
-                    className="grid h-11 w-11 place-items-center rounded-full border border-border bg-card text-primary"
-                  >
-                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                  </button>
-                  <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
-                    {index + 1} of {total}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={next}
-                    aria-label="Next team member"
-                    className="grid h-11 w-11 place-items-center rounded-full border border-border bg-card text-primary"
-                  >
-                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
     </section>
   );
 }

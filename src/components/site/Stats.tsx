@@ -1,33 +1,27 @@
 import { useEffect, useState } from "react";
-import { Footprints, Mountain, Compass, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtDate } from "@/lib/treks";
 
-/**
- * Real metrics computed from the database. No fabricated achievements —
- * if there is no data yet, the band hides itself.
- */
+type Metrics = {
+  explorers: number;
+  trails: number;
+  upcoming: number;
+  nextDate: string | null;
+};
+
+/** Real, optional proof points embedded in the homepage trust story. */
 export default function Stats() {
-  const [metrics, setMetrics] = useState<{ explorers: number; trails: number; upcoming: number; nextDate: string | null } | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setLoadFailed(false);
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
-      // get_explorer_count() is a purpose-built, counts-only server function:
-      // anonymous visitors never read raw booking rows.
       const [trekRes, explorerRes] = await Promise.all([
         supabase.from("upcoming_treks").select("id, trek_date, additional_dates, is_archived, is_draft"),
         supabase.rpc("get_explorer_count"),
       ]);
-      if (cancelled) return;
-      if (trekRes.error || explorerRes.error) {
-        setLoadFailed(true);
-        return;
-      }
+      if (cancelled || trekRes.error || explorerRes.error) return;
 
       type TrekRow = {
         id: string;
@@ -36,90 +30,46 @@ export default function Stats() {
         is_archived: boolean;
         is_draft: boolean;
       };
-      const treks = ((trekRes.data ?? []) as TrekRow[]).filter(
-        (t) => !t.is_archived && !t.is_draft,
-      );
 
-      const explorers = Number(explorerRes.data ?? 0);
-
-      const upcomingTreks = treks.filter((t) => {
-        const dates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
-        if (!dates.length) return true;
-        return dates.some((d) => d >= today);
+      const treks = ((trekRes.data ?? []) as TrekRow[]).filter((trek) => !trek.is_archived && !trek.is_draft);
+      const upcomingTreks = treks.filter((trek) => {
+        const dates = [trek.trek_date, ...(trek.additional_dates ?? [])].filter(Boolean) as string[];
+        return dates.length === 0 || dates.some((date) => date >= today);
       });
+      const nextDate = upcomingTreks
+        .flatMap((trek) => [trek.trek_date, ...(trek.additional_dates ?? [])])
+        .filter((date): date is string => Boolean(date && date >= today))
+        .sort()[0] ?? null;
 
-      // Earliest upcoming date across all adventures
-      let nextDate: string | null = null;
-      for (const t of upcomingTreks) {
-        for (const d of [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[]) {
-          if (d >= today && (!nextDate || d < nextDate)) nextDate = d;
-        }
-      }
-
-      setMetrics({ explorers, trails: treks.length, upcoming: upcomingTreks.length, nextDate });
+      setMetrics({
+        explorers: Number(explorerRes.data ?? 0),
+        trails: treks.length,
+        upcoming: upcomingTreks.length,
+        nextDate,
+      });
     })();
     return () => { cancelled = true; };
-  }, [retryKey]);
+  }, []);
 
-  if (loadFailed) {
-    return (
-      <section className="border-y border-border bg-muted/40 py-8" role="alert">
-        <div className="container flex flex-wrap items-center justify-center gap-3 text-center text-sm text-muted-foreground">
-          <span>Live trip numbers are temporarily unavailable.</span>
-          <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="font-semibold text-accent underline underline-offset-2">Try again</button>
-        </div>
-      </section>
-    );
-  }
+  if (!metrics || (metrics.explorers === 0 && metrics.trails === 0 && metrics.upcoming === 0)) return null;
 
-  if (!metrics || (metrics.explorers === 0 && metrics.trails === 0 && metrics.upcoming === 0)) {
-    return null;
-  }
-
-  // Honesty rule: a "0+ explorers" tile actively damages trust, so it is only
-  // rendered when the database can prove a real number.
   const items = [
     ...(metrics.explorers > 0
-      ? [{ icon: Footprints, value: metrics.explorers, suffix: "+", label: "Explorers guided" }]
+      ? [{ value: `${metrics.explorers.toLocaleString("en-IN")}+`, label: "Explorers guided" }]
       : []),
-    { icon: Mountain, value: metrics.trails, suffix: "", label: "Adventures offered" },
-    { icon: Compass, value: metrics.upcoming, suffix: "", label: "Upcoming adventures" },
+    ...(metrics.trails > 0 ? [{ value: metrics.trails.toLocaleString("en-IN"), label: "Adventures offered" }] : []),
+    ...(metrics.upcoming > 0 ? [{ value: metrics.upcoming.toLocaleString("en-IN"), label: "Upcoming now" }] : []),
+    ...(metrics.nextDate ? [{ value: fmtDate(metrics.nextDate), label: "Next trail out" }] : []),
   ];
 
   return (
-    <section className="bg-primary text-primary-foreground py-14 md:py-16 border-y border-primary-foreground/10">
-      <div className="container">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 items-center">
-          {items.map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="text-center px-2">
-                <Icon className="w-5 h-5 text-gold mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
-                <p className="font-display font-bold text-3xl md:text-4xl leading-none">
-                  {s.value.toLocaleString("en-IN")}
-                  <span className="text-gold">{s.suffix}</span>
-                </p>
-                <p className="mt-2 text-primary-foreground/70 text-xs md:text-sm font-medium tracking-wide">{s.label}</p>
-              </div>
-            );
-          })}
-          {metrics.nextDate ? (
-            <div className="text-center px-2">
-              <CalendarDays className="w-5 h-5 text-gold mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
-              <p className="font-display font-bold text-3xl md:text-4xl leading-none text-gold">
-                {fmtDate(metrics.nextDate)}
-              </p>
-              <p className="mt-2 text-primary-foreground/70 text-xs md:text-sm font-medium tracking-wide">Next trail out</p>
-            </div>
-          ) : (
-            <div className="text-center px-2">
-              <Compass className="w-5 h-5 text-gold mx-auto mb-3" strokeWidth={2} aria-hidden="true" />
-              <p className="font-display font-bold text-3xl md:text-4xl leading-none">—</p>
-              <p className="mt-2 text-primary-foreground/70 text-xs md:text-sm font-medium tracking-wide">Next dates coming soon</p>
-            </div>
-          )}
+    <dl aria-label="Live E2 Trails statistics" className="mt-10 grid grid-cols-2 border-y border-charcoal-foreground/15 sm:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="flex flex-col px-3 py-5 text-center sm:border-l sm:first:border-l-0 sm:border-charcoal-foreground/15">
+          <dt className="order-2 mt-2 text-xs font-medium text-charcoal-foreground/65">{item.label}</dt>
+          <dd className="order-1 font-display text-2xl font-bold leading-none text-gold md:text-3xl">{item.value}</dd>
         </div>
-      </div>
-    </section>
+      ))}
+    </dl>
   );
 }

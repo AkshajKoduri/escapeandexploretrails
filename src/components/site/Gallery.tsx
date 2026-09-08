@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Instagram, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,6 @@ import g7 from "@/assets/gallery-7-960.webp";
 import g7Small from "@/assets/gallery-7-480.webp";
 
 type Category = "Hike" | "Cycling Ride" | "Monsoon Trek" | "Bike Ride" | "General";
-type FilterType = "All" | Category;
 
 type GalleryItem = {
   id: string;
@@ -52,17 +51,8 @@ const FALLBACK_ITEMS: GalleryItem[] = [
   { id: "static-7", url: g7, srcSet: `${g7Small} 480w, ${g7} 960w`, width: 960, height: 565, alt: "Adventure trail moment with E2 Trails", category: "General" },
 ];
 
-const FILTERS: { key: FilterType; label: string }[] = [
-  { key: "All", label: "All" },
-  { key: "Hike", label: "Hikes" },
-  { key: "Cycling Ride", label: "Cycling Rides" },
-  { key: "Bike Ride", label: "Bike Rides" },
-  { key: "Monsoon Trek", label: "Monsoon Treks" },
-];
-
 export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>(FALLBACK_ITEMS);
-  const [filter, setFilter] = useState<FilterType>("All");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogWasOpenRef = useRef(false);
@@ -100,10 +90,7 @@ export default function Gallery() {
     })();
   }, []);
 
-  const visible = useMemo(
-    () => (filter === "All" ? items : items.filter((i) => i.category === filter)),
-    [items, filter],
-  );
+  const visible = items.slice(0, 5);
 
   const open = activeIndex !== null;
   const active = activeIndex !== null ? visible[activeIndex] : null;
@@ -121,17 +108,14 @@ export default function Gallery() {
     return () => cancelAnimationFrame(frame);
   }, [open]);
 
-  /** Editorial layout: index 0 gets a large feature cell, then a rhythm of shapes. */
+  /** Four images on mobile; one additional frame completes the desktop mosaic. */
   const cellClass = (i: number) => {
-    if (i === 0) return "col-span-2 row-span-2 aspect-square md:aspect-auto";
-    if (i % 5 === 1) return "aspect-[4/3]";
-    if (i % 5 === 2) return "aspect-square";
-    if (i % 5 === 3) return "aspect-[3/4]";
-    return "aspect-[4/3]";
+    if (i === 0) return "aspect-square md:col-span-2 md:row-span-2 md:aspect-auto";
+    return "aspect-square md:aspect-auto";
   };
 
   return (
-    <section id="gallery" className="section-lg bg-muted/30">
+    <section id="gallery" className="bg-muted/30 py-14 md:py-20 lg:py-24">
       <div className="container">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
@@ -140,10 +124,7 @@ export default function Gallery() {
               Moments on
               <span className="font-script text-accent"> the trail</span>
             </h2>
-            <p className="editorial-lead">
-              Real frames from real outings — the sunrise summits, the bonfire evenings and the rides
-              home through city lights.
-            </p>
+            <p className="editorial-lead">Real frames from real outings, shared by the people who were there.</p>
           </div>
           <a
             href="https://instagram.com/e2trails.in"
@@ -156,27 +137,10 @@ export default function Gallery() {
           </a>
         </div>
 
-        <div className="mt-10 flex flex-wrap gap-2">
-          {FILTERS.map((f) => {
-            const active = filter === f.key;
-            return (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => { setFilter(f.key); setActiveIndex(null); }}
-                aria-pressed={active}
-                className={cn("filter-pill", active ? "filter-pill-active" : "filter-pill-idle")}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-
         {visible.length === 0 ? (
-          <p className="mt-14 text-center text-muted-foreground">No photos in this category yet.</p>
+          <p className="mt-10 text-center text-muted-foreground">New trail photographs are coming soon.</p>
         ) : (
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-4 auto-rows-[minmax(140px,auto)] md:auto-rows-[minmax(180px,auto)] gap-3 md:gap-4">
+          <div className="mt-8 grid grid-cols-2 gap-3 md:auto-rows-[200px] md:grid-cols-4 md:gap-4">
             {visible.map((img, i) => (
               <button
                 type="button"
@@ -189,6 +153,7 @@ export default function Gallery() {
                 className={cn(
                   "reveal group relative overflow-hidden rounded-lg cursor-pointer bg-muted",
                   cellClass(i),
+                  i === 4 && "hidden md:block",
                 )}
                 style={{ transitionDelay: `${(i % 6) * 50}ms` }}
               >

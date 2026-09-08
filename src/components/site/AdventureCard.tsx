@@ -8,7 +8,17 @@ import { DIFFICULTY_STYLES, EVENT_TYPE_LABELS, hasValue, inr } from "@/lib/treks
  * Editorial adventure card. Dates, price and availability are always real
  * (from the DB) — we never fabricate seat counts.
  */
-export default function AdventureCard({ adventure, priority = false }: { adventure: Adventure; priority?: boolean }) {
+export default function AdventureCard({
+  adventure,
+  priority = false,
+  compact = false,
+  wide = false,
+}: {
+  adventure: Adventure;
+  priority?: boolean;
+  compact?: boolean;
+  wide?: boolean;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const price = adventure.startingPrice ?? (adventure.price > 0 ? adventure.price : null);
   const location = adventure.destination || adventure.location || adventure.region || "Hyderabad";
@@ -21,8 +31,8 @@ export default function AdventureCard({ adventure, priority = false }: { adventu
       className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       aria-label={`View ${adventure.name}`}
     >
-      <article className="relative h-full overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col">
-        <div className="relative aspect-[4/5] sm:aspect-[4/5] overflow-hidden bg-muted">
+      <article className={`relative h-full overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col ${wide ? "md:grid md:h-[380px] md:min-h-0 md:grid-cols-[1.15fr_0.85fr]" : ""}`}>
+        <div className={`relative overflow-hidden bg-muted ${compact ? "aspect-[4/3]" : "aspect-[4/5]"} ${wide ? "md:h-full md:aspect-auto" : ""}`}>
           {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
@@ -72,12 +82,12 @@ export default function AdventureCard({ adventure, priority = false }: { adventu
           )}
         </div>
 
-        <div className="flex flex-col flex-1 gap-3 p-5 text-charcoal-foreground bg-charcoal">
+        <div className={`flex flex-1 flex-col text-charcoal-foreground bg-charcoal ${compact ? "gap-2.5 p-4" : "gap-3 p-5"}`}>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-charcoal-foreground/60">
             {EVENT_TYPE_LABELS[adventure.eventType]}
             {adventure.trekCategory ? ` · ${adventure.trekCategory}` : ""}
           </p>
-          <h3 className="font-display font-bold text-xl leading-snug">{adventure.name}</h3>
+          <h3 className={`font-display font-bold leading-snug ${compact ? "text-lg" : "text-xl"}`}>{adventure.name}</h3>
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-charcoal-foreground/75">
             {hasValue(adventure.dur) && (
@@ -111,7 +121,7 @@ export default function AdventureCard({ adventure, priority = false }: { adventu
         </div>
 
         {!adventure.isFull && adventure.seatsRemaining > 0 && adventure.seatsRemaining <= 8 && (
-          <div className="px-5 py-2 border-t border-charcoal-foreground/10 bg-charcoal">
+          <div className={`${compact ? "px-4" : "px-5"} py-2 border-t border-charcoal-foreground/10 bg-charcoal`}>
             <p className="text-[11px] font-semibold text-gold">
               {adventure.seatsRemaining} spot{adventure.seatsRemaining > 1 ? "s" : ""} left
             </p>

@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
 import Navbar from "@/components/site/Navbar";
 import Hero from "@/components/site/Hero";
-import Stats from "@/components/site/Stats";
 import FeaturedAdventure from "@/components/site/FeaturedAdventure";
 import { useReveal } from "@/hooks/useReveal";
 import { useSeo } from "@/hooks/useSeo";
@@ -24,8 +23,6 @@ const Index = () => {
       <Hero />
       {/* 2. The real product — next departure with date, price, availability. */}
       <FeaturedAdventure />
-      {/* 3. Proof the business can stand behind (no invented numbers). */}
-      <Stats />
       {/* Below-the-fold editorial sections load in their own chunk without
           delaying the hero or the next-departure content. */}
       <Suspense fallback={null}>
