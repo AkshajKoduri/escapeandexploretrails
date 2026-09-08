@@ -53,7 +53,7 @@ export default function Safety() {
       />
       <div className="container relative">
         <div className="grid lg:grid-cols-[1.1fr_1fr] gap-12 lg:gap-20 items-start">
-          <div className="sticky top-28">
+          <div className="lg:sticky lg:top-28">
             <p className="kicker kicker-light">Adventure without the guesswork</p>
             <h2 className="editorial-title editorial-title-light mt-4">
               Safety is
