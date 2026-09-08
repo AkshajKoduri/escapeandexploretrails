@@ -77,7 +77,7 @@ export default function FeaturedAdventure() {
   const visible = adventures.slice(0, 4);
 
   return (
-    <section id="featured" className="border-b border-border bg-background py-14 md:py-20 lg:py-24">
+    <section id="featured" className="border-b border-border bg-background pt-6 pb-14 md:pt-8 md:pb-20 lg:pb-24">
       <div className="container">
         <div className="flex items-end justify-between gap-6">
           <div className="max-w-2xl">
