@@ -63,11 +63,14 @@ export default function Stats() {
   ];
 
   return (
-    <dl aria-label="Live E2 Trails statistics" className="mt-10 grid grid-cols-2 border-y border-charcoal-foreground/15 sm:grid-cols-4">
-      {items.map((item) => (
-        <div key={item.label} className="flex flex-col px-3 py-5 text-center sm:border-l sm:first:border-l-0 sm:border-charcoal-foreground/15">
+    <dl aria-label="Live E2 Trails statistics" className="mt-8 grid grid-cols-3 border-y border-charcoal-foreground/15 sm:mt-10 sm:grid-cols-4">
+      {items.map((item, index) => (
+        <div
+          key={item.label}
+          className={`${index === 3 ? "hidden sm:flex" : "flex"} flex-col px-2 py-4 text-center sm:border-l sm:px-3 sm:py-5 sm:first:border-l-0 sm:border-charcoal-foreground/15`}
+        >
           <dt className="order-2 mt-2 text-xs font-medium text-charcoal-foreground/65">{item.label}</dt>
-          <dd className="order-1 font-display text-2xl font-bold leading-none text-gold md:text-3xl">{item.value}</dd>
+          <dd className="order-1 font-display text-xl font-bold leading-none text-gold sm:text-2xl md:text-3xl">{item.value}</dd>
         </div>
       ))}
     </dl>
