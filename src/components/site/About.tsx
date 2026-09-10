@@ -1,24 +1,6 @@
-import { MapPinned, ShieldCheck, Users } from "lucide-react";
 import Stats from "@/components/site/Stats";
+import WhyUs from "@/components/site/WhyUs";
 import founderAshok from "@/assets/founder-ashok.webp";
-
-const assurances = [
-  {
-    icon: MapPinned,
-    title: "Routes we know",
-    description: "Clear difficulty and trip details before you sign up.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Prepared leadership",
-    description: "Experienced leaders, first-aid kits and contingency plans.",
-  },
-  {
-    icon: Users,
-    title: "Small, managed groups",
-    description: "More attention for first-timers and room to look out for one another.",
-  },
-];
 
 /** A compact founder-led story and trust section. */
 export default function About() {
@@ -65,20 +47,7 @@ export default function About() {
               On one of Ashok&apos;s first climbs, strangers beside him cheered, encouraged and refused to let him quit. That moment became E2 Trails: a Hyderabad trail community shaped by honest trip details, prepared routes and leaders who keep the group together.
             </p>
 
-            <ul id="safety" className="mt-5 grid gap-3 border-y border-charcoal-foreground/15 py-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-1 lg:grid-cols-3">
-              {assurances.map((assurance) => {
-                const Icon = assurance.icon;
-                return (
-                  <li key={assurance.title} className="flex gap-3">
-                    <Icon className="mt-0.5 h-5 w-5 shrink-0 text-accent-light" strokeWidth={1.75} aria-hidden="true" />
-                    <div>
-                      <h3 className="font-display text-base font-bold">{assurance.title}</h3>
-                      <p className="mt-1 text-sm leading-relaxed text-charcoal-foreground/68">{assurance.description}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <WhyUs />
           </div>
         </div>
 

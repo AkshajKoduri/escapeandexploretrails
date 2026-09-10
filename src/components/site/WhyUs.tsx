@@ -1,79 +1,43 @@
-import { ShieldCheck, Map, Users, ArrowRight } from "lucide-react";
+import { MapPinned, ShieldCheck, Users } from "lucide-react";
 
 const pillars = [
   {
     icon: ShieldCheck,
-    num: "01",
     title: "Safety first",
-    desc: "Certified guides, first-aid kits, and clear emergency protocols on every outing. Adventure is only good when everyone comes home.",
+    description: "Prepared leaders, first-aid kits and clear contingency plans.",
   },
   {
-    icon: Map,
-    num: "02",
+    icon: MapPinned,
     title: "Local knowledge",
-    desc: "From Nallamala forests to Deccan forts — routes handpicked from trails we know personally, not picked off a map.",
+    description: "Routes we know, with honest difficulty and trip details.",
   },
   {
     icon: Users,
-    num: "03",
     title: "Real community",
-    desc: "Small groups built for real friendships, shared effort, and lasting memories. You're community, not a customer.",
+    description: "Small groups that welcome first-timers and look out for one another.",
   },
 ];
 
 export default function WhyUs() {
   return (
-    <section id="why-e2" className="section bg-muted/40">
-      <div className="container max-w-6xl">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-          <div className="lg:col-span-5 lg:sticky lg:top-28">
-            <p className="kicker">Why E2 Trails</p>
-            <h2 className="editorial-title mt-3">
-              Not just another
-              <br />
-              <span className="font-script text-accent">trip operator.</span>
-            </h2>
-            <p className="editorial-lead">
-              Anyone can put a date on a trail. We build adventures around the people on them —
-              thoughtfully curated routes, honest trip information, and guides who treat every
-              first-timer like a future regular.
-            </p>
-            {/* Same-page native anchor: About now sits directly above WhyUs on
-                the homepage, so a router <Link to="/#story"> would reload/remount
-                instead of scrolling. */}
-            <a href="#story" className="btn-outline mt-8">
-              Meet the team
-              <ArrowRight className="w-4 h-4" aria-hidden="true" />
-            </a>
-          </div>
-
-          <div className="lg:col-span-7 divide-y divide-border border-y border-border">
-            {pillars.map((p, i) => {
-              const Icon = p.icon;
-              return (
-                <div
-                  key={p.num}
-                  className="reveal py-8 md:py-10 grid sm:grid-cols-[auto_1fr] gap-6 items-start"
-                  style={{ transitionDelay: `${i * 80}ms` }}
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="font-display text-4xl font-bold text-border select-none" aria-hidden="true">
-                      {p.num}
-                    </span>
-                    <span className="w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-                      <Icon className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-xl md:text-2xl text-primary">{p.title}</h3>
-                    <p className="mt-2 text-muted-foreground leading-relaxed max-w-xl">{p.desc}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </section>
+    <div id="why-e2" className="mt-5 border-y border-charcoal-foreground/15 py-4 sm:py-5" aria-labelledby="why-e2-heading">
+      <h3 id="why-e2-heading" className="kicker kicker-light">
+        Why E2 Trails
+      </h3>
+      <ul className="mt-4 grid gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-1 lg:grid-cols-3">
+        {pillars.map((pillar) => {
+          const Icon = pillar.icon;
+          return (
+            <li key={pillar.title} className="flex gap-3">
+              <Icon className="mt-0.5 h-5 w-5 shrink-0 text-accent-light" strokeWidth={1.75} aria-hidden="true" />
+              <div>
+                <h4 className="font-display text-base font-bold text-charcoal-foreground">{pillar.title}</h4>
+                <p className="mt-1 text-sm leading-relaxed text-charcoal-foreground/72">{pillar.description}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
-}
+}
