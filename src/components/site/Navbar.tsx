@@ -76,7 +76,7 @@ export default function Navbar() {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         solid
           ? "bg-charcoal/95 backdrop-blur-md border-b border-charcoal-foreground/10 py-3"
-          : "bg-gradient-to-b from-charcoal/50 to-transparent py-5",
+          : "bg-gradient-to-b from-charcoal/95 via-charcoal/85 to-charcoal/70 backdrop-blur-sm py-4",
       )}
     >
       <a
@@ -95,7 +95,7 @@ export default function Navbar() {
             className="w-10 h-10 rounded-full bg-white object-contain p-0.5 shadow-card"
           />
           <span className="font-display font-bold text-[1.15rem] tracking-wide leading-none">
-            E2 <span className="text-accent-light">TRAILS</span>
+            E2 <span className={solid ? "text-accent-light" : "text-charcoal-foreground"}>TRAILS</span>
           </span>
         </Link>
 

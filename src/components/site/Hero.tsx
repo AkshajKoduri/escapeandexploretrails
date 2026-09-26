@@ -61,10 +61,14 @@ export default function Hero() {
         </div>
       </div>
       <div className="absolute inset-0 bg-gradient-hero" aria-hidden="true" />
+      <div
+        className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-charcoal/60 via-charcoal/40 to-transparent"
+        aria-hidden="true"
+      />
 
       <div className="relative z-10 h-full container flex flex-col justify-end pb-24 sm:pb-28 md:pb-32 text-charcoal-foreground">
         <div className="max-w-[46rem]">
-          <p className="kicker kicker-light reveal">
+          <p className="kicker text-charcoal-foreground before:bg-accent before:opacity-100 text-shadow-strong reveal">
             Escape &amp; Explore · Hyderabad
           </p>
 
