@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Phone, ChevronDown, ArrowRight } from "lucide-react";
@@ -11,8 +11,13 @@ const ADVENTURE_LINKS = [
   { label: "Hyderabad Trails", href: "/hyderabad-trails", note: "Hikes & rides near home" },
 ];
 
+const SCROLL_THRESHOLD = 40;
+
+const isPastScrollThreshold = () =>
+  typeof window !== "undefined" && window.scrollY > SCROLL_THRESHOLD;
+
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(isPastScrollThreshold);
   const [open, setOpen] = useState(false);
   const [adventuresOpen, setAdventuresOpen] = useState(false);
   const adventuresRef = useRef<HTMLDivElement>(null);
@@ -26,8 +31,8 @@ export default function Navbar() {
   const journalActive = pathname === "/trail-log";
   const linkIsActive = (href: string) => href === "/adventures" ? pathname.startsWith("/adventures") : pathname === href;
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+  useLayoutEffect(() => {
+    const onScroll = () => setScrolled(isPastScrollThreshold());
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -73,10 +78,10 @@ export default function Navbar() {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,backdrop-filter] duration-300",
         solid
           ? "bg-charcoal/95 backdrop-blur-md border-b border-charcoal-foreground/10 py-3"
-          : "bg-gradient-to-b from-charcoal/95 via-charcoal/85 to-charcoal/70 backdrop-blur-sm py-4",
+          : "bg-charcoal/70 bg-gradient-to-b from-charcoal/[0.83] via-charcoal/50 to-transparent backdrop-blur-sm py-4",
       )}
     >
       <a
@@ -95,7 +100,15 @@ export default function Navbar() {
             className="w-10 h-10 rounded-full bg-white object-contain p-0.5 shadow-card"
           />
           <span className="font-display font-bold text-[1.15rem] tracking-wide leading-none">
-            E2 <span className={solid ? "text-accent-light" : "text-charcoal-foreground"}>TRAILS</span>
+            E2{" "}
+            <span
+              className={cn(
+                "transition-colors duration-300",
+                solid ? "text-accent-light" : "text-charcoal-foreground",
+              )}
+            >
+              TRAILS
+            </span>
           </span>
         </Link>
 
