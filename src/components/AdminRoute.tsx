@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
-import { adminApi, clearAdminPassword, isAdminSession, setAdminPassword } from "@/lib/adminApi";
+import { adminApi, adminLogin, clearAdminPassword, isAdminSession } from "@/lib/adminApi";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
     if (busy) return;
     setBusy(true);
     try {
-      setAdminPassword(pwd);
+      await adminLogin(pwd);
       await adminApi("verify");
       setOk(true);
     } catch (err: any) {
