@@ -3,28 +3,65 @@ import { useNavigate } from "react-router-dom";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
-import { adminApi, adminLogin, clearAdminPassword, isAdminSession } from "@/lib/adminApi";
+import { adminApi, clearAdminSession, isAdminSession, loginAdmin } from "@/lib/adminApi";
 
 export default function AdminRoute({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const [ok, setOk] = useState<boolean>(() => isAdminSession());
+  const [ok, setOk] = useState(false);
+  const [checking, setChecking] = useState(() => isAdminSession());
   const [pwd, setPwd] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { document.title = "Admin — E2 Trails"; }, []);
+  useEffect(() => {
+    document.title = "Admin — E2 Trails";
+    if (!isAdminSession()) {
+      setChecking(false);
+      return;
+    }
+
+    let active = true;
+    adminApi("verify")
+      .then(() => {
+        if (active) setOk(true);
+      })
+      .catch(() => {
+        clearAdminSession();
+      })
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (ok) return <>{children}</>;
+
+  if (checking) {
+    return (
+      <main
+        aria-busy="true"
+        className="min-h-screen bg-charcoal text-charcoal-foreground grid place-items-center px-4"
+      >
+        <p role="status" className="text-sm text-charcoal-foreground/70">
+          Verifying admin session…
+        </p>
+      </main>
+    );
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     try {
-      await adminLogin(pwd);
-      await adminApi("verify");
+      await loginAdmin(pwd);
+      setPwd("");
       setOk(true);
-    } catch (err: any) {
-      clearAdminPassword();
+    } catch {
+      setPwd("");
+      clearAdminSession();
       toast.error("Access denied.");
       navigate("/", { replace: true });
     } finally {
@@ -74,4 +111,4 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
       </form>
     </main>
   );
-}
+}

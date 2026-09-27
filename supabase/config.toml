@@ -1,7 +1,10 @@
-project_id = "ciyvzklkslygizjnbjxw"
+project_id = "rpxbufmqncctrrdobzkr"
 
 [functions.admin-api]
 verify_jwt = false
 
 [functions.itinerary-signed-url]
+verify_jwt = false
+
+[functions.public-api]
 verify_jwt = false

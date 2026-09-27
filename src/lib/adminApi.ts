@@ -1,36 +1,63 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const TOKEN_KEY = "e2_admin_token";
+const TOKEN_EXPIRY_KEY = "e2_admin_token_expires_at";
+const LEGACY_PASSWORD_KEY = "e2_admin_pwd";
 
-function setAdminToken(token: string) {
+type AdminLoginResponse = {
+  token: string;
+  expiresAt: number;
+};
+
+function storeAdminSession({ token, expiresAt }: AdminLoginResponse) {
+  sessionStorage.removeItem(LEGACY_PASSWORD_KEY);
   sessionStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(TOKEN_EXPIRY_KEY, String(expiresAt));
 }
 
-export function clearAdminPassword() {
+export function clearAdminSession() {
   sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem("e2_admin_pwd");
+  sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
+  sessionStorage.removeItem(LEGACY_PASSWORD_KEY);
 }
 
-function getAdminToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY);
+export function getAdminToken(): string | null {
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  const expiresAt = Number(sessionStorage.getItem(TOKEN_EXPIRY_KEY));
+  if (!token || !Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+    clearAdminSession();
+    return null;
+  }
+  return token;
 }
 
 export function isAdminSession(): boolean {
   return !!getAdminToken();
 }
 
-export async function adminLogin(password: string): Promise<void> {
+export async function loginAdmin(password: string): Promise<void> {
+  clearAdminSession();
   const { data, error } = await supabase.functions.invoke("admin-api", {
     body: { action: "login", payload: { password } },
   });
   if (error) throw new Error(error.message || "Admin login failed");
-  if (!data || typeof data.token !== "string") {
-    throw new Error(String(data?.error || "Admin login failed"));
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String(data.error));
   }
-  setAdminToken(data.token);
+  if (
+    !data ||
+    typeof data !== "object" ||
+    typeof data.token !== "string" ||
+    !data.token ||
+    typeof data.expiresAt !== "number" ||
+    !Number.isFinite(data.expiresAt)
+  ) {
+    throw new Error("Invalid admin login response");
+  }
+  storeAdminSession(data as AdminLoginResponse);
 }
 
-export async function adminApi<T = any>(action: string, payload?: any): Promise<T> {
+export async function adminApi<T = unknown>(action: string, payload?: unknown): Promise<T> {
   const token = getAdminToken();
   if (!token) throw new Error("Not authenticated");
   const { data, error } = await supabase.functions.invoke("admin-api", {
@@ -39,7 +66,9 @@ export async function adminApi<T = any>(action: string, payload?: any): Promise<
   });
   if (error) {
     // Session likely bad — clear so the user is re-prompted.
-    if ((error as any)?.context?.status === 401) clearAdminPassword();
+    if ((error as { context?: { status?: number } })?.context?.status === 401) {
+      clearAdminSession();
+    }
     throw new Error(error.message || "Admin request failed");
   }
   if (data && typeof data === "object" && "error" in data && data.error) {

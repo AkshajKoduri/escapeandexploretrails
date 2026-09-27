@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV, type AdminModule } from "@/lib/admin";
-import { clearAdminPassword } from "@/lib/adminApi";
+import { clearAdminSession } from "@/lib/adminApi";
 import logo from "@/assets/logo.png";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -92,7 +92,7 @@ export default function AdminShell({
           </a>
           <button
             type="button"
-            onClick={() => { clearAdminPassword(); window.location.href = "/"; }}
+            onClick={() => { clearAdminSession(); window.location.href = "/"; }}
             className="w-full flex items-center gap-3 min-h-[44px] px-4 rounded-lg text-sm font-medium text-charcoal-foreground/70 hover:bg-destructive/20 hover:text-destructive transition-colors"
           >
             <LogOut className="w-4 h-4" aria-hidden="true" /> Log out
