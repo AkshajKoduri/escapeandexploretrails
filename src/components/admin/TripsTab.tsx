@@ -31,6 +31,8 @@ import { fmtDate, maskAadhaar } from "@/lib/treks";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import TripDetailsEditor from "@/components/admin/TripDetailsEditor";
+import { normalizeTripDetails, serializeTripDetails } from "@/lib/tripDetails";
 
 /* ================================================================== */
 /* Trips tab                                                           */
@@ -123,6 +125,7 @@ export default function TripsTab({
         duration_text: t.duration_text,
         stay_location: t.stay_location,
         field_labels: t.field_labels,
+        trip_details: serializeTripDetails(normalizeTripDetails(t.trip_details, t.instructions)),
         is_draft: true,
       };
       await adminApi("insertTrek", { row });
@@ -551,7 +554,10 @@ function TripForm({
   currentSeatsTaken: number;
   onDone: () => void;
 }) {
-  const [f, setF] = useState<Trek>(initial);
+  const [f, setF] = useState<Trek>(() => ({
+    ...initial,
+    trip_details: normalizeTripDetails(initial.trip_details, initial.instructions),
+  }));
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [itineraryFile, setItineraryFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -651,6 +657,7 @@ function TripForm({
         duration_text: f.duration_text?.trim() || null,
         stay_location: f.stay_location?.trim() || null,
         field_labels: f.field_labels ?? {},
+        trip_details: serializeTripDetails(f.trip_details),
       };
 
       if (isEdit) {
@@ -775,7 +782,8 @@ function TripForm({
       </FF>
 
       <FF label={isOutstation ? "Description" : "Description *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
-      <FF label="Special instructions (what to carry, wear etc.)" full><textarea rows={2} className={inp} value={f.instructions ?? ""} onChange={(e) => set({ instructions: e.target.value })} placeholder="Carry 2L water, sturdy shoes..." /></FF>
+
+      <TripDetailsEditor value={f.trip_details} onChange={(tripDetails) => set({ trip_details: tripDetails })} />
 
       {isOutstation && (
         <div className="md:col-span-2 rounded-xl border border-border bg-muted/20 p-4 space-y-3">

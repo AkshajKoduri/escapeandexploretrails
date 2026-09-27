@@ -34,7 +34,40 @@ export const TREK_COLUMNS = [
   "altitude", "region", "elevation_gain", "mountain_range", "base_village", "duration_text",
   "stay_location", "field_labels", "additional_dates", "starting_price", "starting_price_label",
   "top_end_price", "top_end_price_label", "itinerary_days", "trek_category", "seats_taken",
+  "trip_details",
 ] as const;
+
+const detailId = z.string().trim().min(1).max(120);
+const detailText = z.string().trim().max(2000);
+
+const detailListItem = z.object({
+  id: detailId,
+  text: detailText,
+}).strict();
+
+const tripPackage = z.object({
+  id: detailId,
+  name: z.string().trim().max(200),
+  price: z.string().trim().max(120),
+  details: detailText,
+}).strict();
+
+const cancellationPolicyRow = z.object({
+  id: detailId,
+  window: z.string().trim().max(200),
+  charge: z.string().trim().max(500),
+}).strict();
+
+export const tripDetailsPayload = z.object({
+  inclusions: z.array(detailListItem).max(50),
+  exclusions: z.array(detailListItem).max(50),
+  packages: z.array(tripPackage).max(25),
+  paymentPolicy: z.array(detailListItem).max(50),
+  thingsToCarry: z.array(detailListItem).max(50),
+  thingsToKeepInMind: z.array(detailListItem).max(50).default([]),
+  cancellationPolicy: z.array(cancellationPolicyRow).max(25),
+  cancellationNotes: z.string().trim().max(5000).default(""),
+}).strict();
 
 export const BOOKING_COLUMNS = [
   "trek_id", "trek_name", "primary_name", "primary_age", "primary_gender", "primary_phone",

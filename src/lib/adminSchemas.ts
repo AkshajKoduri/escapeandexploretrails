@@ -6,6 +6,18 @@ import { z } from "zod";
  */
 
 const optionalUrl = z.string().trim().url("Enter a valid URL").max(500).optional().or(z.literal(""));
+const detailListItem = z.object({ id: z.string().min(1), text: z.string().trim().max(2000) });
+const tripPackage = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().max(200),
+  price: z.string().trim().max(120),
+  details: z.string().trim().max(2000),
+});
+const cancellationPolicyRow = z.object({
+  id: z.string().min(1),
+  window: z.string().trim().max(200),
+  charge: z.string().trim().max(500),
+});
 
 export const tripSchema = z.object({
   name: z.string().trim().min(2, "Trip name is required").max(150, "Trip name is too long"),
@@ -18,6 +30,16 @@ export const tripSchema = z.object({
   instructions: z.string().trim().max(5000, "Instructions are too long").optional().or(z.literal("")),
   album_url: optionalUrl,
   itinerary_url: optionalUrl,
+  trip_details: z.object({
+    inclusions: z.array(detailListItem).max(50),
+    exclusions: z.array(detailListItem).max(50),
+    packages: z.array(tripPackage).max(25),
+    paymentPolicy: z.array(detailListItem).max(50),
+    thingsToCarry: z.array(detailListItem).max(50),
+    thingsToKeepInMind: z.array(detailListItem).max(50),
+    cancellationPolicy: z.array(cancellationPolicyRow).max(25),
+    cancellationNotes: z.string().trim().max(5000),
+  }),
 });
 
 export const manualBookingSchema = z.object({

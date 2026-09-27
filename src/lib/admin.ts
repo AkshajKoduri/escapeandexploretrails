@@ -1,3 +1,5 @@
+import { createDefaultTripDetails, type TripDetails } from "@/lib/tripDetails";
+
 export type Trek = {
   id: string;
   name: string;
@@ -38,6 +40,7 @@ export type Trek = {
   duration_text: string | null;
   stay_location: string | null;
   field_labels: Record<string, string> | null;
+  trip_details: TripDetails;
 };
 
 export type SeatStats = { trek_id: string; max_seats: number; seats_taken: number; seats_remaining: number };
@@ -81,6 +84,7 @@ export const emptyTrek: Partial<Trek> = {
   duration_text: "",
   stay_location: "",
   field_labels: {},
+  trip_details: createDefaultTripDetails(),
 };
 
 export const OUTSTATION_EXTRA_FIELDS: {

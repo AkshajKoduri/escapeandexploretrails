@@ -29,6 +29,7 @@ import {
   whatsappLink,
 } from "@/lib/treks";
 import AdventureCard from "@/components/site/AdventureCard";
+import TripDetailsSection from "@/components/site/TripDetailsSection";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 import BookingForm from "@/components/booking/BookingForm";
@@ -352,13 +353,7 @@ export default function TripDetail() {
               </section>
             )}
 
-            {hasValue(adventure.instructions) && (
-              <section>
-                <p className="kicker">What to carry</p>
-                <h2 className="font-display font-bold text-2xl md:text-3xl text-primary mt-3">Pack right, enjoy more</h2>
-                <p className="mt-4 text-muted-foreground leading-relaxed whitespace-pre-wrap">{adventure.instructions}</p>
-              </section>
-            )}
+            <TripDetailsSection details={adventure.tripDetails} />
 
             {(hasValue(adventure.meetingPoint) || hasValue(adventure.trekTime)) && (
               <section>

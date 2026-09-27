@@ -16,6 +16,7 @@ import {
   reorderPayload,
   TEAM_COLUMNS,
   TREK_COLUMNS,
+  tripDetailsPayload,
   uploadPayload,
   z,
 } from "../_shared/validation.ts";
@@ -165,6 +166,7 @@ Deno.serve(async (req) => {
       // ---- Treks ----
       case "insertTrek": {
         const row = pickAllowed(payload?.row, TREK_COLUMNS) as Record<string, unknown>;
+        if ("trip_details" in row) row.trip_details = parse(tripDetailsPayload, row.trip_details);
         if (!row.name || !row.event_type) return json({ error: "Trip name and event type are required" }, 400);
         const { data, error } = await supabase
           .from("upcoming_treks")
@@ -176,7 +178,8 @@ Deno.serve(async (req) => {
       }
       case "updateTrek": {
         const { id, patch } = parse(patchPayload, payload);
-        const safe = pickAllowed(patch, TREK_COLUMNS);
+        const safe = pickAllowed(patch, TREK_COLUMNS) as Record<string, unknown>;
+        if ("trip_details" in safe) safe.trip_details = parse(tripDetailsPayload, safe.trip_details);
         const { error } = await supabase.from("upcoming_treks").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });

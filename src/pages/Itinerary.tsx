@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Share2, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import TripDetailsSection from "@/components/site/TripDetailsSection";
+import type { Json } from "@/integrations/supabase/types";
+import { hasTripDetailsContent, normalizeTripDetails } from "@/lib/tripDetails";
 import { useSeo } from "@/hooks/useSeo";
 
 type Day = { title: string; description: string };
@@ -15,6 +18,8 @@ type TrekRow = {
   itinerary_days: Day[] | null;
   itinerary_file_path: string | null;
   itinerary_url: string | null;
+  instructions: string | null;
+  trip_details: Json | null;
 };
 
 export default function Itinerary() {
@@ -39,7 +44,7 @@ export default function Itinerary() {
       }
       const { data, error } = await supabase
         .from("upcoming_treks")
-        .select("id,name,image_url,itinerary_days,itinerary_file_path,itinerary_url")
+        .select("id,name,image_url,itinerary_days,itinerary_file_path,itinerary_url,instructions,trip_details")
         .eq("id", trekId)
         .maybeSingle();
       if (cancelled) return;
@@ -90,6 +95,11 @@ export default function Itinerary() {
   const hasDays = days.length > 0;
   const hasPdf = !!trek?.itinerary_file_path || !!trek?.itinerary_url;
   const pdfHref = trek?.itinerary_url || pdfUrl;
+  const tripDetails = useMemo(
+    () => normalizeTripDetails(trek?.trip_details, trek?.instructions),
+    [trek?.trip_details, trek?.instructions],
+  );
+  const hasTripDetails = hasTripDetailsContent(tripDetails);
 
   const share = async () => {
     const url = window.location.href;
@@ -144,7 +154,7 @@ export default function Itinerary() {
           </div>
         ) : !trek ? (
           <p className="text-muted-foreground text-center py-16">Trip not found.</p>
-        ) : !hasDays && !hasPdf ? (
+        ) : !hasDays && !hasPdf && !hasTripDetails ? (
           <p className="text-muted-foreground text-center py-16">Itinerary coming soon.</p>
         ) : (
           <>
@@ -224,6 +234,12 @@ export default function Itinerary() {
                 ) : (
                   <p className="text-muted-foreground text-center py-8">Loading PDF…</p>
                 )}
+              </div>
+            )}
+
+            {hasTripDetails && (
+              <div className="mt-12 border-t border-border pt-10">
+                <TripDetailsSection details={tripDetails} />
               </div>
             )}
           </>

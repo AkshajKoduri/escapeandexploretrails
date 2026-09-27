@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
+import { normalizeTripDetails, type TripDetails } from "@/lib/tripDetails";
 import ahobilam640 from "@/assets/trek-ahobilam-640.webp";
 import ahobilam1280 from "@/assets/trek-ahobilam-1280.webp";
 import ananthagiri640 from "@/assets/trek-ananthagiri-640.webp";
@@ -62,6 +63,7 @@ export type Adventure = {
   trekCategory: string | null;
   albumUrl: string | null;
   extras: AdventureExtra[];
+  tripDetails: TripDetails;
 };
 
 export type SeatStat = {
@@ -272,6 +274,7 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adv
     eventType: (t.event_type as EventType) ?? "Hike",
     trekCategory: t.trek_category ?? null,
     albumUrl: t.album_url ?? null,
+    tripDetails: normalizeTripDetails(t.trip_details, t.instructions),
     extras: OUTSTATION_FIELDS.map((f) => ({
       key: f.key,
       label: (typeof fieldLabels[f.key] === "string" ? fieldLabels[f.key] : f.label) as string,
