@@ -274,7 +274,7 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adv
     albumUrl: t.album_url ?? null,
     extras: OUTSTATION_FIELDS.map((f) => ({
       key: f.key,
-      label: typeof fieldLabels[f.key] === "string" ? fieldLabels[f.key] : f.label,
+      label: (typeof fieldLabels[f.key] === "string" ? fieldLabels[f.key] : f.label) as string,
       value: String(t[f.key] ?? ""),
     })).filter((x) => hasValue(x.value)),
   };
@@ -397,12 +397,19 @@ export async function submitBooking(
     };
   }
 
-  if (!data?.ok) {
-    const code = data?.code ?? "error";
+  const result = data as {
+    ok?: boolean;
+    code?: string;
+    remaining?: number;
+    booking_id?: string;
+  } | null;
+
+  if (!result?.ok) {
+    const code = result?.code ?? "error";
     let message =
       BOOKING_ERROR_MESSAGES[code] ?? "We couldn't complete your booking. Please try again.";
-    if (code === "sold_out" && typeof data?.remaining === "number") {
-      message = `Only ${Math.max(data.remaining, 0)} seat(s) left for this adventure.`;
+    if (code === "sold_out" && typeof result?.remaining === "number") {
+      message = `Only ${Math.max(result.remaining, 0)} seat(s) left for this adventure.`;
     }
     return { ok: false, message, code };
   }
@@ -410,5 +417,5 @@ export async function submitBooking(
   // A repeated submission carrying the same client_ref returns the original
   // booking (created: false) — treat it as success so a lost response or
   // retry after timeout can never create a duplicate.
-  return { ok: true, bookingId: data?.booking_id, code: data?.code };
+  return { ok: true, bookingId: result?.booking_id, code: result?.code };
 }
