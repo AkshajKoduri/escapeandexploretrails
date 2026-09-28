@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import BookingForm from "./BookingForm";
 import type { Adventure } from "@/lib/treks";
+import { createDefaultTripDetails } from "@/lib/tripDetails";
 
 // jsdom lacks a few browser APIs the form touches on error paths.
 if (!globalThis.requestAnimationFrame) {
@@ -65,10 +66,12 @@ function makeAdventure(overrides?: Partial<Adventure>): Adventure {
     maxSeats: 20,
     seatsTaken: 0,
     isFull: false,
+    departureAvailability: { "2026-09-05": 20, "2026-09-26": 20 },
     eventType: "Hike",
     trekCategory: null,
     albumUrl: null,
     extras: [],
+    tripDetails: createDefaultTripDetails(),
     ...overrides,
   };
 }
@@ -86,28 +89,28 @@ describe("BookingForm", () => {
     expect(firstDate).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("keeps member-name rows exactly in sync with the people stepper", async () => {
+  it("keeps full participant rows exactly in sync with the people stepper", async () => {
     render(<BookingForm adventure={makeAdventure()} />);
-    expect(screen.queryByPlaceholderText(/Traveller 2/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Traveller 2" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "More people" }));
     await waitFor(() =>
-      expect(screen.getByPlaceholderText(/Traveller 2/)).toBeInTheDocument(),
+      expect(screen.getByRole("group", { name: "Traveller 2" })).toBeInTheDocument(),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "More people" }));
     await waitFor(() =>
-      expect(screen.getByPlaceholderText(/Traveller 3/)).toBeInTheDocument(),
+      expect(screen.getByRole("group", { name: "Traveller 3" })).toBeInTheDocument(),
     );
 
     // Decrement back to one traveller — no stale member rows may remain.
     fireEvent.click(screen.getByRole("button", { name: "Fewer people" }));
     await waitFor(() =>
-      expect(screen.queryByPlaceholderText(/Traveller 3/)).not.toBeInTheDocument(),
+      expect(screen.queryByRole("group", { name: "Traveller 3" })).not.toBeInTheDocument(),
     );
     fireEvent.click(screen.getByRole("button", { name: "Fewer people" }));
     await waitFor(() =>
-      expect(screen.queryByPlaceholderText(/Traveller 2/)).not.toBeInTheDocument(),
+      expect(screen.queryByRole("group", { name: "Traveller 2" })).not.toBeInTheDocument(),
     );
   });
 
@@ -151,5 +154,47 @@ describe("BookingForm", () => {
       | undefined;
     expect(payload?.trekDate).toBe("2026-09-26");
     expect(payload?.clientRef).toBeTruthy();
+  });
+
+  it("requires an explicit departure for a multi-date trip", async () => {
+    render(<BookingForm adventure={makeAdventure()} />);
+    fireEvent.change(screen.getByLabelText(/Full name/), { target: { value: "Ravi Kumar" } });
+    fireEvent.change(screen.getByLabelText(/^Age/), { target: { value: "28" } });
+    fireEvent.change(screen.getByLabelText(/^Gender/), { target: { value: "Male" } });
+    fireEvent.change(screen.getByLabelText(/^Phone/), { target: { value: "9876543210" } });
+    fireEvent.click(screen.getByRole("button", { name: /booking request/i }));
+    expect(await screen.findByText("Choose a date first")).toBeInTheDocument();
+    expect(submitBookingMock).not.toHaveBeenCalled();
+  });
+
+  it("submits the selected package and complete additional participant details", async () => {
+    const details = createDefaultTripDetails();
+    details.packages = [
+      { id: "standard", name: "Standard", price: "", priceAmount: 2500, priceBasis: "per_person", currency: "INR", details: "Shared stay" },
+      { id: "comfort", name: "Comfort", price: "", priceAmount: 4000, priceBasis: "per_person", currency: "INR", details: "Private stay" },
+    ];
+    render(<BookingForm adventure={makeAdventure({ dates: ["2026-09-26"], allDates: ["2026-09-26"], tripDetails: details, departureAvailability: { "2026-09-26": 20 } })} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: /Comfort/ }));
+    fireEvent.click(screen.getByRole("button", { name: "More people" }));
+    const traveller = await screen.findByRole("group", { name: "Traveller 2" });
+    fireEvent.change(within(traveller).getByLabelText("Full name *"), { target: { value: "Meera Rao" } });
+    fireEvent.change(within(traveller).getByLabelText("Age *"), { target: { value: "31" } });
+    fireEvent.change(within(traveller).getByLabelText("Gender *"), { target: { value: "Female" } });
+    fireEvent.change(within(traveller).getByLabelText("Mobile number *"), { target: { value: "9988776655" } });
+    fireEvent.change(within(traveller).getByLabelText(/Email/), { target: { value: "meera@example.com" } });
+    fireEvent.change(screen.getAllByLabelText(/Full name/).at(-1)!, { target: { value: "Ravi Kumar" } });
+    fireEvent.change(screen.getAllByLabelText(/^Age/).at(-1)!, { target: { value: "28" } });
+    fireEvent.change(screen.getAllByLabelText(/^Gender/).at(-1)!, { target: { value: "Male" } });
+    fireEvent.change(screen.getAllByLabelText(/^Phone/).at(-1)!, { target: { value: "9876543210" } });
+
+    expect(screen.getAllByText("₹8,000").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /Send booking request/ }));
+    await waitFor(() => expect(submitBookingMock).toHaveBeenCalledTimes(1));
+    expect(submitBookingMock.mock.calls[0][0]).toEqual(expect.objectContaining({
+      trekDate: "2026-09-26",
+      packageId: "comfort",
+      groupMembers: [{ name: "Meera Rao", age: 31, gender: "Female", phone: "9988776655", email: "meera@example.com" }],
+    }));
   });
 });

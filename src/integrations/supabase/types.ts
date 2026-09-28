@@ -31,28 +31,40 @@ export type Database = {
       }
       booking_members: {
         Row: {
+          age: number | null
           aadhaar_number: string
           aadhaar_photo: string
           booking_id: string
           created_at: string
           full_name: string
+          gender: string | null
           id: string
+          email: string | null
+          phone: string | null
         }
         Insert: {
+          age?: number | null
           aadhaar_number: string
           aadhaar_photo: string
           booking_id: string
           created_at?: string
           full_name: string
+          gender?: string | null
           id?: string
+          email?: string | null
+          phone?: string | null
         }
         Update: {
+          age?: number | null
           aadhaar_number?: string
           aadhaar_photo?: string
           booking_id?: string
           created_at?: string
           full_name?: string
+          gender?: string | null
           id?: string
+          email?: string | null
+          phone?: string | null
         }
         Relationships: [
           {
@@ -66,6 +78,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          booking_total: number | null
           booking_source: string
           client_ref: string | null
           created_at: string
@@ -73,6 +86,9 @@ export type Database = {
           is_group: boolean
           notes: string | null
           payment_status: string
+          package_currency: string | null
+          package_price_basis: string | null
+          package_unit_amount: number | null
           primary_aadhaar: string | null
           primary_aadhaar_photo: string | null
           primary_age: number | null
@@ -81,6 +97,8 @@ export type Database = {
           primary_name: string
           primary_phone: string
           seats_booked: number
+          selected_package_id: string | null
+          selected_package_name: string | null
           status: string
           trek_date: string | null
           trek_id: string | null
@@ -88,6 +106,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          booking_total?: number | null
           booking_source?: string
           client_ref?: string | null
           created_at?: string
@@ -95,6 +114,9 @@ export type Database = {
           is_group?: boolean
           notes?: string | null
           payment_status?: string
+          package_currency?: string | null
+          package_price_basis?: string | null
+          package_unit_amount?: number | null
           primary_aadhaar?: string | null
           primary_aadhaar_photo?: string | null
           primary_age?: number | null
@@ -103,6 +125,8 @@ export type Database = {
           primary_name: string
           primary_phone: string
           seats_booked?: number
+          selected_package_id?: string | null
+          selected_package_name?: string | null
           status?: string
           trek_date?: string | null
           trek_id?: string | null
@@ -110,6 +134,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          booking_total?: number | null
           booking_source?: string
           client_ref?: string | null
           created_at?: string
@@ -117,6 +142,9 @@ export type Database = {
           is_group?: boolean
           notes?: string | null
           payment_status?: string
+          package_currency?: string | null
+          package_price_basis?: string | null
+          package_unit_amount?: number | null
           primary_aadhaar?: string | null
           primary_aadhaar_photo?: string | null
           primary_age?: number | null
@@ -125,6 +153,8 @@ export type Database = {
           primary_name?: string
           primary_phone?: string
           seats_booked?: number
+          selected_package_id?: string | null
+          selected_package_name?: string | null
           status?: string
           trek_date?: string | null
           trek_id?: string | null
@@ -536,6 +566,21 @@ export type Database = {
         }
         Returns: Json
       }
+      create_booking_v2: {
+        Args: {
+          p_age?: number
+          p_client_ref?: string
+          p_email?: string
+          p_gender?: string
+          p_members?: Json
+          p_name: string
+          p_package_id?: string
+          p_phone: string
+          p_trek_date: string
+          p_trek_id: string
+        }
+        Returns: Json
+      }
       get_explorer_count: { Args: never; Returns: number }
       get_trek_seat_stats: {
         Args: never
@@ -543,6 +588,16 @@ export type Database = {
           max_seats: number
           seats_remaining: number
           seats_taken: number
+          trek_id: string
+        }[]
+      }
+      get_trek_departure_stats: {
+        Args: never
+        Returns: {
+          max_seats: number
+          seats_remaining: number
+          seats_taken: number
+          trek_date: string
           trek_id: string
         }[]
       }

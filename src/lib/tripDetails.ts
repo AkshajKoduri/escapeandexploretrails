@@ -7,7 +7,22 @@ export type TripPackage = {
   id: string;
   name: string;
   price: string;
+  priceAmount: number | null;
+  priceBasis: "per_person" | "per_booking";
+  currency: "INR";
   details: string;
+};
+
+export type PaymentPolicyRow = {
+  id: string;
+  title: string;
+  terms: string;
+};
+
+export type KeepInMindSection = {
+  id: string;
+  heading: string;
+  instructions: DetailListItem[];
 };
 
 export type CancellationPolicyRow = {
@@ -20,9 +35,9 @@ export type TripDetails = {
   inclusions: DetailListItem[];
   exclusions: DetailListItem[];
   packages: TripPackage[];
-  paymentPolicy: DetailListItem[];
+  paymentPolicy: PaymentPolicyRow[];
   thingsToCarry: DetailListItem[];
-  thingsToKeepInMind: DetailListItem[];
+  thingsToKeepInMind: KeepInMindSection[];
   cancellationPolicy: CancellationPolicyRow[];
   cancellationNotes: string;
 };
@@ -75,13 +90,106 @@ function normalizePackages(value: unknown): TripPackage[] {
     if (!isRecord(entry)) return [];
     const name = typeof entry.name === "string" ? entry.name.trim() : "";
     const price = typeof entry.price === "string" ? entry.price.trim() : "";
+    const rawAmount = entry.priceAmount;
+    const priceAmount = (typeof rawAmount === "number" || typeof rawAmount === "string")
+      && rawAmount !== "" && Number.isFinite(Number(rawAmount)) && Number(rawAmount) >= 0
+      ? Number(Number(rawAmount).toFixed(2))
+      : null;
+    const priceBasis = entry.priceBasis === "per_booking" ? "per_booking" : "per_person";
     const details = typeof entry.details === "string" ? entry.details.trim() : "";
-    if (!name && !price && !details) return [];
+    if (!name && !price && priceAmount == null && !details) return [];
     return [{
       id: typeof entry.id === "string" && entry.id.trim() ? entry.id : createTripDetailId("package"),
       name,
       price,
+      priceAmount,
+      priceBasis,
+      currency: "INR",
       details,
+    }];
+  });
+}
+
+function normalizePaymentPolicy(value: unknown): PaymentPolicyRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry, index) => {
+    if (typeof entry === "string") {
+      const terms = entry.trim();
+      return terms ? [{ id: createTripDetailId("payment"), title: "", terms }] : [];
+    }
+    if (!isRecord(entry)) return [];
+    const title = typeof entry.title === "string" ? entry.title.trim() : "";
+    const terms = typeof entry.terms === "string"
+      ? entry.terms.trim()
+      : typeof entry.text === "string" ? entry.text.trim() : "";
+    if (!terms) return [];
+    return [{
+      id: typeof entry.id === "string" && entry.id.trim() ? entry.id : createTripDetailId(`payment-${index + 1}`),
+      title,
+      terms,
+    }];
+  });
+}
+
+function normalizeKeepInMind(value: unknown): KeepInMindSection[] {
+  if (!Array.isArray(value)) return [];
+  const hasStructuredSections = value.some((entry) => isRecord(entry) && (own(entry, "heading") || own(entry, "instructions")));
+  if (!hasStructuredSections) {
+    const legacyItems = value.flatMap((entry) => {
+      const text = typeof entry === "string"
+        ? entry.trim()
+        : isRecord(entry) && typeof entry.text === "string" ? entry.text.trim() : "";
+      if (!text) return [];
+      return [{
+        id: isRecord(entry) && typeof entry.id === "string" && entry.id.trim()
+          ? entry.id
+          : createTripDetailId("instruction"),
+        text,
+      }];
+    });
+    const sections: KeepInMindSection[] = [];
+    let current: KeepInMindSection | null = null;
+    legacyItems.forEach((item) => {
+      const headingLike = item.text.length <= 100
+        && (item.text.endsWith(":") || (/[A-Z]/.test(item.text) && item.text === item.text.toUpperCase()));
+      if (headingLike) {
+        current = { id: createTripDetailId("keep-in-mind"), heading: item.text.replace(/:\s*$/, ""), instructions: [] };
+        sections.push(current);
+      } else {
+        if (!current) {
+          current = { id: createTripDetailId("keep-in-mind"), heading: "", instructions: [] };
+          sections.push(current);
+        }
+        current.instructions.push(item);
+      }
+    });
+    return sections.filter((section) => section.instructions.length > 0);
+  }
+  return value.flatMap((entry, sectionIndex) => {
+    if (typeof entry === "string") {
+      const text = entry.trim();
+      return text ? [{
+        id: createTripDetailId("keep-in-mind"),
+        heading: "",
+        instructions: [{ id: createTripDetailId("instruction"), text }],
+      }] : [];
+    }
+    if (!isRecord(entry)) return [];
+    if (typeof entry.text === "string") {
+      const text = entry.text.trim();
+      return text ? [{
+        id: typeof entry.id === "string" && entry.id.trim() ? entry.id : createTripDetailId("keep-in-mind"),
+        heading: "",
+        instructions: [{ id: createTripDetailId("instruction"), text }],
+      }] : [];
+    }
+    const heading = typeof entry.heading === "string" ? entry.heading.trim() : "";
+    const instructions = normalizeList(entry.instructions, `keep-in-mind-${sectionIndex + 1}`);
+    if (instructions.length === 0) return [];
+    return [{
+      id: typeof entry.id === "string" && entry.id.trim() ? entry.id : createTripDetailId("keep-in-mind"),
+      heading,
+      instructions,
     }];
   });
 }
@@ -161,7 +269,26 @@ function parseLegacyInstructions(instructions?: string | null): TripDetails {
         id: createTripDetailId("package"),
         name: priceMatch?.[2]?.trim() || text,
         price: priceMatch?.[1]?.trim() || "",
+        priceAmount: null,
+        priceBasis: "per_person",
+        currency: "INR",
         details: "",
+      });
+      continue;
+    }
+
+    if (section === "paymentPolicy") {
+      const previous = parsed.paymentPolicy.at(-1);
+      if (previous && !/[.!?;:]$/.test(previous.terms)) previous.terms = `${previous.terms} ${text}`;
+      else parsed.paymentPolicy.push({ id: createTripDetailId("payment"), title: "", terms: text });
+      continue;
+    }
+
+    if (section === "thingsToKeepInMind") {
+      parsed.thingsToKeepInMind.push({
+        id: createTripDetailId("keep-in-mind"),
+        heading: "",
+        instructions: [{ id: createTripDetailId("instruction"), text }],
       });
       continue;
     }
@@ -180,7 +307,9 @@ function parseLegacyInstructions(instructions?: string | null): TripDetails {
       continue;
     }
 
-    pushLegacyListItem(parsed[section], line, section);
+    if (section === "inclusions" || section === "exclusions" || section === "thingsToCarry") {
+      pushLegacyListItem(parsed[section], line, section);
+    }
   }
 
   if (!foundHeading) {
@@ -216,12 +345,12 @@ export function normalizeTripDetails(value: unknown, legacyInstructions?: string
     inclusions: own(record, "inclusions") ? normalizeList(record.inclusions, "inclusion") : legacy.inclusions,
     exclusions: own(record, "exclusions") ? normalizeList(record.exclusions, "exclusion") : legacy.exclusions,
     packages: own(record, "packages") ? normalizePackages(record.packages) : legacy.packages,
-    paymentPolicy: own(record, "paymentPolicy") ? normalizeList(record.paymentPolicy, "payment") : legacy.paymentPolicy,
+    paymentPolicy: own(record, "paymentPolicy") ? normalizePaymentPolicy(record.paymentPolicy) : legacy.paymentPolicy,
     thingsToCarry: own(record, "thingsToCarry")
       ? normalizeList(record.thingsToCarry, "carry")
       : legacy.thingsToCarry,
     thingsToKeepInMind: own(record, "thingsToKeepInMind")
-      ? normalizeList(record.thingsToKeepInMind, "keep-in-mind")
+      ? normalizeKeepInMind(record.thingsToKeepInMind)
       : legacy.thingsToKeepInMind,
     cancellationPolicy: own(record, "cancellationPolicy")
       ? normalizeCancellation(record.cancellationPolicy)
@@ -237,9 +366,9 @@ export function serializeTripDetails(value: TripDetails): TripDetails {
     inclusions: normalizeList(value.inclusions, "inclusion"),
     exclusions: normalizeList(value.exclusions, "exclusion"),
     packages: normalizePackages(value.packages),
-    paymentPolicy: normalizeList(value.paymentPolicy, "payment"),
+    paymentPolicy: normalizePaymentPolicy(value.paymentPolicy),
     thingsToCarry: normalizeList(value.thingsToCarry, "carry"),
-    thingsToKeepInMind: normalizeList(value.thingsToKeepInMind, "keep-in-mind"),
+    thingsToKeepInMind: normalizeKeepInMind(value.thingsToKeepInMind),
     cancellationPolicy: normalizeCancellation(value.cancellationPolicy),
     cancellationNotes: value.cancellationNotes.trim(),
   };

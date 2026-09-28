@@ -60,19 +60,22 @@ describe("TripDetailsEditor", () => {
     ]);
   });
 
-  it("edits additional cancellation details and things to keep in mind", () => {
+  it("edits structured payment, cancellation, and things-to-keep-in-mind content", () => {
     render(<ControlledEditor />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add instruction" }));
-    fireEvent.change(screen.getByLabelText("Things to keep in mind item 1"), {
-      target: { value: "Stay with the group" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Add payment row" }));
+    fireEvent.change(screen.getByLabelText("Row 1: payment stage"), { target: { value: "Booking confirmation" } });
+    fireEvent.change(screen.getByLabelText("Row 1: payment terms"), { target: { value: "Pay after approval" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add subsection" }));
+    fireEvent.change(screen.getByLabelText("Subsection 1 heading"), { target: { value: "Trail conduct" } });
+    fireEvent.change(screen.getByLabelText("Subsection 1 instruction 1"), { target: { value: "Stay with the group" } });
     fireEvent.change(screen.getByLabelText("Additional cancellation and refund details"), {
       target: { value: "Refund timing depends on the original payment method." },
     });
 
     const state = JSON.parse(screen.getByTestId("details-state").textContent ?? "{}") as TripDetails;
-    expect(state.thingsToKeepInMind.map((item) => item.text)).toEqual(["Stay with the group"]);
+    expect(state.paymentPolicy).toEqual([expect.objectContaining({ title: "Booking confirmation", terms: "Pay after approval" })]);
+    expect(state.thingsToKeepInMind).toEqual([expect.objectContaining({ heading: "Trail conduct", instructions: [expect.objectContaining({ text: "Stay with the group" })] })]);
     expect(state.cancellationNotes).toBe("Refund timing depends on the original payment method.");
   });
 });

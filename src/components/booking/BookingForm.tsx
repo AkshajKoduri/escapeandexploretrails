@@ -26,10 +26,30 @@ const bookingSchema = z.object({
 
 const MAX_SEATS_PER_BOOKING = 12;
 
+type AdditionalParticipant = {
+  id: string;
+  name: string;
+  age: string;
+  gender: string;
+  phone: string;
+  email: string;
+};
+
+const newParticipant = (): AdditionalParticipant => ({
+  id: crypto.randomUUID(),
+  name: "",
+  age: "",
+  gender: "",
+  phone: "",
+  email: "",
+});
+
 export type BookingSuccessInfo = {
   date: string;
   people: number;
   bookingId?: string;
+  packageName?: string;
+  total?: number | null;
 };
 
 type BookingFormProps = {
@@ -61,26 +81,34 @@ export default function BookingForm({
   resetSignal = 0,
 }: BookingFormProps) {
   const uid = useId().replace(/[:]/g, "");
-  const price = adventure.startingPrice ?? (adventure.price > 0 ? adventure.price : null);
-  const soldOut = adventure.isFull || adventure.seatsRemaining <= 0;
-  const maxPeople = Math.max(
-    1,
-    Math.min(Math.max(adventure.seatsRemaining, 1), MAX_SEATS_PER_BOOKING),
-  );
-
+  const packages = adventure.tripDetails.packages;
+  const [selectedPackageId, setSelectedPackageId] = useState(() => packages.length === 1 ? packages[0].id : "");
+  const selectedPackage = packages.find((item) => item.id === selectedPackageId) ?? null;
+  const fallbackPrice = packages.length === 0
+    ? adventure.startingPrice ?? (adventure.price > 0 ? adventure.price : null)
+    : null;
   const [date, setDate] = useState<string>(() => {
     if (initialDate && adventure.dates.includes(initialDate)) return initialDate;
-    return adventure.dates[0] ?? "";
+    return adventure.dates.length === 1 ? adventure.dates[0] : "";
   });
+  const departureRemaining = date
+    ? adventure.departureAvailability[date] ?? adventure.seatsRemaining
+    : adventure.seatsRemaining;
+  const soldOut = departureRemaining <= 0;
+  const maxPeople = Math.max(1, Math.min(Math.max(departureRemaining, 1), MAX_SEATS_PER_BOOKING));
   const [people, setPeople] = useState<number>(() =>
     Math.min(Math.max(1, initialPeople), Math.max(1, adventure.seatsRemaining)),
   );
-  const [memberNames, setMemberNames] = useState<string[]>(() =>
+  const [groupMembers, setGroupMembers] = useState<AdditionalParticipant[]>(() =>
     Array.from(
       { length: Math.max(0, Math.min(initialPeople, adventure.seatsRemaining) - 1) },
-      () => "",
+      newParticipant,
     ),
   );
+  const unitPrice = selectedPackage?.priceAmount ?? fallbackPrice;
+  const total = unitPrice == null
+    ? null
+    : selectedPackage?.priceBasis === "per_booking" ? unitPrice : unitPrice * people;
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
@@ -90,6 +118,8 @@ export default function BookingForm({
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [bookingId, setBookingId] = useState<string | undefined>();
+  const [confirmedPackageName, setConfirmedPackageName] = useState<string | null>(null);
+  const [confirmedTotal, setConfirmedTotal] = useState<number | null>(null);
   // Idempotency key: retries after a timeout or lost response reuse the same
   // key so the server can never create a duplicate booking.
   const [clientRef, setClientRef] = useState(() => crypto.randomUUID());
@@ -103,9 +133,10 @@ export default function BookingForm({
 
   // Fresh state whenever the adventure changes (e.g. re-picked from the list).
   useEffect(() => {
-    setDate(initialDate && adventure.dates.includes(initialDate) ? initialDate : adventure.dates[0] ?? "");
+    setDate(initialDate && adventure.dates.includes(initialDate) ? initialDate : adventure.dates.length === 1 ? adventure.dates[0] : "");
+    setSelectedPackageId(packages.length === 1 ? packages[0].id : "");
     setPeople(1);
-    setMemberNames([]);
+    setGroupMembers([]);
     setName("");
     setAge("");
     setGender("");
@@ -113,17 +144,19 @@ export default function BookingForm({
     setEmail("");
     setErrors({});
     setDone(false);
+    setConfirmedPackageName(null);
+    setConfirmedTotal(null);
     setClientRef(crypto.randomUUID());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adventure.id]);
 
-  // Keep member-name rows exactly in sync with the people count, so a
+  // Keep participant rows exactly in sync with the people count, so a
   // decrement can never leave stale rows behind.
   useEffect(() => {
-    setMemberNames((prev) => {
+    setGroupMembers((prev) => {
       const target = Math.max(0, people - 1);
       if (prev.length === target) return prev;
-      if (prev.length < target) return [...prev, ...Array.from({ length: target - prev.length }, () => "")];
+      if (prev.length < target) return [...prev, ...Array.from({ length: target - prev.length }, newParticipant)];
       return prev.slice(0, target);
     });
   }, [people]);
@@ -143,12 +176,15 @@ export default function BookingForm({
     setPhone("");
     setEmail("");
     setErrors({});
-    setMemberNames([]);
+    setGroupMembers([]);
+    setSelectedPackageId(packages.length === 1 ? packages[0].id : "");
     setPeople(1);
-    setDate(adventure.dates[0] ?? "");
+    setDate(adventure.dates.length === 1 ? adventure.dates[0] : "");
     setBookingId(undefined);
+    setConfirmedPackageName(null);
+    setConfirmedTotal(null);
     setClientRef(crypto.randomUUID());
-  }, [resetSignal, adventure.id, adventure.dates]);
+  }, [resetSignal, adventure.id, adventure.dates, packages]);
 
   // Mobile sticky bar: appears once the user has scrolled past the top of the
   // form and disappears again near the page bottom (where the real button is).
@@ -197,8 +233,15 @@ export default function BookingForm({
 
     const next: Record<string, string> = {};
     if (!date) next.date = "Choose a date first";
-    memberNames.forEach((m, i) => {
-      if (!m.trim()) next[`member-${i}`] = "Enter this person's name";
+    if (packages.length > 0 && !selectedPackage) next.package = "Choose a package first";
+    groupMembers.forEach((member, index) => {
+      const memberResult = bookingSchema.safeParse(member);
+      if (!memberResult.success) {
+        memberResult.error.issues.forEach((issue) => {
+          const key = `member-${index}-${String(issue.path[0])}`;
+          if (!next[key]) next[key] = issue.message;
+        });
+      }
     });
 
     const parsed = bookingSchema.safeParse({ name, age, gender, phone, email });
@@ -209,7 +252,7 @@ export default function BookingForm({
       }
       setErrors(next);
       requestAnimationFrame(() =>
-        focusValidationError(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
+        focusValidationError(next, ["date", "package", ...groupMembers.flatMap((_, i) => ["name", "age", "gender", "phone", "email"].map((field) => `member-${i}-${field}`)), "name", "age", "gender", "phone", "email"]),
       );
       return;
     }
@@ -217,7 +260,7 @@ export default function BookingForm({
     if (Object.keys(next).length > 0) {
       setErrors(next);
       requestAnimationFrame(() =>
-        focusValidationError(next, ["date", ...memberNames.map((_, i) => `member-${i}`), "name", "age", "gender", "phone", "email"]),
+        focusValidationError(next, ["date", "package", ...groupMembers.flatMap((_, i) => ["name", "age", "gender", "phone", "email"].map((field) => `member-${i}-${field}`)), "name", "age", "gender", "phone", "email"]),
       );
       return;
     }
@@ -231,7 +274,14 @@ export default function BookingForm({
       gender: parsed.data.gender,
       phone: parsed.data.phone,
       email: parsed.data.email || undefined,
-      groupMembers: memberNames.map((m) => ({ name: m.trim() })),
+      groupMembers: groupMembers.map((member) => ({
+        name: member.name.trim(),
+        age: Number(member.age),
+        gender: member.gender,
+        phone: member.phone.trim(),
+        email: member.email.trim() || undefined,
+      })),
+      packageId: selectedPackage?.id ?? null,
       clientRef,
     });
     setSubmitting(false);
@@ -241,9 +291,11 @@ export default function BookingForm({
       return;
     }
     setBookingId(result.bookingId);
+    setConfirmedPackageName(result.packageName ?? selectedPackage?.name ?? null);
+    setConfirmedTotal(result.total ?? total);
     setDone(true);
     toast.success("Booking received — our team will call you to confirm.");
-    onSuccess?.({ date, people, bookingId: result.bookingId });
+    onSuccess?.({ date, people, bookingId: result.bookingId, packageName: result.packageName ?? selectedPackage?.name, total: result.total ?? total });
   };
 
   /* ------------------------------- Success ------------------------------ */
@@ -276,9 +328,10 @@ export default function BookingForm({
         <dl className="mt-6 rounded-lg bg-muted/60 p-4 text-sm space-y-2">
           <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Trip</dt><dd className="font-semibold text-right">{adventure.name}</dd></div>
           {date && <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Date</dt><dd className="font-semibold text-right">{fmtDate(date)}</dd></div>}
+          {(confirmedPackageName || selectedPackage) && <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Package</dt><dd className="font-semibold text-right">{confirmedPackageName || selectedPackage?.name || "Selected package"}</dd></div>}
           <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Travellers</dt><dd className="font-semibold text-right">{people}</dd></div>
-          {price != null && (
-            <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Estimated total</dt><dd className="font-display font-bold text-right">{inr(price * people)}</dd></div>
+          {confirmedTotal != null && (
+            <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Trip total (not paid)</dt><dd className="font-display font-bold text-right">{inr(confirmedTotal)}</dd></div>
           )}
           {ref && (
             <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Booking reference</dt><dd className="font-mono font-semibold text-right text-primary">{ref}</dd></div>
@@ -330,7 +383,8 @@ export default function BookingForm({
   /* ------------------------------ Form body ----------------------------- */
   const errorOrder = [
     "date",
-    ...memberNames.map((_, index) => `member-${index}`),
+    "package",
+    ...groupMembers.flatMap((_, index) => ["name", "age", "gender", "phone", "email"].map((field) => `member-${index}-${field}`)),
     "name",
     "age",
     "gender",
@@ -339,7 +393,12 @@ export default function BookingForm({
   ];
   const errorLabel = (field: string) => {
     if (field === "date") return "Date";
-    if (field.startsWith("member-")) return `Traveller ${Number(field.split("-")[1]) + 2}`;
+    if (field === "package") return "Package";
+    if (field.startsWith("member-")) {
+      const [, index, memberField] = field.split("-");
+      const label = ({ name: "full name", age: "age", gender: "gender", phone: "phone", email: "email" } as Record<string, string>)[memberField] ?? memberField;
+      return `Traveller ${Number(index) + 2} ${label}`;
+    }
     return ({ name: "Full name", age: "Age", gender: "Gender", phone: "Phone", email: "Email" } as Record<string, string>)[field] ?? field;
   };
   const errorEntries = errorOrder.flatMap((field) => errors[field] ? [[field, errors[field]] as const] : []);
@@ -379,11 +438,13 @@ export default function BookingForm({
       <section>
         <SectionHeading className="field-label text-base mb-3">Choose your date</SectionHeading>
         <p className="text-sm text-muted-foreground mb-3">
-          {soldOut
+          {date && soldOut
             ? "This adventure is currently full."
             : adventure.dates.length === 0
               ? "No upcoming dates yet — check back soon."
-              : `${adventure.seatsRemaining} seat${adventure.seatsRemaining > 1 ? "s" : ""} available across these dates (shared pool).`}
+              : adventure.dates.length === 1
+                ? `${departureRemaining} seat${departureRemaining === 1 ? "" : "s"} available for this departure.`
+                : "Select a departure to see its availability."}
         </p>
         {adventure.dates.length > 0 ? (
           <div
@@ -399,10 +460,10 @@ export default function BookingForm({
                 key={d}
                 type="button"
                 aria-pressed={date === d}
-                onClick={() => setDate(d)}
+                onClick={() => { setDate(d); setPeople((current) => Math.min(current, Math.max(adventure.departureAvailability[d] ?? adventure.seatsRemaining, 1))); }}
                 className={cn("filter-pill", date === d ? "filter-pill-active" : "filter-pill-idle")}
               >
-                {fmtDateShort(d)}
+                {fmtDateShort(d)} · {adventure.departureAvailability[d] ?? adventure.seatsRemaining} left
               </button>
             ))}
           </div>
@@ -414,6 +475,26 @@ export default function BookingForm({
         )}
       </section>
 
+      {packages.length > 0 && (
+        <section>
+          <SectionHeading className="field-label text-base mb-3">Choose your package</SectionHeading>
+          <div id={`${uid}-package`} role="radiogroup" aria-label="Available trip packages" aria-describedby={errId("package")} tabIndex={-1} className="grid gap-3 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            {packages.map((item) => {
+              const displayPrice = item.priceAmount != null
+                ? `${inr(item.priceAmount)} ${item.priceBasis === "per_booking" ? "per booking" : "per participant"}`
+                : item.price || "Price confirmed by our team";
+              return (
+                <button key={item.id} type="button" role="radio" aria-checked={selectedPackageId === item.id} onClick={() => setSelectedPackageId(item.id)} className={cn("min-h-11 rounded-lg border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent", selectedPackageId === item.id ? "border-accent bg-accent/8" : "border-border bg-background hover:border-primary/30") }>
+                  <span className="flex flex-wrap items-start justify-between gap-2"><span className="font-semibold text-foreground">{item.name || "Trip package"}</span><span className="font-display font-bold text-accent">{displayPrice}</span></span>
+                  {item.details && <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{item.details}</span>}
+                </button>
+              );
+            })}
+          </div>
+          {errors.package && <p id={errId("package")} className="field-error">{errors.package}</p>}
+        </section>
+      )}
+
       {/* People */}
       <section>
         <SectionHeading className="field-label text-base mb-3">Who's coming?</SectionHeading>
@@ -424,7 +505,7 @@ export default function BookingForm({
               <p className="text-xs text-muted-foreground mt-0.5">
                 {soldOut
                   ? "Full — no seats left."
-                  : `${adventure.seatsRemaining} seat${adventure.seatsRemaining > 1 ? "s" : ""} available`}
+                  : date ? `${departureRemaining} seat${departureRemaining === 1 ? "" : "s"} available on this departure` : "Choose a departure first"}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -456,31 +537,21 @@ export default function BookingForm({
               <p className="text-xs text-muted-foreground">
                 Add the other {people - 1} traveller{people - 1 > 1 ? "s" : ""}.
               </p>
-              {memberNames.map((m, i) => (
-                <div key={i}>
-                  <label htmlFor={`${uid}-member-${i}`} className="sr-only">
-                    Traveller {i + 2} full name
-                  </label>
-                  <input
-                    id={`${uid}-member-${i}`}
-                    value={m}
-                    onChange={(e) =>
-                      setMemberNames((arr) => arr.map((x, idx) => (idx === i ? e.target.value : x)))
-                    }
-                    placeholder={`Traveller ${i + 2} — full name`}
-                    autoComplete="name"
-                    maxLength={80}
-                    className="field-input"
-                    aria-invalid={!!errors[`member-${i}`]}
-                    aria-describedby={errId(`member-${i}`)}
-                  />
-                  {errors[`member-${i}`] && (
-                    <p id={errId(`member-${i}`)} className="field-error">
-                      {errors[`member-${i}`]}
-                    </p>
-                  )}
-                </div>
-              ))}
+              {groupMembers.map((member, i) => {
+                const updateMember = (patch: Partial<AdditionalParticipant>) => setGroupMembers((current) => current.map((item) => item.id === member.id ? { ...item, ...patch } : item));
+                return (
+                <fieldset key={member.id} className="rounded-lg border border-border bg-background p-4">
+                  <legend className="px-1 text-sm font-semibold text-primary">Traveller {i + 2}</legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="sm:col-span-2"><label htmlFor={`${uid}-member-${i}-name`} className="field-label">Full name *</label><input id={`${uid}-member-${i}-name`} value={member.name} onChange={(e) => updateMember({ name: e.target.value })} autoComplete="name" maxLength={80} className="field-input" aria-invalid={!!errors[`member-${i}-name`]} aria-describedby={errId(`member-${i}-name`)} />{errors[`member-${i}-name`] && <p id={errId(`member-${i}-name`)} className="field-error">{errors[`member-${i}-name`]}</p>}</div>
+                    <div><label htmlFor={`${uid}-member-${i}-age`} className="field-label">Age *</label><input id={`${uid}-member-${i}-age`} type="number" inputMode="numeric" min={10} max={99} value={member.age} onChange={(e) => updateMember({ age: e.target.value })} className="field-input" aria-invalid={!!errors[`member-${i}-age`]} aria-describedby={errId(`member-${i}-age`)} />{errors[`member-${i}-age`] && <p id={errId(`member-${i}-age`)} className="field-error">{errors[`member-${i}-age`]}</p>}</div>
+                    <div><label htmlFor={`${uid}-member-${i}-gender`} className="field-label">Gender *</label><select id={`${uid}-member-${i}-gender`} value={member.gender} onChange={(e) => updateMember({ gender: e.target.value })} className="field-input" aria-invalid={!!errors[`member-${i}-gender`]} aria-describedby={errId(`member-${i}-gender`)}><option value="">Select…</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select>{errors[`member-${i}-gender`] && <p id={errId(`member-${i}-gender`)} className="field-error">{errors[`member-${i}-gender`]}</p>}</div>
+                    <div><label htmlFor={`${uid}-member-${i}-phone`} className="field-label">Mobile number *</label><input id={`${uid}-member-${i}-phone`} type="tel" inputMode="tel" value={member.phone} onChange={(e) => updateMember({ phone: e.target.value })} className="field-input" aria-invalid={!!errors[`member-${i}-phone`]} aria-describedby={errId(`member-${i}-phone`)} />{errors[`member-${i}-phone`] && <p id={errId(`member-${i}-phone`)} className="field-error">{errors[`member-${i}-phone`]}</p>}</div>
+                    <div><label htmlFor={`${uid}-member-${i}-email`} className="field-label">Email <span className="font-normal text-muted-foreground">(optional)</span></label><input id={`${uid}-member-${i}-email`} type="email" value={member.email} onChange={(e) => updateMember({ email: e.target.value })} className="field-input" aria-invalid={!!errors[`member-${i}-email`]} aria-describedby={errId(`member-${i}-email`)} />{errors[`member-${i}-email`] && <p id={errId(`member-${i}-email`)} className="field-error">{errors[`member-${i}-email`]}</p>}</div>
+                  </div>
+                </fieldset>
+                );
+              })}
             </div>
           )}
         </div>
@@ -625,8 +696,8 @@ export default function BookingForm({
         ? "Sending…"
         : soldOut
           ? "Sold out"
-          : price != null
-            ? `Send booking request${people > 1 ? ` — ${inr(price * people)}` : ""}`
+          : total != null
+            ? `Send booking request — ${inr(total)}`
             : "Request booking"}
       {!submitting && !soldOut && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
     </button>
@@ -653,7 +724,7 @@ export default function BookingForm({
           onSubmit={submit}
           noValidate
           ref={formRef}
-          className="grid lg:grid-cols-[1fr_360px] gap-10 lg:gap-12 items-start"
+          className="grid items-start gap-10 [&_button]:min-h-11 [&_input]:min-h-11 [&_select]:min-h-11 lg:grid-cols-[1fr_360px] lg:gap-12"
         >
           <div className="space-y-10 min-w-0">{sections}</div>
           <aside className="rounded-xl border border-primary/15 border-t-2 border-t-accent bg-card shadow-card p-6 lg:sticky lg:top-20">
@@ -669,14 +740,20 @@ export default function BookingForm({
                   <dd className="font-semibold text-right">{fmtDate(date)}</dd>
                 </div>
               )}
+              {selectedPackage && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Package</dt>
+                  <dd className="font-semibold text-right">{selectedPackage.name || "Selected package"}</dd>
+                </div>
+              )}
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Travellers</dt>
                 <dd className="font-semibold text-right">{people}</dd>
               </div>
-              {price != null ? (
+              {total != null ? (
                 <div className="flex justify-between gap-3 border-t border-border pt-2.5 mt-2.5">
-                  <dt className="text-muted-foreground">Total</dt>
-                  <dd className="font-display font-bold text-xl text-primary">{inr(price * people)}</dd>
+                  <dt className="text-muted-foreground">Trip total <span className="block text-[11px]">Not paid</span></dt>
+                  <dd className="font-display font-bold text-xl text-primary">{inr(total)}</dd>
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground leading-relaxed border-t border-border pt-2.5 mt-2.5">
@@ -702,10 +779,10 @@ export default function BookingForm({
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-xs text-muted-foreground">
-                  {date ? fmtDate(date) : adventure.dates[0] ? fmtDate(adventure.dates[0]) : "Choose a date"} · {people} traveller{people > 1 ? "s" : ""}
+                  {date ? fmtDate(date) : "Choose a date"} · {people} traveller{people > 1 ? "s" : ""}
                 </p>
                 <p className="font-display font-bold text-lg text-primary leading-tight truncate">
-                  {price != null ? inr(price * people) : "Price on call"}
+                  {total != null ? inr(total) : "Price on call"}
                 </p>
               </div>
               <button
@@ -714,7 +791,7 @@ export default function BookingForm({
                 disabled={submitting || soldOut}
                 className="btn-accent shrink-0 min-h-[44px] px-5"
               >
-                {submitting ? "Sending…" : price != null ? `Request — ${inr(price * people)}` : "Request booking"}
+                {submitting ? "Sending…" : total != null ? `Request — ${inr(total)}` : "Request booking"}
               </button>
             </div>
           </div>
@@ -743,7 +820,7 @@ export default function BookingForm({
           </Link>
         </div>
       ) : (
-        <form onSubmit={submit} noValidate ref={formRef} className="mt-6 space-y-7">
+        <form onSubmit={submit} noValidate ref={formRef} className="mt-6 space-y-7 [&_button]:min-h-11 [&_input]:min-h-11 [&_select]:min-h-11">
           {sections}
           <div className="rounded-lg border border-border bg-background p-4 space-y-1.5 text-sm">
             <p className="flex justify-between">
@@ -756,10 +833,16 @@ export default function BookingForm({
                 <span className="font-semibold">{fmtDate(date)}</span>
               </p>
             )}
-            {price != null ? (
+            {selectedPackage && (
+              <p className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Package</span>
+                <span className="font-semibold text-right">{selectedPackage.name || "Selected package"}</span>
+              </p>
+            )}
+            {total != null ? (
               <p className="flex justify-between border-t border-border pt-2 mt-2">
-                <span className="text-muted-foreground">Total</span>
-                <span className="font-display font-bold text-lg text-primary">{inr(price * people)}</span>
+                <span className="text-muted-foreground">Trip total (not paid)</span>
+                <span className="font-display font-bold text-lg text-primary">{inr(total)}</span>
               </p>
             ) : (
               <p className="text-xs text-muted-foreground pt-1">Price confirmed by our team.</p>

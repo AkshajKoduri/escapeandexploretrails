@@ -10,10 +10,10 @@ function populatedDetails(): TripDetails {
     ...createDefaultTripDetails(),
     inclusions: [{ id: "guide", text: "Local guide" }],
     exclusions: [{ id: "travel", text: "Travel to the meeting point" }],
-    packages: [{ id: "standard", name: "Standard", price: "₹4,500", details: "Shared stay" }],
-    paymentPolicy: [{ id: "deposit", text: "Pay the confirmed deposit after approval" }],
+    packages: [{ id: "standard", name: "Standard", price: "₹4,500", priceAmount: 4500, priceBasis: "per_person", currency: "INR", details: "Shared stay" }],
+    paymentPolicy: [{ id: "deposit", title: "Booking confirmation", terms: "Pay the confirmed deposit after approval" }],
     thingsToCarry: [{ id: "water", text: "Two litres of water" }],
-    thingsToKeepInMind: [{ id: "guide", text: "Follow the guide’s instructions" }],
+    thingsToKeepInMind: [{ id: "guide", heading: "Trail conduct", instructions: [{ id: "follow", text: "Follow the guide’s instructions" }] }],
     cancellationNotes: "Refund timing is confirmed after review.",
   };
 }
@@ -43,6 +43,22 @@ describe("TripDetailsSection", () => {
     expect(within(table).getByRole("columnheader", { name: "Cancellation charge" })).toBeInTheDocument();
     const rowHeaders = within(table).getAllByRole("rowheader").map((cell) => cell.textContent);
     expect(rowHeaders).toEqual(["Second window", "First window"]);
+
+    const paymentTable = screen.getByRole("table", { name: "Payment stages and the corresponding payment terms" });
+    expect(within(paymentTable).getByRole("columnheader", { name: "Payment stage" })).toBeInTheDocument();
+    expect(within(paymentTable).getByRole("rowheader", { name: "Booking confirmation" })).toBeInTheDocument();
+    expect(within(paymentTable).getByText("Pay the confirmed deposit after approval")).toBeInTheDocument();
+
+    const headings = screen.getAllByRole("heading").map((heading) => heading.textContent);
+    expect(headings.indexOf("Things to keep in mind")).toBeGreaterThan(headings.indexOf("Cancellation and refund policy"));
+  });
+
+  it("uses ordered-list semantics for multiple keep-in-mind instructions", () => {
+    const details = populatedDetails();
+    details.thingsToKeepInMind[0].instructions.push({ id: "second", text: "Carry your own water" });
+    const { container } = render(<TripDetailsSection details={details} />);
+    expect(container.querySelector("ol")).toBeInTheDocument();
+    expect(screen.getByText("Carry your own water")).toBeInTheDocument();
   });
 
   it("renders the approved fallback policy with semantic table structure", () => {

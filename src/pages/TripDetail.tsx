@@ -410,33 +410,28 @@ export default function TripDetail() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   {soldOut
                     ? "This adventure is currently full — check back for new dates."
-                    : `${adventure.seatsRemaining} seat${adventure.seatsRemaining > 1 ? "s" : ""} available across these dates (shared pool) at ${price != null ? `${inr(price)} per person` : "the listed price"}.`}
+                    : `Availability is tracked separately for each departure${price != null ? `; prices start at ${inr(price)} per person` : ""}.`}
                 </p>
                 <ul className="mt-5 divide-y divide-border border-y border-border">
-                  {adventure.dates.map((d) => (
+                  {adventure.dates.map((d) => {
+                    const remaining = adventure.departureAvailability[d] ?? adventure.seatsRemaining;
+                    const departureFull = remaining <= 0;
+                    return (
                     <li key={d} className="flex flex-wrap items-center justify-between gap-3 py-4">
                       <div>
                         <p className="font-display font-semibold text-lg text-foreground">{fmtDate(d)}</p>
-                        {adventure.dates.length > 1 && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {d === adventure.dates[0] ? "Next departure" : "Second departure"}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5">{departureFull ? "Full" : `${remaining} seat${remaining === 1 ? "" : "s"} available`}{adventure.dates.length > 1 && d === adventure.dates[0] ? " · Next departure" : ""}</p>
                       </div>
-                      <a
-                        href="#book"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setRequestedDate(d);
-                          document.getElementById("book")?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        className="text-sm font-semibold text-accent hover:underline min-h-[44px] inline-flex items-center gap-1.5"
-                      >
-                        {soldOut ? "Full" : "Book this date"}
-                        {!soldOut && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
-                      </a>
+                      {departureFull ? (
+                        <span className="inline-flex min-h-11 items-center text-sm font-semibold text-muted-foreground">Full</span>
+                      ) : (
+                        <a href="#book" onClick={(e) => { e.preventDefault(); setRequestedDate(d); document.getElementById("book")?.scrollIntoView({ behavior: "smooth" }); }} className="text-sm font-semibold text-accent hover:underline min-h-[44px] inline-flex items-center gap-1.5">
+                          Book this date <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                        </a>
+                      )}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </section>
             )}

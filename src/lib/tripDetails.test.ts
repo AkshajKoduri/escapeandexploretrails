@@ -52,13 +52,13 @@ describe("trip details mapping", () => {
     expect(details.packages).toEqual([
       expect.objectContaining({ name: "Non-AC sleeper class", price: "₹ 5,499/-" }),
     ]);
-    expect(details.paymentPolicy.map((item) => item.text)).toEqual(["Pay the balance seven days before the trek."]);
+    expect(details.paymentPolicy.map((item) => item.terms)).toEqual(["Pay the balance seven days before the trek."]);
     expect(details.thingsToCarry.map((item) => item.text)).toEqual(["Water bottle"]);
     expect(details.cancellationPolicy).toEqual([
       expect.objectContaining({ window: "Up to 21 days before", charge: "Free cancellation allowed" }),
     ]);
     expect(details.cancellationNotes).toBe("Calculated from the trek start date.");
-    expect(details.thingsToKeepInMind.map((item) => item.text)).toEqual(["Stay with the group."]);
+    expect(details.thingsToKeepInMind.flatMap((section) => section.instructions.map((item) => item.text))).toEqual(["Stay with the group."]);
   });
 
   it("preserves custom policy row order through edit serialization and loading", () => {
@@ -91,14 +91,30 @@ describe("trip details mapping", () => {
         { id: "blank", text: "  " },
         { id: "guide", text: "  Local guide  " },
       ],
-      packages: [{ id: "empty-package", name: "", price: "", details: "" }],
-      thingsToKeepInMind: [{ id: "mind", text: "  Follow the guide  " }],
+      packages: [{ id: "empty-package", name: "", price: "", priceAmount: null, priceBasis: "per_person", currency: "INR", details: "" }],
+      thingsToKeepInMind: [{ id: "mind", heading: "  Trail conduct  ", instructions: [{ id: "follow", text: "  Follow the guide  " }] }],
       cancellationNotes: "  Refunds are processed after confirmation.  ",
     });
 
     expect(saved.inclusions).toEqual([{ id: "guide", text: "Local guide" }]);
     expect(saved.packages).toEqual([]);
-    expect(saved.thingsToKeepInMind).toEqual([{ id: "mind", text: "Follow the guide" }]);
+    expect(saved.thingsToKeepInMind).toEqual([{ id: "mind", heading: "Trail conduct", instructions: [{ id: "follow", text: "Follow the guide" }] }]);
     expect(saved.cancellationNotes).toBe("Refunds are processed after confirmation.");
+  });
+
+  it("maps legacy payment and keep-in-mind entries without discarding their text", () => {
+    const details = normalizeTripDetails({
+      paymentPolicy: [{ id: "legacy-pay", text: "Pay after confirmation" }],
+      thingsToKeepInMind: [
+        { id: "legacy-heading", text: "TRAIN TICKETS:" },
+        { id: "legacy-mind", text: "Stay with the group" },
+      ],
+    });
+
+    expect(details.paymentPolicy).toEqual([{ id: "legacy-pay", title: "", terms: "Pay after confirmation" }]);
+    expect(details.thingsToKeepInMind[0]).toEqual(expect.objectContaining({
+      heading: "TRAIN TICKETS",
+      instructions: [expect.objectContaining({ text: "Stay with the group" })],
+    }));
   });
 });

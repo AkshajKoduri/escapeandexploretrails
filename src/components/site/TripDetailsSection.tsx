@@ -2,6 +2,8 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hasTripDetailsContent, type DetailListItem, type TripDetails } from "@/lib/tripDetails";
 
+const formatInr = (amount: number) => `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+
 function EditorialList({ items, markerClass }: { items: DetailListItem[]; markerClass?: string }) {
   return (
     <ul className="mt-4 space-y-3">
@@ -20,8 +22,7 @@ export default function TripDetailsSection({ details }: { details: TripDetails }
 
   const hasInclusionsExclusions = details.inclusions.length > 0 || details.exclusions.length > 0;
   const hasGuidance = details.paymentPolicy.length > 0
-    || details.thingsToCarry.length > 0
-    || details.thingsToKeepInMind.length > 0;
+    || details.thingsToCarry.length > 0;
   const hasCancellation = details.cancellationPolicy.length > 0 || details.cancellationNotes.length > 0;
 
   return (
@@ -73,7 +74,11 @@ export default function TripDetailsSection({ details }: { details: TripDetails }
                     {item.name && <h4 className="font-display text-lg font-bold text-primary [overflow-wrap:anywhere]">{item.name}</h4>}
                     {item.details && <p className="mt-1 max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">{item.details}</p>}
                   </div>
-                  {item.price && <p className="self-start font-display text-base font-bold text-accent sm:text-right [overflow-wrap:anywhere]">{item.price}</p>}
+                  {(item.price || item.priceAmount != null) && (
+                    <p className="self-start font-display text-base font-bold text-accent sm:text-right [overflow-wrap:anywhere]">
+                      {item.price || `${formatInr(item.priceAmount!)} ${item.priceBasis === "per_booking" ? "per booking" : "per participant"}`}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
@@ -85,26 +90,27 @@ export default function TripDetailsSection({ details }: { details: TripDetails }
             {details.paymentPolicy.length > 0 && (
               <section aria-labelledby="payment-policy-heading" className="border-t border-primary/20 pt-5">
                 <h3 id="payment-policy-heading" className="font-display text-xl font-bold text-foreground">Payment policy</h3>
-                <ol className="mt-4 space-y-3">
-                  {details.paymentPolicy.map((item, index) => (
-                    <li key={item.id} className="flex gap-3 text-sm leading-relaxed text-foreground/80">
-                      <span className="font-display font-bold tabular-nums text-accent" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                      <span className="min-w-0 [overflow-wrap:anywhere]">{item.text}</span>
-                    </li>
-                  ))}
-                </ol>
+                <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+                  <table className="w-full table-fixed border-collapse text-left text-sm">
+                    <caption className="sr-only">Payment stages and the corresponding payment terms</caption>
+                    <colgroup><col className="w-[36%] sm:w-[38%]" /><col /></colgroup>
+                    <thead className="bg-primary text-primary-foreground"><tr><th scope="col" className="px-3 py-3 font-semibold sm:px-5">Payment stage</th><th scope="col" className="px-3 py-3 font-semibold sm:px-5">Payment terms</th></tr></thead>
+                    <tbody className="divide-y divide-border">
+                      {details.paymentPolicy.map((item, index) => (
+                        <tr key={item.id}>
+                          <th scope="row" className="px-3 py-4 align-top font-semibold leading-relaxed text-foreground [overflow-wrap:anywhere] sm:px-5">{item.title || `Payment term ${index + 1}`}</th>
+                          <td className="px-3 py-4 align-top leading-relaxed text-foreground/80 [overflow-wrap:anywhere] sm:px-5">{item.terms}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </section>
             )}
             {details.thingsToCarry.length > 0 && (
               <section aria-labelledby="things-to-carry-heading" className="border-t border-primary/20 pt-5">
                 <h3 id="things-to-carry-heading" className="font-display text-xl font-bold text-foreground">Things to carry</h3>
                 <EditorialList items={details.thingsToCarry} />
-              </section>
-            )}
-            {details.thingsToKeepInMind.length > 0 && (
-              <section aria-labelledby="things-to-keep-in-mind-heading" className="border-t border-primary/20 pt-5">
-                <h3 id="things-to-keep-in-mind-heading" className="font-display text-xl font-bold text-foreground">Things to keep in mind</h3>
-                <EditorialList items={details.thingsToKeepInMind} />
               </section>
             )}
           </div>
@@ -164,6 +170,26 @@ export default function TripDetailsSection({ details }: { details: TripDetails }
                 </p>
               </div>
             )}
+          </section>
+        )}
+
+        {details.thingsToKeepInMind.length > 0 && (
+          <section aria-labelledby="things-to-keep-in-mind-heading" className="border-t border-primary/20 pt-5">
+            <h3 id="things-to-keep-in-mind-heading" className="font-display text-xl font-bold text-foreground">Things to keep in mind</h3>
+            <div className="mt-5 space-y-6">
+              {details.thingsToKeepInMind.map((section, index) => (
+                <section key={section.id} aria-labelledby={section.heading ? `keep-in-mind-${section.id}` : undefined}>
+                  {section.heading && <h4 id={`keep-in-mind-${section.id}`} className="font-display text-base font-bold uppercase tracking-[0.08em] text-primary [overflow-wrap:anywhere]">{section.heading}</h4>}
+                  {section.instructions.length > 1 ? (
+                    <ol className={cn("list-decimal space-y-2 pl-5 text-sm leading-relaxed text-foreground/80", section.heading && "mt-3")}>
+                      {section.instructions.map((instruction) => <li key={instruction.id} className="pl-1 [overflow-wrap:anywhere]">{instruction.text}</li>)}
+                    </ol>
+                  ) : section.instructions[0] ? (
+                    <p className={cn("max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-foreground/80 [overflow-wrap:anywhere]", section.heading && "mt-3")}>{section.instructions[0].text}</p>
+                  ) : null}
+                </section>
+              ))}
+            </div>
           </section>
         )}
       </div>

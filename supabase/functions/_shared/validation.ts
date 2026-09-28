@@ -49,7 +49,22 @@ const tripPackage = z.object({
   id: detailId,
   name: z.string().trim().max(200),
   price: z.string().trim().max(120),
+  priceAmount: z.number().nonnegative().max(99999999.99).nullable(),
+  priceBasis: z.enum(["per_person", "per_booking"]),
+  currency: z.literal("INR"),
   details: detailText,
+}).strict();
+
+const paymentPolicyRow = z.object({
+  id: detailId,
+  title: z.string().trim().max(200),
+  terms: detailText,
+}).strict();
+
+const keepInMindSection = z.object({
+  id: detailId,
+  heading: z.string().trim().max(200),
+  instructions: z.array(detailListItem).max(50),
 }).strict();
 
 const cancellationPolicyRow = z.object({
@@ -62,9 +77,9 @@ export const tripDetailsPayload = z.object({
   inclusions: z.array(detailListItem).max(50),
   exclusions: z.array(detailListItem).max(50),
   packages: z.array(tripPackage).max(25),
-  paymentPolicy: z.array(detailListItem).max(50),
+  paymentPolicy: z.array(paymentPolicyRow).max(50),
   thingsToCarry: z.array(detailListItem).max(50),
-  thingsToKeepInMind: z.array(detailListItem).max(50).default([]),
+  thingsToKeepInMind: z.array(keepInMindSection).max(25).default([]),
   cancellationPolicy: z.array(cancellationPolicyRow).max(25),
   cancellationNotes: z.string().trim().max(5000).default(""),
 }).strict();
@@ -72,7 +87,9 @@ export const tripDetailsPayload = z.object({
 export const BOOKING_COLUMNS = [
   "trek_id", "trek_name", "primary_name", "primary_age", "primary_gender", "primary_phone",
   "primary_email", "primary_aadhaar", "primary_aadhaar_photo", "is_group", "status",
-  "seats_booked", "payment_status", "booking_source", "notes",
+  "seats_booked", "payment_status", "booking_source", "notes", "trek_date",
+  "selected_package_id", "selected_package_name", "package_unit_amount",
+  "package_price_basis", "package_currency", "booking_total",
 ] as const;
 
 export const CALLBACK_COLUMNS = [
@@ -149,13 +166,21 @@ const phone = z.string().trim().regex(/^[+]?[0-9\s()\-]{7,20}$/, "Enter a valid 
 
 export const publicBookingPayload = z.object({
   trek_id: uuid,
+  trek_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  package_id: detailId.nullable().optional(),
   primary_name: z.string().trim().min(2).max(80),
-  primary_age: z.number().int().min(10).max(99).nullable().optional(),
-  primary_gender: z.enum(["Male", "Female", "Other", "Prefer not to say"]).nullable().optional(),
+  primary_age: z.number().int().min(10).max(99),
+  primary_gender: z.enum(["Male", "Female", "Other", "Prefer not to say"]),
   primary_phone: phone,
   primary_email: z.string().trim().email().max(255).nullable().optional().or(z.literal("")),
   is_group: z.boolean().optional().default(false),
-  members: z.array(z.object({ full_name: z.string().trim().min(1).max(80) })).max(30).optional().default([]),
+  members: z.array(z.object({
+    full_name: z.string().trim().min(2).max(80),
+    age: z.number().int().min(10).max(99),
+    gender: z.enum(["Male", "Female", "Other", "Prefer not to say"]),
+    phone,
+    email: z.string().trim().email().max(255).nullable().optional().or(z.literal("")),
+  }).strict()).max(11).optional().default([]),
 });
 
 export const publicCallbackPayload = z.object({

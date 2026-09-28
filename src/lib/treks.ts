@@ -59,6 +59,7 @@ export type Adventure = {
   maxSeats: number;
   seatsTaken: number;
   isFull: boolean;
+  departureAvailability: Record<string, number>;
   eventType: EventType;
   trekCategory: string | null;
   albumUrl: string | null;
@@ -74,6 +75,7 @@ export type SeatStat = {
 };
 
 type TrekRow = Database["public"]["Tables"]["upcoming_treks"]["Row"];
+type DepartureStat = Database["public"]["Functions"]["get_trek_departure_stats"]["Returns"][number];
 
 /* ------------------------------------------------------------------ */
 /* Formatters & small helpers                                          */
@@ -193,6 +195,7 @@ const OUTSTATION_FIELDS: { key: keyof TrekRow; label: string }[] = [
 ];
 
 let seatStatsInFlight: Promise<Map<string, SeatStat>> | null = null;
+let departureStatsInFlight: Promise<Map<string, DepartureStat[]>> | null = null;
 let adventuresInFlight: Promise<Adventure[]> | null = null;
 
 async function loadSeatStats(): Promise<Map<string, SeatStat>> {
@@ -212,6 +215,24 @@ export function fetchSeatStats(): Promise<Map<string, SeatStat>> {
   return seatStatsInFlight;
 }
 
+async function loadDepartureStats(): Promise<Map<string, DepartureStat[]>> {
+  const { data, error } = await supabase.rpc("get_trek_departure_stats");
+  // During a migration-first rollout, older environments may not have the
+  // aggregate RPC yet. Keep reads usable; create_booking_v2 remains the
+  // authoritative capacity gate once the migration is applied.
+  if (error) return new Map();
+  const grouped = new Map<string, DepartureStat[]>();
+  (data ?? []).forEach((row) => grouped.set(row.trek_id, [...(grouped.get(row.trek_id) ?? []), row]));
+  return grouped;
+}
+
+function fetchDepartureStats(): Promise<Map<string, DepartureStat[]>> {
+  if (!departureStatsInFlight) {
+    departureStatsInFlight = loadDepartureStats().finally(() => { departureStatsInFlight = null; });
+  }
+  return departureStatsInFlight;
+}
+
 function normalizeItineraryDays(value: Json): Adventure["itineraryDays"] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
@@ -224,7 +245,7 @@ function normalizeItineraryDays(value: Json): Adventure["itineraryDays"] {
   });
 }
 
-function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adventure {
+function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, departureMap: Map<string, DepartureStat[]>, today: string): Adventure {
   const s = statsMap.get(t.id);
   const seatsTaken = s?.seats_taken ?? t.seats_taken ?? 0;
   const maxSeats = s?.max_seats ?? t.max_seats ?? 0;
@@ -233,6 +254,12 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adv
   const allDates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
   const dates = allDates.filter((d) => d >= today);
   const sorted = [...dates].sort();
+  const departureAvailability = Object.fromEntries(
+    (departureMap.get(t.id) ?? []).map((row) => [row.trek_date, Number(row.seats_remaining)]),
+  );
+  const bestDepartureRemaining = sorted.length > 0
+    ? Math.max(...sorted.map((departure) => departureAvailability[departure] ?? maxSeats))
+    : remaining;
   const fieldLabels = t.field_labels && typeof t.field_labels === "object" && !Array.isArray(t.field_labels)
     ? t.field_labels
     : {};
@@ -267,10 +294,11 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adv
     itineraryUrl: t.itinerary_url ?? null,
     itineraryFilePath: t.itinerary_file_path ?? null,
     itineraryDays: normalizeItineraryDays(t.itinerary_days),
-    seatsRemaining: remaining,
+    seatsRemaining: bestDepartureRemaining,
     maxSeats: maxSeats,
     seatsTaken: seatsTaken,
-    isFull: remaining <= 0,
+    isFull: bestDepartureRemaining <= 0,
+    departureAvailability,
     eventType: (t.event_type as EventType) ?? "Hike",
     trekCategory: t.trek_category ?? null,
     albumUrl: t.album_url ?? null,
@@ -289,7 +317,7 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, today: string): Adv
  */
 async function loadAdventures(includePast = false): Promise<Adventure[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const [trekResult, statsMap] = await Promise.all([
+  const [trekResult, statsMap, departureMap] = await Promise.all([
     supabase
       .from("upcoming_treks")
       .select("*")
@@ -297,12 +325,13 @@ async function loadAdventures(includePast = false): Promise<Adventure[]> {
       .eq("is_draft", false)
       .order("trek_date", { ascending: true, nullsFirst: false }),
     fetchSeatStats(),
+    fetchDepartureStats(),
   ]);
   if (trekResult.error) throw trekResult.error;
   const trekData = trekResult.data;
 
   return (trekData ?? [])
-    .map((t) => mapRow(t, statsMap, today))
+    .map((t) => mapRow(t, statsMap, departureMap, today))
     .filter((a: Adventure) => {
       if (includePast) return true;
       if (a.allDates.length === 0) return true;
@@ -325,15 +354,16 @@ export async function fetchAdventureById(id: string): Promise<Adventure | null> 
     return null;
   }
   const today = new Date().toISOString().slice(0, 10);
-  const [trekRes, statsMap] = await Promise.all([
+  const [trekRes, statsMap, departureMap] = await Promise.all([
     supabase.from("upcoming_treks").select("*").eq("id", id).maybeSingle(),
     fetchSeatStats(),
+    fetchDepartureStats(),
   ]);
   if (trekRes.error) throw trekRes.error;
   if (!trekRes.data) return null;
   const row = trekRes.data;
   if (row.is_archived || row.is_draft) return null;
-  return mapRow(row, statsMap, today);
+  return mapRow(row, statsMap, departureMap, today);
 }
 
 /* ------------------------------------------------------------------ */
@@ -348,7 +378,8 @@ export type BookingInput = {
   gender: string;
   phone: string;
   email?: string;
-  groupMembers: { name: string }[];
+  groupMembers: { name: string; age: number; gender: string; phone: string; email?: string }[];
+  packageId?: string | null;
 };
 
 export type BookingResult = {
@@ -356,6 +387,8 @@ export type BookingResult = {
   message?: string;
   bookingId?: string;
   code?: string;
+  packageName?: string | null;
+  total?: number | null;
 };
 
 const BOOKING_ERROR_MESSAGES: Record<string, string> = {
@@ -365,6 +398,10 @@ const BOOKING_ERROR_MESSAGES: Record<string, string> = {
   expired_date: "That date has passed. Please choose an upcoming date.",
   invalid_date: "That date isn't available for this adventure. Please pick one of the dates shown.",
   sold_out: "This adventure has just filled up. Please choose another date or adventure.",
+  invalid_member: "Check every additional participant's details and try again.",
+  package_required: "Choose a package before sending your booking request.",
+  invalid_package: "That package is no longer available. Please choose another.",
+  invalid_package_price: "This package price needs confirmation. Please contact our team.",
 };
 
 /**
@@ -379,9 +416,15 @@ export async function submitBooking(
   input: BookingInput & { clientRef?: string },
 ): Promise<BookingResult> {
   const clientRef = input.clientRef ?? crypto.randomUUID();
-  const members = input.groupMembers.map((m) => m.name.trim()).filter(Boolean);
+  const members = input.groupMembers.map((member) => ({
+    full_name: member.name.trim(),
+    age: member.age,
+    gender: member.gender,
+    phone: member.phone.trim(),
+    email: member.email?.trim() || null,
+  }));
 
-  const { data, error } = await supabase.rpc("create_booking", {
+  const { data, error } = await supabase.rpc("create_booking_v2", {
     p_trek_id: input.trek.id,
     p_trek_date: input.trekDate,
     p_name: input.name,
@@ -389,7 +432,8 @@ export async function submitBooking(
     p_email: input.email || null,
     p_age: input.age,
     p_gender: input.gender,
-    p_members: members.length ? members : null,
+    p_members: members,
+    p_package_id: input.packageId || null,
     p_client_ref: clientRef,
   });
 
@@ -405,6 +449,8 @@ export async function submitBooking(
     code?: string;
     remaining?: number;
     booking_id?: string;
+    package_name?: string | null;
+    total?: number | null;
   } | null;
 
   if (!result?.ok) {
@@ -420,5 +466,11 @@ export async function submitBooking(
   // A repeated submission carrying the same client_ref returns the original
   // booking (created: false) — treat it as success so a lost response or
   // retry after timeout can never create a duplicate.
-  return { ok: true, bookingId: result?.booking_id, code: result?.code };
+  return {
+    ok: true,
+    bookingId: result?.booking_id,
+    code: result?.code,
+    packageName: result?.package_name ?? null,
+    total: result?.total == null ? null : Number(result.total),
+  };
 }
