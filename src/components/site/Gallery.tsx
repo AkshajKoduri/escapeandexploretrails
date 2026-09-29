@@ -3,6 +3,7 @@ import { Instagram, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { publicApi } from "@/lib/publicApi";
 import g1 from "@/assets/gallery-1-960.webp";
 import g1Small from "@/assets/gallery-1-480.webp";
 import g2 from "@/assets/gallery-2-960.webp";
@@ -39,7 +40,6 @@ type GalleryRow = {
   alt_text: string | null;
 };
 
-type SignedUrlRow = { path: string; signedUrl: string | null };
 
 const FALLBACK_ITEMS: GalleryItem[] = [
   { id: "static-1", url: g1, srcSet: `${g1Small} 480w, ${g1} 848w`, width: 848, height: 1024, alt: "Adventure trail moment with E2 Trails", category: "General" },
@@ -67,14 +67,10 @@ export default function Gallery() {
 
       const rows = data as unknown as GalleryRow[];
       const paths = rows.map((r) => r.storage_path).filter(Boolean) as string[];
-      const urlMap: Record<string, string> = {};
+      let urlMap: Record<string, string> = {};
       if (paths.length) {
-        const { data: signed } = await supabase.storage
-          .from("gallery-images")
-          .createSignedUrls(paths, 60 * 60 * 6);
-        (signed ?? []).forEach((s: SignedUrlRow) => {
-          if (s.path && s.signedUrl) urlMap[s.path] = s.signedUrl;
-        });
+        const { urls } = await publicApi<{ urls: Record<string, string> }>("galleryUrls", {});
+        urlMap = urls;
       }
 
       const mapped: GalleryItem[] = rows
@@ -86,16 +82,16 @@ export default function Gallery() {
         }))
         .filter((i) => i.url);
 
-      if (mapped.length > 0) setItems(mapped);
-    })();
+      setItems(mapped);
+    })().catch(() => { /* Bundled images remain available when the network fails. */ });
   }, []);
 
   const visible = items.slice(0, 5);
 
   const open = activeIndex !== null;
-  const active = activeIndex !== null ? visible[activeIndex] : null;
-  const prev = () => setActiveIndex((i) => (i === null ? i : (i - 1 + visible.length) % visible.length));
-  const next = () => setActiveIndex((i) => (i === null ? i : (i + 1) % visible.length));
+  const active = activeIndex !== null ? items[activeIndex] : null;
+  const prev = () => setActiveIndex((i) => (i === null ? i : (i - 1 + items.length) % items.length));
+  const next = () => setActiveIndex((i) => (i === null ? i : (i + 1) % items.length));
 
   useEffect(() => {
     if (open) {
@@ -185,8 +181,10 @@ export default function Gallery() {
         )}
       </div>
 
+      {items.length > 0 && <div className="container mt-6"><button type="button" className="btn-outline" onClick={(event) => { lastTriggerRef.current = event.currentTarget; setActiveIndex(0); }}>View all photos ({items.length})</button></div>}
       <Dialog open={open} onOpenChange={(o) => !o && setActiveIndex(null)}>
         <DialogContent
+          onKeyDown={(event) => { if (event.key === "ArrowLeft") { event.preventDefault(); prev(); } if (event.key === "ArrowRight") { event.preventDefault(); next(); } }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             lastTriggerRef.current?.focus();
@@ -224,7 +222,7 @@ export default function Gallery() {
                 <ChevronRight className="w-6 h-6" aria-hidden="true" />
               </button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/50 text-white text-xs">
-                {(activeIndex ?? 0) + 1} / {visible.length}
+                {(activeIndex ?? 0) + 1} / {items.length}
               </div>
             </div>
           )}

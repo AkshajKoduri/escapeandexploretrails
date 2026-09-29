@@ -21,6 +21,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [adventuresOpen, setAdventuresOpen] = useState(false);
   const adventuresRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const adventuresBtnRef = useRef<HTMLButtonElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement>(null);
@@ -30,6 +31,23 @@ export default function Navbar() {
   const adventureActive = pathname.startsWith("/adventures") || pathname === "/upcoming-treks" || pathname === "/hyderabad-trails";
   const journalActive = pathname === "/trail-log";
   const linkIsActive = (href: string) => href === "/adventures" ? pathname.startsWith("/adventures") : pathname === href;
+
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const updateHeight = () => {
+      document.documentElement.style.setProperty("--site-header-height", `${header.getBoundingClientRect().height}px`);
+    };
+    updateHeight();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateHeight) : null;
+    observer?.observe(header);
+    window.addEventListener("resize", updateHeight);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateHeight);
+      document.documentElement.style.removeProperty("--site-header-height");
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const onScroll = () => setScrolled(isPastScrollThreshold());
@@ -77,6 +95,8 @@ export default function Navbar() {
 
   return (
     <header
+      ref={headerRef}
+      style={{ paddingTop: `calc(${solid ? "0.75rem" : "1rem"} + env(safe-area-inset-top, 0px))` }}
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,backdrop-filter] duration-300",
         solid

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 /** Moves keyboard focus to the new page after client-side navigation. */
 export default function RouteFocus() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const previousPath = useRef(pathname);
   const previousMain = useRef<HTMLElement | null>(null);
 
@@ -13,6 +13,9 @@ export default function RouteFocus() {
       return;
     }
     previousPath.current = pathname;
+    // CSS smooth scrolling is for in-page anchors. Page changes must start
+    // immediately at the top, even when the outgoing page was scrolled.
+    if (!hash) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 
     let frame = 0;
     let observer: MutationObserver | null = null;
@@ -43,7 +46,7 @@ export default function RouteFocus() {
       observer?.disconnect();
       if (timeout) window.clearTimeout(timeout);
     };
-  }, [pathname]);
+  }, [pathname, hash]);
 
   return null;
 }

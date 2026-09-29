@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { adminApi, adminRemove, adminUpload } from "@/lib/adminApi";
-import { supabase } from "@/integrations/supabase/client";
+import { validateImageUpload, imageStoragePath } from "@/lib/imageUpload";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
@@ -31,12 +31,10 @@ export default function TeamTab() {
       const res = await adminApi<{ data: TeamMember[] }>("listTeamMembers");
       const rows = res?.data ?? [];
       setItems(rows);
-      const paths = rows.map((r) => r.photo_url).filter(Boolean) as string[];
+      const paths = rows.map((r) => r.photo_url).filter((path): path is string => !!path && !/^https?:\/\//i.test(path));
       if (paths.length) {
-        const { data } = await supabase.storage.from("team-photos").createSignedUrls(paths, 60 * 60);
-        const map: Record<string, string> = {};
-        (data ?? []).forEach((s: any) => { if (s.path && s.signedUrl) map[s.path] = s.signedUrl; });
-        setSigned(map);
+        const { urls } = await adminApi<{ urls: Record<string, string> }>("signImagePaths", { bucket: "team-photos", paths });
+        setSigned(urls);
       } else {
         setSigned({});
       }
@@ -202,14 +200,13 @@ function TeamMemberDialog({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !roleTitle.trim()) return toast.error("Name and role are required");
+    if (photoFile) { const invalid = validateImageUpload(photoFile); if (invalid) return toast.error(invalid); }
     setSaving(true);
     try {
       let photo_url = member?.photo_url ?? null;
       if (photoFile) {
-        const ext = photoFile.name.split(".").pop() || "jpg";
-        const path = `team/${crypto.randomUUID()}.${ext}`;
+        const path = imageStoragePath("team", photoFile);
         await adminUpload("team-photos", path, photoFile);
-        if (photo_url) { try { await adminRemove("team-photos", photo_url); } catch { /* ignore */ } }
         photo_url = path;
       }
       const cleanBadges = badges
@@ -236,6 +233,9 @@ function TeamMemberDialog({
           },
         });
         toast.success("Added");
+      }
+      if (member?.photo_url && photo_url !== member.photo_url && !/^https?:\/\//i.test(member.photo_url)) {
+        await adminRemove("team-photos", member.photo_url).catch(() => undefined);
       }
       onSaved();
     } catch (err: any) {

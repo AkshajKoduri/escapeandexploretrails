@@ -55,7 +55,6 @@ export default function AdventureCard({
               </div>
             </div>
           )}
-          <div className={`absolute inset-0 bg-gradient-card ${wide ? "md:hidden" : ""}`} aria-hidden="true" />
 
           {/* Date badge */}
           {nextDate && (

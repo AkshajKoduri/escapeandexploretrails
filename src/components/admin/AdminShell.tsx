@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
+  Home,
   Mountain,
   Users,
   PhoneCall,
@@ -21,6 +22,7 @@ import logo from "@/assets/logo.png";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard,
+  Home,
   Mountain,
   Users,
   PhoneCall,

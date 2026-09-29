@@ -55,7 +55,9 @@ describe("Itinerary trek details", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Plan with clarity" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Trip information" })).toBeInTheDocument();
+    expect(screen.queryByText("Plan with clarity")).not.toBeInTheDocument();
+    expect(screen.queryByText("Trip essentials")).not.toBeInTheDocument();
     expect(screen.getByText("Local guide")).toBeInTheDocument();
     expect(screen.getByText("Stay with the group")).toBeInTheDocument();
     expect(screen.getByText("Refund timing is confirmed after review.")).toBeInTheDocument();

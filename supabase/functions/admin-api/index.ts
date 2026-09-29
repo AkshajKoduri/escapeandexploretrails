@@ -4,6 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { clientIp, rateLimit, resetRateLimit } from "../_shared/rateLimit.ts";
 import { issueToken, timingSafeEqual, verifyToken } from "../_shared/adminSession.ts";
+import { manualBookingSnapshot, normalizePayment } from "../_shared/bookingPayment.ts";
 import {
   assertUploadAllowed,
   BOOKING_COLUMNS,
@@ -17,6 +18,11 @@ import {
   TEAM_COLUMNS,
   TREK_COLUMNS,
   tripDetailsPayload,
+  highlightsPayload,
+  tripGalleryPayload,
+  homepagePayload,
+  signImagePathsPayload,
+  galleryPatchPayload,
   uploadPayload,
   z,
 } from "../_shared/validation.ts";
@@ -54,6 +60,20 @@ const parse = <T>(schema: z.ZodType<T>, payload: unknown): T => {
   if (!r.success) throw new Error(r.error.issues[0]?.message ?? "Invalid payload");
   return r.data;
 };
+
+async function listAll(table: "bookings" | "booking_members") {
+  const rows: Record<string, unknown>[] = [];
+  // A deterministic secondary key prevents skipped records at page boundaries.
+  for (let offset = 0; ;) {
+    const { data, error, count } = await supabase.from(table).select("*", { count: "exact" })
+      .order("created_at", { ascending: false }).order("id").range(offset, offset + 999);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data?.length) return rows;
+    offset += data.length;
+    if (count != null ? offset >= count : data.length < 1000) return rows;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
@@ -109,17 +129,10 @@ Deno.serve(async (req) => {
 
       // ---- Reads ----
       case "listBookings": {
-        const { data, error } = await supabase
-          .from("bookings")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        return json({ data });
+        return json({ data: await listAll("bookings") });
       }
       case "listBookingMembers": {
-        const { data, error } = await supabase.from("booking_members").select("*");
-        if (error) throw error;
-        return json({ data });
+        return json({ data: await listAll("booking_members") });
       }
       case "listCallbackRequests": {
         const { data, error } = await supabase
@@ -133,7 +146,14 @@ Deno.serve(async (req) => {
       // ---- Bookings ----
       case "updateBooking": {
         const { id, patch } = parse(patchPayload, payload);
-        const safe = pickAllowed(patch, BOOKING_COLUMNS);
+        const { data: existing, error: readError } = await supabase.from("bookings").select("*").eq("id", id).single();
+        if (readError) throw readError;
+        const allowed = pickAllowed(patch, BOOKING_COLUMNS);
+        // Package snapshots and group size are fixed when the booking is created.
+        for (const key of ["trek_id", "seats_booked", "selected_package_id", "selected_package_name", "package_unit_amount", "package_price_basis", "package_currency"]) {
+          if (key in allowed && allowed[key] !== existing[key]) throw new Error("Booking package and participant count cannot be changed through a payment update");
+        }
+        const safe = normalizePayment(existing, allowed);
         const { error } = await supabase.from("bookings").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
@@ -143,7 +163,12 @@ Deno.serve(async (req) => {
         if (!row.primary_name || !row.primary_phone || !row.trek_name) {
           return json({ error: "Missing required fields" }, 400);
         }
-        const { data, error } = await supabase.from("bookings").insert(row).select().single();
+        const trekId = parse(idPayload, { id: row.trek_id }).id;
+        const { data: trek, error: trekError } = await supabase.from("upcoming_treks").select("*").eq("id", trekId).single();
+        if (trekError) throw trekError;
+        if (trek.is_archived || trek.is_draft) throw new Error("Select an active published trip");
+        const snapshot = manualBookingSnapshot(row, trek);
+        const { data, error } = await supabase.from("bookings").insert(normalizePayment(null, snapshot)).select().single();
         if (error) throw error;
         return json({ data });
       }
@@ -167,6 +192,8 @@ Deno.serve(async (req) => {
       case "insertTrek": {
         const row = pickAllowed(payload?.row, TREK_COLUMNS) as Record<string, unknown>;
         if ("trip_details" in row) row.trip_details = parse(tripDetailsPayload, row.trip_details);
+        if ("highlights" in row) row.highlights = parse(highlightsPayload, row.highlights);
+        if ("gallery_images" in row) row.gallery_images = parse(tripGalleryPayload, row.gallery_images);
         if (!row.name || !row.event_type) return json({ error: "Trip name and event type are required" }, 400);
         const { data, error } = await supabase
           .from("upcoming_treks")
@@ -180,6 +207,8 @@ Deno.serve(async (req) => {
         const { id, patch } = parse(patchPayload, payload);
         const safe = pickAllowed(patch, TREK_COLUMNS) as Record<string, unknown>;
         if ("trip_details" in safe) safe.trip_details = parse(tripDetailsPayload, safe.trip_details);
+        if ("highlights" in safe) safe.highlights = parse(highlightsPayload, safe.highlights);
+        if ("gallery_images" in safe) safe.gallery_images = parse(tripGalleryPayload, safe.gallery_images);
         const { error } = await supabase.from("upcoming_treks").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
@@ -192,6 +221,14 @@ Deno.serve(async (req) => {
       }
 
       // ---- Storage ----
+      case "signImagePaths": {
+        const { bucket, paths } = parse(signImagePathsPayload, payload);
+        if (!paths.length) return json({ urls: {} });
+        const { data, error } = await supabase.storage.from(bucket).createSignedUrls(paths, 60 * 60);
+        if (error) throw error;
+        const urls = Object.fromEntries((data ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl]));
+        return json({ urls });
+      }
       case "uploadFile": {
         const { bucket, path, base64, contentType, upsert } = parse(uploadPayload, payload);
         const bytes = b64ToBytes(base64);
@@ -214,6 +251,17 @@ Deno.serve(async (req) => {
       }
 
       // ---- Gallery ----
+      case "getHomepageSettings": {
+        const { data, error } = await supabase.from("site_settings").select("id, hero_image_path, hero_alt_text").eq("id", "homepage").maybeSingle();
+        if (error) throw error;
+        return json({ data });
+      }
+      case "updateHomepageSettings": {
+        const patch = parse(homepagePayload, payload?.patch);
+        const { data, error } = await supabase.from("site_settings").upsert({ id: "homepage", ...patch }).select().single();
+        if (error) throw error;
+        return json({ data });
+      }
       case "listGalleryImages": {
         const { data, error } = await supabase
           .from("gallery_images")
@@ -223,7 +271,7 @@ Deno.serve(async (req) => {
         return json({ data });
       }
       case "insertGalleryImage": {
-        const row = pickAllowed(payload?.row, GALLERY_COLUMNS) as Record<string, unknown>;
+        const row = parse(galleryPatchPayload, pickAllowed(payload?.row, GALLERY_COLUMNS));
         if (!row.image_url && !row.storage_path) return json({ error: "Image is required" }, 400);
         const { data, error } = await supabase
           .from("gallery_images")
@@ -235,7 +283,7 @@ Deno.serve(async (req) => {
       }
       case "updateGalleryImage": {
         const { id, patch } = parse(patchPayload, payload);
-        const safe = pickAllowed(patch, GALLERY_COLUMNS);
+        const safe = parse(galleryPatchPayload, pickAllowed(patch, GALLERY_COLUMNS));
         const { error } = await supabase.from("gallery_images").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
@@ -339,11 +387,11 @@ Deno.serve(async (req) => {
           .from("team_members").select("is_founder, photo_url").eq("id", id).maybeSingle();
         if (fetchErr) throw fetchErr;
         if (existing?.is_founder) return json({ error: "Cannot delete the founder" }, 400);
-        if (existing?.photo_url) {
-          try { await supabase.storage.from("team-photos").remove([existing.photo_url]); } catch { /* ignore */ }
-        }
         const { error } = await supabase.from("team_members").delete().eq("id", id);
         if (error) throw error;
+        if (existing?.photo_url && !/^https?:\/\//i.test(existing.photo_url)) {
+          await supabase.storage.from("team-photos").remove([existing.photo_url]);
+        }
         return json({ ok: true });
       }
       case "reorderTeamMembers": {

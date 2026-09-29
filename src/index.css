@@ -103,6 +103,34 @@
 }
 
 @layer components {
+  /* Reserve the measured header height, and let content grow on short or
+     narrow screens instead of pushing the heading behind the fixed header. */
+  .homepage-hero {
+    min-height: max(580px, 88svh);
+  }
+  .homepage-hero-content {
+    padding-top: calc(var(--site-header-height, calc(76px + env(safe-area-inset-top, 0px))) + 2rem);
+  }
+  .trip-hero {
+    padding-top: var(--site-header-height, calc(76px + env(safe-area-inset-top, 0px)));
+  }
+  .trip-contact-icon {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/60 bg-charcoal/40 text-white transition-colors hover:bg-charcoal/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+  /* Shade the copy area while leaving the scenery at its original brightness. */
+  .homepage-hero-shade {
+    background: linear-gradient(180deg, transparent 0%, hsl(160 12% 8% / 0.55) 30%, hsl(160 12% 8% / 0.72) 100%);
+  }
+  @media (min-width: 640px) {
+    .homepage-hero { min-height: max(640px, 88svh); }
+  }
+  @media (min-width: 768px) {
+    .homepage-hero { min-height: max(640px, min(92svh, 840px)); }
+    .homepage-hero-shade {
+      background: linear-gradient(90deg, hsl(160 12% 8% / 0.75) 0%, hsl(160 12% 8% / 0.6) 35%, transparent 80%);
+    }
+  }
+
   /* ---------- Typography ---------- */
   .kicker {
     @apply inline-flex items-center gap-2.5 text-[11px] md:text-xs font-semibold uppercase tracking-[0.22em] text-accent;

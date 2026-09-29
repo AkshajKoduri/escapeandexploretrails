@@ -69,7 +69,13 @@ export async function adminApi<T = unknown>(action: string, payload?: unknown): 
     if ((error as { context?: { status?: number } })?.context?.status === 401) {
       clearAdminSession();
     }
-    throw new Error(error.message || "Admin request failed");
+    let message = error.message || "Admin request failed";
+    const context = (error as { context?: { json?: () => Promise<{ error?: unknown }> } }).context;
+    try {
+      const body = await context?.json?.();
+      if (body?.error) message = String(body.error);
+    } catch { /* Retain the transport error when there is no JSON response. */ }
+    throw new Error(message);
   }
   if (data && typeof data === "object" && "error" in data && data.error) {
     throw new Error(String(data.error));

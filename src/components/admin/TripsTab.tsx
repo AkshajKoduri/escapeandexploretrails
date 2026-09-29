@@ -33,6 +33,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import TripDetailsEditor from "@/components/admin/TripDetailsEditor";
 import { normalizeTripDetails, serializeTripDetails } from "@/lib/tripDetails";
+import { exportBookingMembers } from "@/lib/bookingExport";
+import { getBookingPayment, PAYMENT_STATUS_LABEL } from "@/lib/bookingPayments";
+import { TripHighlightsEditor, TripPhotosEditor } from "@/components/admin/TripMediaEditor";
+import { normalizeHighlights, normalizeTripPhotos, validateTripImage } from "@/lib/tripContent";
 
 /* ================================================================== */
 /* Trips tab                                                           */
@@ -100,6 +104,8 @@ export default function TripsTab({
         duration: t.duration,
         distance: t.distance,
         description: t.description,
+        highlights: normalizeHighlights(t.highlights),
+        gallery_images: normalizeTripPhotos(t.gallery_images),
         price: t.price,
         starting_price: t.starting_price,
         starting_price_label: t.starting_price_label,
@@ -112,6 +118,7 @@ export default function TripsTab({
         image_url: t.image_url,
         album_url: t.album_url,
         itinerary_url: t.itinerary_url,
+        itinerary_file_path: t.itinerary_file_path,
         itinerary_days: t.itinerary_days,
         event_type: t.event_type,
         trek_category: t.trek_category,
@@ -385,60 +392,8 @@ function TripDetailView({
   ];
 
   const downloadExcel = async () => {
-    if (trekBookings.length === 0) {
-      toast.error("No bookings for this trip yet");
-      return;
-    }
-    // Load xlsx (~400 KB) only when exporting — never on admin startup.
-    const XLSX = await import("xlsx");
-    const rows: any[] = [];
-    trekBookings.forEach((b, idx) => {
-      const ms = membersByBooking.get(b.id) ?? [];
-      rows.push({
-        "Booking ID": b.id,
-        Trek: b.trek_name,
-        "Booking Date": new Date(b.created_at).toLocaleString(),
-        Status: b.status,
-        "Payment Status": (b.payment_status ?? "pending") === "paid" ? "Paid" : "Pending",
-        "Booking Source": b.booking_source === "manual" ? "Manual" : "Online",
-        Role: ms.length > 0 ? "GROUP LEADER (Booked By)" : "Primary",
-        "Full Name": b.primary_name,
-        Age: b.primary_age ?? "",
-        Gender: b.primary_gender ?? "",
-        Phone: b.primary_phone,
-        Email: b.primary_email ?? "",
-        "Aadhaar Number": b.primary_aadhaar ?? "",
-        "Group Booking": ms.length > 0 ? "Yes" : "No",
-        "Seats Booked": b.seats_booked ?? 1,
-      });
-      ms.forEach((m, i) => {
-        rows.push({
-          "Booking ID": b.id,
-          Trek: "",
-          "Booking Date": "",
-          Status: "",
-          "Payment Status": "",
-          "Booking Source": "",
-          Role: `   Member ${i + 1} (under ${b.primary_name})`,
-          "Full Name": m.full_name,
-          Age: "",
-          Gender: "",
-          Phone: "",
-          Email: "",
-          "Aadhaar Number": m.aadhaar_number ?? "",
-          "Group Booking": "Yes",
-          "Seats Booked": "",
-        });
-      });
-    });
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 38 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 28 }, { wch: 24 }, { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, ws, "Trekkers");
-    const slug = trek.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "trek";
-    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    XLSX.writeFile(wb, `e2trails-${slug}-${ts}.xlsx`);
-    toast.success("Excel file downloaded");
+    try { await exportBookingMembers(trekBookings, members, [trek], { label: trek.name }); toast.success("Member list downloaded"); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Could not download member list"); }
   };
 
   return (
@@ -503,8 +458,8 @@ function TripDetailView({
                     <span className="font-semibold text-foreground">{b.primary_name}</span>
                     <span className="text-xs text-muted-foreground">{b.primary_phone}</span>
                     <span className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</span>
-                    <span className={cn("pill", STATUS_CHIP[(b.payment_status ?? "pending") === "paid" ? "PAID" : "PENDING"])}>
-                      {(b.payment_status ?? "pending") === "paid" ? "Paid" : "Pending"}
+                    <span className={cn("pill", STATUS_CHIP[getBookingPayment(b).status.toUpperCase()])}>
+                      {PAYMENT_STATUS_LABEL[getBookingPayment(b).status]}
                     </span>
                     <span className="text-xs font-semibold text-muted-foreground ml-auto">{b.seats_booked ?? 1} seat(s)</span>
                   </div>
@@ -556,10 +511,13 @@ function TripForm({
 }) {
   const [f, setF] = useState<Trek>(() => ({
     ...initial,
+    highlights: normalizeHighlights(initial.highlights),
+    gallery_images: normalizeTripPhotos(initial.gallery_images),
     trip_details: normalizeTripDetails(initial.trip_details, initial.instructions),
   }));
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [itineraryFile, setItineraryFile] = useState<File | null>(null);
+  const [galleryBusy, setGalleryBusy] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const set = (patch: Partial<Trek>) => setF((p) => ({ ...p, ...patch }));
@@ -568,22 +526,17 @@ function TripForm({
     try { new URL(v); return true; } catch { return false; }
   };
 
-  const removeItineraryFile = async () => {
-    if (!f.itinerary_file_path) return;
-    if (!confirm("Remove the uploaded itinerary PDF?")) return;
-    try {
-      await adminRemove("itineraries", f.itinerary_file_path);
-      if (isEdit) await adminApi("updateTrek", { id: f.id, patch: { itinerary_file_path: null } });
-      set({ itinerary_file_path: null });
-      toast.success("Itinerary removed");
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+  const removeItineraryFile = () => {
+    set({ itinerary_file_path: null });
+    setItineraryFile(null);
+    toast.info("Save the trip to remove this PDF. Existing shared copies are preserved.");
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (galleryBusy) return;
     if (!f.name?.trim()) return toast.error("Trip name is required");
+    if (imageFile) { const problem = validateTripImage(imageFile); if (problem) return toast.error(problem); }
     if (f.max_seats < currentSeatsTaken) {
       return toast.error(`Can't set max seats below current bookings (${currentSeatsTaken})`);
     }
@@ -608,9 +561,7 @@ function TripForm({
       if (itineraryFile) {
         const path = `trips/${crypto.randomUUID()}.pdf`;
         const up = await adminUpload("itineraries", path, itineraryFile);
-        if (f.itinerary_file_path) {
-          try { await adminRemove("itineraries", f.itinerary_file_path); } catch { /* ignore */ }
-        }
+
         itineraryPath = up.path;
       }
 
@@ -629,6 +580,8 @@ function TripForm({
         duration: f.duration?.trim() || null,
         distance: f.distance?.trim() || null,
         description: f.description?.trim() || null,
+        highlights: normalizeHighlights(f.highlights),
+        gallery_images: normalizeTripPhotos(f.gallery_images),
         price: startPrice ?? (Number(f.price) || 0),
         starting_price: startPrice,
         starting_price_label: null,
@@ -781,7 +734,9 @@ function TripForm({
         <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="15800" />
       </FF>
 
-      <FF label={isOutstation ? "Description" : "Description *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
+      <FF label={isOutstation ? "Overview" : "Overview *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
+      <TripHighlightsEditor value={f.highlights} onChange={(highlights) => set({ highlights })} />
+      <TripPhotosEditor value={f.gallery_images} onChange={(gallery_images) => set({ gallery_images })} onBusy={setGalleryBusy} />
 
       <TripDetailsEditor value={f.trip_details} onChange={(tripDetails) => set({ trip_details: tripDetails })} />
 
@@ -921,7 +876,7 @@ function TripForm({
       </FF>
 
       <div className="md:col-span-2">
-        <button type="submit" disabled={busy} className="w-full btn-primary disabled:opacity-60">
+        <button type="submit" disabled={busy || galleryBusy} className="w-full btn-primary disabled:opacity-60">
           {busy ? "Saving…" : isEdit ? "Save changes" : "Create trip"}
         </button>
       </div>

@@ -13,6 +13,8 @@ export type Trek = {
   distance: string | null;
   image_url: string | null;
   description: string | null;
+  highlights: string[];
+  gallery_images: { id: string; url: string; path: string | null; alt: string }[];
   price: number;
   starting_price: number | null;
   starting_price_label: string | null;
@@ -59,6 +61,8 @@ export const emptyTrek: Partial<Trek> = {
   duration: "",
   distance: "",
   description: "",
+  highlights: [],
+  gallery_images: [],
   price: 0,
   starting_price: null,
   starting_price_label: "",
@@ -148,6 +152,7 @@ export const STATUS_CHIP: Record<string, string> = {
   DRAFT: "bg-amber-500/15 text-amber-700",
   CANCELLED: "bg-destructive/15 text-destructive",
   PAID: "bg-green-600/15 text-green-700",
+  PARTIAL: "bg-blue-600/15 text-blue-700",
   PENDING: "bg-amber-500/15 text-amber-700",
   CONTACTED: "bg-green-600/15 text-green-700",
 };
@@ -160,6 +165,7 @@ export const ADMIN_NAV = [
   { key: "drafts", label: "Drafts", icon: "FileEdit" },
   { key: "trail-log", label: "Trail Log", icon: "BookOpen" },
   { key: "gallery", label: "Gallery", icon: "Image" },
+  { key: "homepage", label: "Homepage", icon: "Home" },
   { key: "team", label: "Team", icon: "Users2" },
 ] as const;
 

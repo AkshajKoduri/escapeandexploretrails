@@ -1,10 +1,12 @@
 import { Fragment, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Plus, ChevronDown, ChevronRight, Eye, EyeOff, X, Search } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, Eye, EyeOff, X, Search, Download } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import type { Booking, Trek } from "@/lib/admin";
 import { STATUS_CHIP, trekDates } from "@/lib/admin";
-import { groupBookingsByDeparture, resolveBookingDeparture } from "@/lib/bookingAdmin";
+import { filterBookings, groupBookingsByDeparture, resolveBookingDeparture } from "@/lib/bookingAdmin";
+import { exportBookingMembers } from "@/lib/bookingExport";
+import { getBookingPayment, PAYMENT_STATUS_LABEL, validatePaymentAmounts, type PaymentStatus } from "@/lib/bookingPayments";
 import { fmtDate, inr, maskAadhaar } from "@/lib/treks";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
@@ -13,6 +15,64 @@ import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type BookingMember = Database["public"]["Tables"]["booking_members"]["Row"];
 const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
+const formatPaymentAmount = (amount: number, currency?: string | null) => `${currency || "INR"} ${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function paymentPreview(total: number | string | null, paid: string) {
+  if (total == null || total === "" || paid.trim() === "") return null;
+  try { return validatePaymentAmounts(total, paid); } catch { return null; }
+}
+
+function PaymentForm({ booking, onDone }: { booking: Booking; onDone: () => void }) {
+  const current = getBookingPayment(booking);
+  const [total, setTotal] = useState(current.total == null ? "" : String(current.total));
+  const [paid, setPaid] = useState(current.paid == null ? "" : String(current.paid));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const preview = paymentPreview(total, paid);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    try {
+      const payment = validatePaymentAmounts(total, paid);
+      setBusy(true);
+      await adminApi("updateBooking", {
+        id: booking.id,
+        patch: { amount_paid: payment.paid, ...(current.total == null ? { booking_total: payment.total } : {}) },
+      });
+      toast.success("Booking payment updated");
+      onDone();
+    } catch (cause) {
+      setError(errorMessage(cause, "Could not update payment. Please try again."));
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <p className="text-sm text-muted-foreground">{booking.primary_name} · {booking.trek_name}</p>
+      {current.total == null ? (
+        <div>
+          <label htmlFor="payment-total" className="field-label">Total booking amount ({booking.package_currency || "INR"})</label>
+          <input id="payment-total" type="number" min="0" max="10000000" step="0.01" inputMode="decimal" value={total} onChange={(event) => setTotal(event.target.value)} className="field-input" required aria-describedby="payment-total-help" />
+          <p id="payment-total-help" className="text-xs text-muted-foreground mt-1">This historical booking has no recorded total. Enter its actual agreed total for all participants before recording payment.</p>
+        </div>
+      ) : <p className="font-medium">Total booking amount: {formatPaymentAmount(current.total, booking.package_currency)}</p>}
+      {current.paid == null && <p className="text-sm text-muted-foreground">Previous status: {PAYMENT_STATUS_LABEL[current.status]}. The amount received was not recorded. Confirm the cumulative amount from your payment records.</p>}
+      <div>
+        <label htmlFor="payment-paid" className="field-label">Amount paid so far ({booking.package_currency || "INR"})</label>
+        <input id="payment-paid" type="number" min="0" max={total || "10000000"} step="0.01" inputMode="decimal" value={paid} onChange={(event) => setPaid(event.target.value)} className="field-input" required aria-describedby="payment-paid-help" />
+        <p id="payment-paid-help" className="mt-1 text-xs text-muted-foreground">Enter the cumulative amount received for this whole booking, including earlier payments. This replaces the saved amount.</p>
+      </div>
+      <div className="rounded-lg bg-muted p-3 text-sm space-y-1" aria-live="polite">
+        <p>Payment status: <strong>{preview ? PAYMENT_STATUS_LABEL[preview.status] : "Enter valid amounts"}</strong></p>
+        <p>Remaining balance: <strong>{preview ? formatPaymentAmount(preview.balance, booking.package_currency) : "—"}</strong></p>
+        {preview?.total === 0 && <p>No payment is due for this zero-total booking.</p>}
+      </div>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <div className="flex justify-end"><button type="submit" disabled={busy} className="btn-primary btn-sm disabled:opacity-60">{busy ? "Saving…" : "Save payment"}</button></div>
+    </form>
+  );
+}
 
 export default function BookingsTab({
   bookings,
@@ -29,7 +89,7 @@ export default function BookingsTab({
   const [trekFilter, setTrekFilter] = useState("all");
   const [departureFilter, setDepartureFilter] = useState("all");
   const [packageFilter, setPackageFilter] = useState("all");
-  const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "paid">("all");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | PaymentStatus>("all");
   const [sourceFilter, setSourceFilter] = useState<"all" | "online" | "manual">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "cancelled">("all");
   const [sortDir, setSortDir] = useState<"newest" | "oldest">("newest");
@@ -37,6 +97,8 @@ export default function BookingsTab({
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [addOpen, setAddOpen] = useState(false);
   const [cancelling, setCancelling] = useState<Booking | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Booking | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const membersByBooking = useMemo(() => {
     const m = new Map<string, BookingMember[]>();
@@ -48,32 +110,10 @@ export default function BookingsTab({
     return m;
   }, [members]);
 
-  const filtered = useMemo(() => {
-    let list = [...bookings];
-    const q = query.trim().toLowerCase();
-    if (q) {
-      list = list.filter((b) =>
-        [b.primary_name, b.primary_phone, b.primary_email, b.trek_name]
-          .filter(Boolean)
-          .some((v) => String(v).toLowerCase().includes(q)),
-      );
-    }
-    if (trekFilter !== "all") list = list.filter((b) => b.trek_id === trekFilter || b.trek_name === trekFilter);
-    if (departureFilter !== "all") list = list.filter((b) => (resolveBookingDeparture(b, treks) ?? "unknown") === departureFilter);
-    if (packageFilter !== "all") list = list.filter((b) => (b.selected_package_id ?? "unknown") === packageFilter);
-    if (paymentFilter !== "all") list = list.filter((b) => (b.payment_status ?? "pending") === paymentFilter);
-    if (sourceFilter !== "all") list = list.filter((b) => (b.booking_source ?? "online") === sourceFilter);
-    if (statusFilter !== "all") {
-      if (statusFilter === "cancelled") list = list.filter((b) => b.status === "cancelled");
-      else if (statusFilter === "confirmed") list = list.filter((b) => b.status === "confirmed");
-      else list = list.filter((b) => b.status === "pending");
-    }
-    list.sort((a, b) => {
-      const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      return sortDir === "newest" ? -diff : diff;
-    });
-    return list;
-  }, [bookings, query, trekFilter, departureFilter, packageFilter, paymentFilter, sourceFilter, statusFilter, sortDir, treks]);
+  const filtered = useMemo(() => filterBookings(bookings, treks, {
+    query, trek: trekFilter, departure: departureFilter, package: packageFilter,
+    payment: paymentFilter, source: sourceFilter, status: statusFilter, sort: sortDir,
+  }), [bookings, query, trekFilter, departureFilter, packageFilter, paymentFilter, sourceFilter, statusFilter, sortDir, treks]);
 
   const departureOptions = useMemo(() => [...new Set(bookings.map((booking) => resolveBookingDeparture(booking, treks)).filter(Boolean) as string[])].sort(), [bookings, treks]);
   const packageOptions = useMemo(() => {
@@ -101,13 +141,18 @@ export default function BookingsTab({
     }
   };
 
-  const setPaymentStatus = async (b: Booking, value: "pending" | "paid") => {
+  const downloadMembers = async (selection: Booking[]) => {
+    if (!selection.length) return toast.error("No bookings match the current filters.");
+    setDownloading(true);
     try {
-      await adminApi("updateBooking", { id: b.id, patch: { payment_status: value } });
-      toast.success(`Marked as ${value}`);
-      reload();
+      const trips = new Set(selection.map((booking) => booking.trek_name));
+      const label = selection.length === 1 ? `booking-${selection[0].id}` : trips.size === 1 ? selection[0].trek_name : "filtered-bookings";
+      await exportBookingMembers(selection, members, treks, { label });
+      toast.success("Member list downloaded. Booking totals are on the Booking payments sheet.");
     } catch (err: unknown) {
-      toast.error(errorMessage(err, "Could not update payment status"));
+      toast.error(errorMessage(err, "Could not download member list"));
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -118,9 +163,14 @@ export default function BookingsTab({
           <p className="kicker">Bookings &amp; participants</p>
           <h1 className="font-display font-bold text-3xl text-primary mt-1">Bookings ({filtered.length})</h1>
         </div>
-        <button onClick={() => setAddOpen(true)} className="btn-accent btn-sm">
-          <Plus className="w-4 h-4" aria-hidden="true" /> Add manual booking
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => downloadMembers(filtered)} disabled={downloading || filtered.length === 0} className="btn-outline btn-sm disabled:opacity-50">
+            <Download className="w-4 h-4" aria-hidden="true" /> {downloading ? "Preparing download…" : "Download member list"}
+          </button>
+          <button onClick={() => setAddOpen(true)} className="btn-accent btn-sm">
+            <Plus className="w-4 h-4" aria-hidden="true" /> Add manual booking
+          </button>
+        </div>
       </div>
 
       <div className="surface rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -150,9 +200,10 @@ export default function BookingsTab({
           {packageOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           <option value="unknown">Package not recorded</option>
         </select>
-        <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value as "all" | "pending" | "paid")} aria-label="Filter by payment" className="field-input py-2">
+        <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value as "all" | PaymentStatus)} aria-label="Filter by payment" className="field-input py-2">
           <option value="all">Payment: all</option>
           <option value="pending">Payment: pending</option>
+          <option value="partial">Payment: partially paid</option>
           <option value="paid">Payment: paid</option>
         </select>
         <div className="flex gap-2">
@@ -182,7 +233,8 @@ export default function BookingsTab({
             const ms = membersByBooking.get(b.id) ?? [];
             const isGroup = b.is_group || ms.length > 0;
             const isCancelled = b.status === "cancelled";
-            const pay = (b.payment_status ?? "pending") as "pending" | "paid";
+            const payment = getBookingPayment(b);
+            const pay = payment.status;
             const source = (b.booking_source ?? "online") as "online" | "manual";
             const isOpen = expanded === b.id;
             const showAadhaar = revealed[b.id];
@@ -219,16 +271,8 @@ export default function BookingsTab({
                   </button>
                   <span className="text-xs text-muted-foreground hidden md:block">{b.primary_phone}</span>
                   <span className="pill bg-primary/10 text-primary">{b.seats_booked ?? 1} seat{(b.seats_booked ?? 1) > 1 ? "s" : ""}</span>
-                  <span className={cn("pill", STATUS_CHIP[pay === "paid" ? "PAID" : "PENDING"])}>{pay === "paid" ? "Paid" : "Pending"}</span>
-                  <select
-                    value={pay}
-                    onChange={(e) => setPaymentStatus(b, e.target.value as "pending" | "paid")}
-                    aria-label="Payment status"
-                    className="px-2 py-1.5 rounded-md border border-input bg-background text-xs"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                  </select>
+                  <span className={cn("pill", STATUS_CHIP[pay.toUpperCase()])}>{PAYMENT_STATUS_LABEL[pay]}</span>
+                  <button type="button" onClick={() => setEditingPayment(b)} className="btn-outline btn-sm">Update payment</button>
                   <button
                     type="button"
                     onClick={() => setExpanded(isOpen ? null : b.id)}
@@ -245,7 +289,9 @@ export default function BookingsTab({
                       <p><span className="text-muted-foreground">Departure:</span> <span className="font-medium">{departure === "unknown" ? "Departure date not recorded" : fmtDate(departure)}</span></p>
                       <p><span className="text-muted-foreground">Package:</span> <span className="font-medium">{b.selected_package_name || "Package not recorded"}</span></p>
                       {b.package_unit_amount != null && <p><span className="text-muted-foreground">Unit price:</span> <span className="font-medium">{inr(b.package_unit_amount)} {b.package_price_basis === "per_booking" ? "per booking" : "per participant"}</span></p>}
-                      {b.booking_total != null && <p><span className="text-muted-foreground">Trip total:</span> <span className="font-medium">{inr(b.booking_total)} {b.package_currency || "INR"}</span></p>}
+                      <p><span className="text-muted-foreground">Total booking amount:</span> <span className="font-medium">{payment.total == null ? "Not recorded" : formatPaymentAmount(payment.total, b.package_currency)}</span></p>
+                      <p><span className="text-muted-foreground">Amount paid so far:</span> <span className="font-medium">{payment.paid == null ? "Not recorded" : formatPaymentAmount(payment.paid, b.package_currency)}</span></p>
+                      <p><span className="text-muted-foreground">Remaining balance:</span> <span className="font-medium">{payment.balance == null ? "Not recorded" : formatPaymentAmount(payment.balance, b.package_currency)}</span></p>
                       <p><span className="text-muted-foreground">Email:</span> <span className="font-medium">{b.primary_email ?? "—"}</span></p>
                       <p><span className="text-muted-foreground">Age / Gender:</span> <span className="font-medium">{b.primary_age ?? "—"} / {b.primary_gender ?? "—"}</span></p>
                       <p>
@@ -295,6 +341,8 @@ export default function BookingsTab({
                         </ul>
                       </div>
                     )}
+                    <div className="flex flex-wrap gap-3">
+                    <button type="button" onClick={() => downloadMembers([b])} disabled={downloading} className="btn-outline btn-sm disabled:opacity-50"><Download className="w-4 h-4" aria-hidden="true" /> Download this booking’s members</button>
                     {!isCancelled && (
                       <button
                         type="button"
@@ -304,6 +352,7 @@ export default function BookingsTab({
                         <X className="w-3.5 h-3.5" aria-hidden="true" /> Cancel booking
                       </button>
                     )}
+                    </div>
                   </div>
                 )}
               </article>
@@ -319,6 +368,13 @@ export default function BookingsTab({
             <DialogTitle className="font-display text-xl text-primary">Add manual booking</DialogTitle>
           </DialogHeader>
           <ManualBookingForm treks={treks.filter((t) => !t.is_archived && !t.is_draft)} onDone={() => { setAddOpen(false); reload(); }} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingPayment} onOpenChange={(open) => { if (!open) setEditingPayment(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-display text-xl text-primary">Update booking payment</DialogTitle></DialogHeader>
+          {editingPayment && <PaymentForm key={editingPayment.id} booking={editingPayment} onDone={() => { setEditingPayment(null); reload(); }} />}
         </DialogContent>
       </Dialog>
 
@@ -355,9 +411,14 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [seats, setSeats] = useState(1);
-  const [paymentStatus, setPaymentStatus] = useState<"pending" | "paid">("pending");
+  const [amountPaid, setAmountPaid] = useState("0");
+  const [bookingTotal, setBookingTotal] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const selectedPackage = packages.find((item) => item.id === packageId);
+  const configuredTotal = !packages.length && selectedTrek ? Math.round(selectedTrek.price * 100) * seats / 100 : selectedPackage?.priceAmount == null ? null
+    : selectedPackage.priceBasis === "per_booking" ? selectedPackage.priceAmount : Math.round(selectedPackage.priceAmount * 100) * seats / 100;
+  const preview = paymentPreview(configuredTotal ?? bookingTotal, amountPaid);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -370,7 +431,10 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
     const selectedPackage = trek.trip_details.packages.find((item) => item.id === packageId) ?? null;
     if (trek.trip_details.packages.length > 0 && !selectedPackage) return toast.error("Please select a package");
     const seatCount = Math.max(1, Number(seats) || 1);
-    const total = selectedPackage?.priceAmount == null ? null : selectedPackage.priceBasis === "per_booking" ? selectedPackage.priceAmount : selectedPackage.priceAmount * seatCount;
+    const total = !packages.length ? Math.round(trek.price * 100) * seatCount / 100 : selectedPackage?.priceAmount == null ? bookingTotal : selectedPackage.priceBasis === "per_booking" ? selectedPackage.priceAmount : Math.round(selectedPackage.priceAmount * 100) * seatCount / 100;
+    let payment: ReturnType<typeof validatePaymentAmounts>;
+    try { payment = validatePaymentAmounts(total, amountPaid); }
+    catch (cause) { return toast.error(errorMessage(cause, "Please check the booking amounts")); }
 
     setBusy(true);
     try {
@@ -390,8 +454,8 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
           package_unit_amount: selectedPackage?.priceAmount ?? null,
           package_price_basis: selectedPackage?.priceAmount != null ? selectedPackage.priceBasis : null,
           package_currency: selectedPackage?.priceAmount != null ? selectedPackage.currency : null,
-          booking_total: total,
-          payment_status: paymentStatus,
+          booking_total: payment.total,
+          amount_paid: payment.paid,
           booking_source: "manual",
           notes: notes.trim() || null,
           status: "pending",
@@ -410,7 +474,7 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
     <form onSubmit={submit} className="space-y-3">
       <div>
         <label className="field-label">Select Trip *</label>
-        <select value={trekId} onChange={(e) => { const nextId = e.target.value; const nextTrek = treks.find((trek) => trek.id === nextId); const dates = nextTrek ? trekDates(nextTrek) : []; const nextPackages = nextTrek?.trip_details.packages ?? []; setTrekId(nextId); setDepartureDate(dates.length === 1 ? dates[0] : ""); setPackageId(nextPackages.length === 1 ? nextPackages[0].id : ""); }} className="field-input" required>
+        <select value={trekId} onChange={(e) => { const nextId = e.target.value; const nextTrek = treks.find((trek) => trek.id === nextId); const dates = nextTrek ? trekDates(nextTrek) : []; const nextPackages = nextTrek?.trip_details.packages ?? []; setTrekId(nextId); setDepartureDate(dates.length === 1 ? dates[0] : ""); setPackageId(nextPackages.length === 1 ? nextPackages[0].id : ""); setBookingTotal(""); setAmountPaid("0"); }} className="field-input" required>
           {treks.length === 0 && <option value="">No active trips</option>}
           {treks.map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
@@ -466,11 +530,21 @@ function ManualBookingForm({ treks, onDone }: { treks: Trek[]; onDone: () => voi
           <input type="number" min={1} value={seats} onChange={(e) => setSeats(Number(e.target.value))} className="field-input" />
         </div>
         <div className="sm:col-span-2">
-          <label className="field-label">Payment Status</label>
-          <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as "pending" | "paid")} className="field-input">
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-          </select>
+          {configuredTotal == null ? <>
+            <label htmlFor="manual-booking-total" className="field-label">Total booking amount ({selectedPackage?.currency || "INR"}) *</label>
+            <input id="manual-booking-total" type="number" min="0" max="10000000" step="0.01" inputMode="decimal" value={bookingTotal} onChange={(event) => setBookingTotal(event.target.value)} className="field-input" required />
+            <p className="mt-1 text-xs text-muted-foreground">Enter the agreed total for the selected package and all participants.</p>
+          </> : <p className="text-sm font-medium">Total booking amount: {formatPaymentAmount(configuredTotal, selectedPackage?.currency)}</p>}
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="manual-amount-paid" className="field-label">Amount paid so far ({selectedPackage?.currency || "INR"}) *</label>
+          <input id="manual-amount-paid" type="number" min="0" max={configuredTotal ?? (bookingTotal || "10000000")} step="0.01" inputMode="decimal" value={amountPaid} onChange={(event) => setAmountPaid(event.target.value)} className="field-input" required aria-describedby="manual-paid-help" />
+          <p id="manual-paid-help" className="mt-1 text-xs text-muted-foreground">The cumulative amount received for this whole booking, including all earlier payments.</p>
+          <div className="mt-3 rounded-lg bg-muted p-3 text-sm space-y-1" aria-live="polite">
+            <p>Payment status: <strong>{preview ? PAYMENT_STATUS_LABEL[preview.status] : "Enter valid amounts"}</strong></p>
+            <p>Remaining balance: <strong>{preview ? formatPaymentAmount(preview.balance, selectedPackage?.currency) : "—"}</strong></p>
+            {preview?.total === 0 && <p>No payment is due for this zero-total booking.</p>}
+          </div>
         </div>
         <div className="sm:col-span-2">
           <label className="field-label">Notes</label>

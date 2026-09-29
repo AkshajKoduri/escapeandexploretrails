@@ -57,6 +57,8 @@ function makeAdventure(overrides?: Partial<Adventure>): Adventure {
     dateLabel: "",
     trekTime: null,
     description: null,
+    highlights: [],
+    galleryImages: [],
     instructions: null,
     meetingPoint: null,
     itineraryUrl: null,

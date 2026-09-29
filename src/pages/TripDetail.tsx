@@ -11,7 +11,6 @@ import {
   CalendarDays,
   Phone,
   FileText,
-  MessageCircle,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -38,6 +37,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useReveal } from "@/hooks/useReveal";
 import { formatAdventureDescription } from "@/lib/adventureDescription";
+import { normalizeAssemblyTime } from "@/lib/tripContent";
+import ItineraryCoverShare from "@/components/site/ItineraryCoverShare";
+import TripPhotoGallery from "@/components/site/TripPhotoGallery";
 
 export default function TripDetail() {
   useReveal();
@@ -135,6 +137,7 @@ export default function TripDetail() {
   const soldOut = adventure.isFull || adventure.seatsRemaining <= 0;
   const descriptionSections = formatAdventureDescription(adventure.description, adventure.name);
   const distanceHasContext = /[a-z]/i.test(adventure.dist);
+  const assemblyTime = normalizeAssemblyTime(adventure.trekTime);
 
   const facts = [
     hasValue(adventure.dist) && {
@@ -145,7 +148,7 @@ export default function TripDetail() {
     hasValue(adventure.dur) && { label: "Duration", value: adventure.dur, icon: Clock },
     { label: "Difficulty", value: adventure.diff, icon: Mountain },
     hasValue(adventure.meetingPoint) && { label: "Starting point", value: adventure.meetingPoint, icon: Flag },
-    hasValue(adventure.trekTime) && { label: "Assembly", value: adventure.trekTime, icon: Clock },
+    assemblyTime && { label: "Assembly", value: assemblyTime, icon: Clock },
   ].filter(Boolean) as { label: string; value: string; icon: typeof Clock }[];
 
   return (
@@ -153,8 +156,15 @@ export default function TripDetail() {
       <Navbar />
 
       {/* ============ Hero ============ */}
-      <section id="main-content" tabIndex={-1} className="relative bg-charcoal overflow-hidden outline-none">
-        <div className={cn("relative", adventure.img ? "h-[52vh] min-h-[380px] md:h-[62vh]" : "h-[340px] md:h-[440px]")}>
+      <section id="main-content" tabIndex={-1} className="trip-hero relative bg-charcoal overflow-hidden outline-none">
+        <div className="trip-cover relative flex min-h-[62svh] flex-col md:min-h-[72svh]">
+        <div className="container absolute inset-x-0 z-10 flex items-center justify-between pt-4">
+          <Link to="/adventures" className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-charcoal/75 text-charcoal-foreground text-sm font-semibold hover:bg-charcoal transition-colors">
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" /> All adventures
+          </Link>
+          <ItineraryCoverShare key={adventure.id} source={adventure} />
+        </div>
+        <div className="absolute inset-0">
           {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
@@ -163,7 +173,7 @@ export default function TripDetail() {
               alt={`${adventure.name} in ${location}`}
               width={adventure.imgWidth ?? undefined}
               height={adventure.imgHeight ?? undefined}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
               loading="eager"
               decoding="async"
               fetchPriority="high"
@@ -177,20 +187,10 @@ export default function TripDetail() {
               </div>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-hero" aria-hidden="true" />
-        </div>
-        <div className="absolute top-20 left-0 right-0">
-          <div className="container flex items-center justify-between">
-            <Link
-              to="/adventures"
-              className="inline-flex items-center gap-2 min-h-[40px] px-4 rounded-full bg-charcoal/50 backdrop-blur-sm text-charcoal-foreground text-sm font-semibold hover:bg-charcoal/70 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" aria-hidden="true" /> All adventures
-            </Link>
-          </div>
         </div>
 
-        <div className="container relative -mt-24 md:-mt-28 pb-8">
+        <div className="relative mt-auto pt-40 pb-8 md:pt-52 bg-[linear-gradient(to_bottom,transparent,hsl(160_12%_8%/0.5))]">
+        <div className="container text-shadow-strong">
           <div className="max-w-4xl">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className={cn("pill backdrop-blur-sm", diff.chip)}>
@@ -238,14 +238,21 @@ export default function TripDetail() {
                 href={whatsappLink(`Hi! I'm interested in the ${adventure.name}. Can you share more details?`)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-ghost-light"
+                className="trip-contact-icon"
+                aria-label="Enquire on WhatsApp"
+                title="Enquire on WhatsApp"
               >
-                <MessageCircle className="w-4 h-4" aria-hidden="true" />
-                Enquire on WhatsApp
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6" aria-hidden="true">
+                  <path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.3-4.7a8.5 8.5 0 1 1 16.2-4.1Z" />
+                  <path d="m8.4 7.5 1.4 2.6-1 1.1c.9 1.8 2.2 3 4 3.8l1-1.1 2.7 1.3c-.2 1.6-1.2 2.2-2.6 1.8-3.8-1-6.3-3.4-7.2-7.1-.3-1.2.4-2.2 1.7-2.4Z" strokeLinejoin="round" />
+                </svg>
               </a>
               <CallbackButton adventure={adventure} />
+              <TripPhotoGallery photos={adventure.galleryImages ?? []} name={adventure.name} />
             </div>
           </div>
+        </div>
+        </div>
         </div>
       </section>
 
@@ -294,12 +301,11 @@ export default function TripDetail() {
           <div className="min-w-0 space-y-14">
             {descriptionSections.length > 0 && (
               <section>
-                <p className="kicker">The experience</p>
-                <h2 className="font-display font-bold text-2xl md:text-3xl text-primary mt-3">What this adventure is</h2>
+                <h2 className="font-display font-bold text-2xl md:text-3xl text-primary">Overview</h2>
                 <div className="mt-5 space-y-8">
                   {descriptionSections.map((section, sectionIndex) => (
                     <div key={`${section.heading ?? "overview"}-${sectionIndex}`}>
-                      {section.heading && (
+                      {section.heading && section.heading.toLowerCase() !== "overview" && (
                         <h3 className="font-display text-xl font-bold text-foreground">{section.heading}</h3>
                       )}
                       <div className={cn("space-y-4", section.heading && "mt-3")}>
@@ -325,6 +331,15 @@ export default function TripDetail() {
                     </div>
                   ))}
                 </div>
+              </section>
+            )}
+
+            {adventure.highlights?.length > 0 && (
+              <section aria-labelledby="trip-highlights-heading">
+                <h2 id="trip-highlights-heading" className="font-display font-bold text-2xl md:text-3xl text-primary">Highlights</h2>
+                <ul className="mt-5 space-y-3 text-muted-foreground">
+                  {adventure.highlights.map((highlight, index) => <li key={index} className="flex gap-3 leading-relaxed"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" /><span>{highlight}</span></li>)}
+                </ul>
               </section>
             )}
 
@@ -355,7 +370,7 @@ export default function TripDetail() {
 
             <TripDetailsSection details={adventure.tripDetails} />
 
-            {(hasValue(adventure.meetingPoint) || hasValue(adventure.trekTime)) && (
+            {(hasValue(adventure.meetingPoint) || assemblyTime) && (
               <section>
                 <p className="kicker">Logistics</p>
                 <h2 className="font-display font-bold text-2xl md:text-3xl text-primary mt-3">Getting there &amp; meeting up</h2>
@@ -366,10 +381,10 @@ export default function TripDetail() {
                       <dd className="text-sm font-medium text-foreground whitespace-pre-wrap">{adventure.meetingPoint}</dd>
                     </div>
                   )}
-                  {hasValue(adventure.trekTime) && (
+                  {assemblyTime && (
                     <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 px-5 sm:px-6 py-4">
                       <dt className="meta-label sm:w-40 shrink-0">Assembly time</dt>
-                      <dd className="text-sm font-medium text-foreground whitespace-pre-wrap">{adventure.trekTime}</dd>
+                      <dd className="text-sm font-medium text-foreground whitespace-pre-wrap">{assemblyTime}</dd>
                     </div>
                   )}
                 </dl>
@@ -609,9 +624,8 @@ function CallbackButton({ adventure }: { adventure: Adventure }) {
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="btn-ghost-light">
-        <Phone className="w-4 h-4" aria-hidden="true" />
-        Request a callback
+      <button type="button" onClick={() => setOpen(true)} className="trip-contact-icon" aria-label="Request a callback" title="Request a callback">
+        <Phone className="w-5 h-5" aria-hidden="true" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { normalizeTripDetails, type TripDetails } from "@/lib/tripDetails";
+import { normalizeAssemblyTime, normalizeHighlights, normalizeTripPhotos, type TripPhoto } from "@/lib/tripContent";
 import ahobilam640 from "@/assets/trek-ahobilam-640.webp";
 import ahobilam1280 from "@/assets/trek-ahobilam-1280.webp";
 import ananthagiri640 from "@/assets/trek-ananthagiri-640.webp";
@@ -50,6 +51,8 @@ export type Adventure = {
   dateLabel: string;
   trekTime: string | null;
   description: string | null;
+  highlights: string[];
+  galleryImages: TripPhoto[];
   instructions: string | null;
   meetingPoint: string | null;
   itineraryUrl: string | null;
@@ -287,8 +290,10 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, departureMap: Map<s
     dates: sorted,
     allDates,
     dateLabel: sorted.length ? sorted.map(fmtDate).join(", ") : "",
-    trekTime: t.trek_time ?? null,
+    trekTime: normalizeAssemblyTime(t.trek_time),
     description: t.description ?? null,
+    highlights: normalizeHighlights(t.highlights),
+    galleryImages: normalizeTripPhotos(t.gallery_images),
     instructions: t.instructions ?? null,
     meetingPoint: t.meeting_point ?? null,
     itineraryUrl: t.itinerary_url ?? null,

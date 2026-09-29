@@ -13,6 +13,7 @@ import DraftsTab from "@/components/admin/DraftsTab";
 import GalleryTab from "@/components/admin/GalleryTab";
 import TrailLogTab from "@/components/admin/TrailLogTab";
 import TeamTab from "@/components/admin/TeamTab";
+import HomepageTab from "@/components/admin/HomepageTab";
 
 export default function Admin() {
   const [module, setModule] = useState<AdminModule>("dashboard");
@@ -77,8 +78,9 @@ export default function Admin() {
       {module === "callbacks" && <CallbacksTab />}
       {module === "trail-log" && <TrailLogTab />}
       {module === "gallery" && <GalleryTab />}
+      {module === "homepage" && <HomepageTab />}
       {module === "team" && <TeamTab />}
       {module === "drafts" && <DraftsTab treks={draftTreks} reload={loadAll} />}
     </AdminShell>
   );
-}
+}

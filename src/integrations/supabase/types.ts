@@ -78,6 +78,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          amount_paid: number | null
           booking_total: number | null
           booking_source: string
           client_ref: string | null
@@ -107,6 +108,7 @@ export type Database = {
         }
         Insert: {
           booking_total?: number | null
+          amount_paid?: number | null
           booking_source?: string
           client_ref?: string | null
           created_at?: string
@@ -135,6 +137,7 @@ export type Database = {
         }
         Update: {
           booking_total?: number | null
+          amount_paid?: number | null
           booking_source?: string
           client_ref?: string | null
           created_at?: string
@@ -389,6 +392,8 @@ export type Database = {
       }
       upcoming_treks: {
         Row: {
+          highlights: string[]
+          gallery_images: Json
           additional_dates: string[]
           album_url: string | null
           altitude: string | null
@@ -433,6 +438,8 @@ export type Database = {
           trek_time: string | null
         }
         Insert: {
+          highlights?: string[]
+          gallery_images?: Json
           additional_dates?: string[]
           album_url?: string | null
           altitude?: string | null
@@ -477,6 +484,8 @@ export type Database = {
           trek_time?: string | null
         }
         Update: {
+          highlights?: string[]
+          gallery_images?: Json
           additional_dates?: string[]
           album_url?: string | null
           altitude?: string | null
@@ -520,6 +529,12 @@ export type Database = {
           trek_distance?: string | null
           trek_time?: string | null
         }
+        Relationships: []
+      }
+      site_settings: {
+        Row: { id: string; hero_image_path: string | null; hero_alt_text: string }
+        Insert: { id: string; hero_image_path?: string | null; hero_alt_text?: string }
+        Update: { id?: string; hero_image_path?: string | null; hero_alt_text?: string }
         Relationships: []
       }
       user_roles: {

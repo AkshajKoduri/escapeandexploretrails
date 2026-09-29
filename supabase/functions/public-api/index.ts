@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
   const { action, payload = {} } = body ?? {};
 
   // Read-only actions get their own, looser bucket; writes stay tightly limited.
-  const readOnly = action === "galleryUrls";
+  const readOnly = action === "galleryUrls" || action === "teamMembers";
   const limited = readOnly
     ? await rateLimit(`public-read:${ip}`, 60, 60_000)
     : await rateLimit(`public:${ip}`, 5, 60_000);
@@ -60,6 +60,23 @@ Deno.serve(async (req) => {
 
   try {
     switch (action) {
+      case "teamMembers": {
+        const { data: rows, error } = await supabase.from("team_members")
+          .select("id, full_name, role_title, bio, photo_url, badges, display_order, is_founder")
+          .order("display_order", { ascending: true });
+        if (error) throw error;
+        const paths = (rows ?? []).map((row) => row.photo_url)
+          .filter((path): path is string => typeof path === "string" && !!path && !/^https?:\/\//i.test(path));
+        const urls: Record<string, string> = {};
+        if (paths.length) {
+          const { data: signed, error: signError } = await supabase.storage.from("team-photos").createSignedUrls(paths, 60 * 60 * 6);
+          if (signError) throw signError;
+          for (const item of signed ?? []) if (item.path && item.signedUrl) urls[item.path] = item.signedUrl;
+        }
+        return json({ data: (rows ?? []).map((row) => ({ ...row,
+          photo_url: row.photo_url && (/^https?:\/\//i.test(row.photo_url) ? row.photo_url : urls[row.photo_url]) || null,
+        })) });
+      }
       case "createCallbackRequest": {
         const p = parse(publicCallbackPayload, payload);
         const { error } = await supabase.from("callback_requests").insert({

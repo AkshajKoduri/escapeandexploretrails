@@ -4,6 +4,7 @@ import type { Trek, SeatStats, Booking } from "@/lib/admin";
 import { seatStatus, STATUS_CHIP, isPastTrip, trekDates } from "@/lib/admin";
 import { fmtDate } from "@/lib/treks";
 import { cn } from "@/lib/utils";
+import { getBookingPayment } from "@/lib/bookingPayments";
 
 type Props = {
   treks: Trek[];
@@ -47,8 +48,11 @@ export default function DashboardTab({ treks, stats, bookings, callbacks, onNavi
     [bookings, upcomingIds],
   );
 
-  const pendingPayments = useMemo(
-    () => bookings.filter((b) => b.status !== "cancelled" && (b.payment_status ?? "pending") !== "paid").length,
+  const paymentCounts = useMemo(
+    () => bookings.filter((booking) => booking.status !== "cancelled").reduce((counts, booking) => {
+      counts[getBookingPayment(booking).status] += 1;
+      return counts;
+    }, { pending: 0, partial: 0, paid: 0 }),
     [bookings],
   );
 
@@ -59,7 +63,7 @@ export default function DashboardTab({ treks, stats, bookings, callbacks, onNavi
     { icon: Users, label: "Confirmed explorers", value: confirmedExplorers, onClick: () => onNavigate("bookings") },
     { icon: Armchair, label: "Open seats", value: openSeats, onClick: () => onNavigate("trips") },
     { icon: CalendarCheck, label: "Upcoming bookings", value: upcomingBookings, onClick: () => onNavigate("bookings") },
-    { icon: Wallet, label: "Payments pending", value: pendingPayments, onClick: () => onNavigate("bookings") },
+    { icon: Wallet, label: "Payments outstanding", value: paymentCounts.pending + paymentCounts.partial, detail: `${paymentCounts.pending} pending · ${paymentCounts.partial} partially paid · ${paymentCounts.paid} paid`, onClick: () => onNavigate("bookings") },
     { icon: PhoneCall, label: "Callbacks to make", value: pendingCallbacks, onClick: () => onNavigate("callbacks") },
   ];
 
@@ -89,6 +93,7 @@ export default function DashboardTab({ treks, stats, bookings, callbacks, onNavi
               </div>
               <p className="mt-4 font-display font-bold text-3xl text-primary">{m.value.toLocaleString("en-IN")}</p>
               <p className="mt-1 text-xs font-medium text-muted-foreground">{m.label}</p>
+              {m.detail && <p className="mt-2 text-xs text-muted-foreground">{m.detail}</p>}
             </button>
           );
         })}

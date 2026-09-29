@@ -26,13 +26,8 @@ export default function TripDetailsSection({ details }: { details: TripDetails }
   const hasCancellation = details.cancellationPolicy.length > 0 || details.cancellationNotes.length > 0;
 
   return (
-    <section aria-labelledby="trip-details-heading">
-      <p className="kicker">Trip essentials</p>
-      <h2 id="trip-details-heading" className="mt-3 font-display text-2xl font-bold text-primary md:text-3xl">
-        Plan with clarity
-      </h2>
-
-      <div className="mt-6 space-y-10">
+    <section aria-label="Trip information">
+      <div className="space-y-10">
         {hasInclusionsExclusions && (
           <section aria-labelledby="inclusions-exclusions-heading">
             <h3 id="inclusions-exclusions-heading" className="font-display text-xl font-bold text-foreground">

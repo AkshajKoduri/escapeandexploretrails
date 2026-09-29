@@ -34,7 +34,7 @@ export const TREK_COLUMNS = [
   "altitude", "region", "elevation_gain", "mountain_range", "base_village", "duration_text",
   "stay_location", "field_labels", "additional_dates", "starting_price", "starting_price_label",
   "top_end_price", "top_end_price_label", "itinerary_days", "trek_category", "seats_taken",
-  "trip_details",
+  "trip_details", "highlights", "gallery_images",
 ] as const;
 
 const detailId = z.string().trim().min(1).max(120);
@@ -89,7 +89,7 @@ export const BOOKING_COLUMNS = [
   "primary_email", "primary_aadhaar", "primary_aadhaar_photo", "is_group", "status",
   "seats_booked", "payment_status", "booking_source", "notes", "trek_date",
   "selected_package_id", "selected_package_name", "package_unit_amount",
-  "package_price_basis", "package_currency", "booking_total",
+  "package_price_basis", "package_currency", "booking_total", "amount_paid",
 ] as const;
 
 export const CALLBACK_COLUMNS = [
@@ -99,6 +99,34 @@ export const CALLBACK_COLUMNS = [
 export const GALLERY_COLUMNS = ["image_url", "storage_path", "category", "display_order", "alt_text"] as const;
 
 export const TEAM_COLUMNS = ["full_name", "role_title", "bio", "photo_url", "badges", "display_order"] as const;
+
+const safeStoragePath = z.string().min(1).max(300)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._\-/]*$/, "Invalid storage path")
+  .refine((path) => !path.includes(".."), "Invalid storage path");
+const imageUrl = z.string().url().max(2000).refine((url) => /^https?:\/\//i.test(url), "Invalid image URL");
+export const highlightsPayload = z.array(z.string().trim().max(1000)).max(50)
+  .transform((items) => items.filter(Boolean));
+export const tripGalleryPayload = z.array(z.object({
+  id: z.string().trim().min(1).max(120),
+  url: imageUrl,
+  path: safeStoragePath.nullable(),
+  alt: z.string().trim().max(500),
+}).strict()).max(50);
+export const homepagePayload = z.object({
+  hero_image_path: safeStoragePath.refine((path) => path.startsWith("homepage/"), "Invalid homepage image").nullable(),
+  hero_alt_text: z.string().trim().max(500),
+}).strict();
+export const signImagePathsPayload = z.object({
+  bucket: z.enum(["gallery-images", "team-photos"]),
+  paths: z.array(safeStoragePath).max(500),
+}).strict();
+export const galleryPatchPayload = z.object({
+  image_url: imageUrl.or(z.literal("")).nullable().optional(),
+  storage_path: safeStoragePath.nullable().optional(),
+  category: z.enum(["Hike", "Cycling Ride", "Monsoon Trek", "Bike Ride", "General"]).optional(),
+  display_order: z.number().int().min(0).max(10000).optional(),
+  alt_text: z.string().trim().max(500).nullable().optional(),
+}).strict();
 
 // ---- Reusable payload schemas ----
 
@@ -140,7 +168,7 @@ export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 export const uploadPayload = z.object({
   bucket: z.enum(ALLOWED_BUCKETS),
   // No traversal, no leading slash, no backslashes.
-  path: z.string().min(1).max(300).regex(/^[A-Za-z0-9][A-Za-z0-9._\-/]*$/, "Invalid path")
+  path: z.string().min(1).max(300).regex(/^[A-Za-z0-9][A-Za-z0-9._/-]*$/, "Invalid path")
     .refine((p) => !p.includes(".."), "Invalid path"),
   base64: z.string().min(1),
   contentType: z.string().max(120).optional(),
@@ -162,7 +190,7 @@ export function assertUploadAllowed(bucket: string, path: string, contentType: s
 
 // ---- Public (unauthenticated) payloads ----
 
-const phone = z.string().trim().regex(/^[+]?[0-9\s()\-]{7,20}$/, "Enter a valid phone number");
+const phone = z.string().trim().regex(/^[+]?[0-9\s()-]{7,20}$/, "Enter a valid phone number");
 
 export const publicBookingPayload = z.object({
   trek_id: uuid,

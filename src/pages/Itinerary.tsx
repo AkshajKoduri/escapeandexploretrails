@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Share2, Download, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, FileText } from "lucide-react";
+import ItineraryActions from "@/components/site/ItineraryActions";
+import ItineraryPdf from "@/components/site/ItineraryPdf";
+import { hasItineraryPdf } from "@/lib/itinerarySharing";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import TripDetailsSection from "@/components/site/TripDetailsSection";
@@ -28,10 +30,8 @@ export default function Itinerary() {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [pdfFailed, setPdfFailed] = useState(false);
-  const [pdfRetryKey, setPdfRetryKey] = useState(0);
-  const [showPdf, setShowPdf] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showPdf, setShowPdf] = useState(searchParams.get("view") === "pdf");
 
   useEffect(() => {
     let cancelled = false;
@@ -61,26 +61,7 @@ export default function Itinerary() {
     return () => { cancelled = true; };
   }, [trekId, retryKey]);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!trek?.itinerary_file_path || !trek.id) return;
-    setPdfFailed(false);
-    setPdfUrl(null);
-    supabase.functions
-      .invoke("itinerary-signed-url", { body: { trekId: trek.id } })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          setPdfFailed(true);
-          return;
-        }
-        const res = data as { url?: string | null } | null;
-        if (res?.url) setPdfUrl(res.url);
-        else setPdfFailed(true);
-      })
-      .catch(() => { if (!cancelled) setPdfFailed(true); });
-    return () => { cancelled = true; };
-  }, [trek?.id, trek?.itinerary_file_path, pdfRetryKey]);
+
 
   useSeo({
     title: trek?.name ? `${trek.name} — Itinerary | E2 Trails` : "Trip Itinerary | E2 Trails",
@@ -93,30 +74,15 @@ export default function Itinerary() {
 
   const days: Day[] = Array.isArray(trek?.itinerary_days) ? (trek!.itinerary_days as Day[]) : [];
   const hasDays = days.length > 0;
-  const hasPdf = !!trek?.itinerary_file_path || !!trek?.itinerary_url;
-  const pdfHref = trek?.itinerary_url || pdfUrl;
+  const source = { id: trek?.id ?? "", name: trek?.name ?? "Itinerary", itineraryFilePath: trek?.itinerary_file_path, itineraryUrl: trek?.itinerary_url };
+  const hasPdf = hasItineraryPdf(source);
   const tripDetails = useMemo(
     () => normalizeTripDetails(trek?.trip_details, trek?.instructions),
     [trek?.trip_details, trek?.instructions],
   );
   const hasTripDetails = hasTripDetailsContent(tripDetails);
 
-  const share = async () => {
-    const url = window.location.href;
-    const title = trek?.name ? `${trek.name} — Itinerary` : "Trip Itinerary";
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title, url });
-        return;
-      } catch { /* user cancelled */ }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copied!");
-    } catch {
-      toast.error("Could not copy link");
-    }
-  };
+
 
   const showPdfInline = (!hasDays && hasPdf) || (hasDays && showPdf && hasPdf);
 
@@ -133,13 +99,7 @@ export default function Itinerary() {
           <h1 className="font-display font-bold text-base sm:text-lg text-charcoal-foreground truncate">
             {trek?.name ?? "Itinerary"}
           </h1>
-          <button
-            type="button"
-            onClick={share}
-            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:brightness-110 transition-all"
-          >
-            <Share2 className="w-4 h-4" aria-hidden="true" /> Share
-          </button>
+
         </div>
       </header>
 
@@ -164,6 +124,8 @@ export default function Itinerary() {
                 {trek.name}
               </h2>
             </div>
+
+            <div className="mb-6"><ItineraryActions key={source.id} source={source} showView={false} /></div>
 
             {hasDays && !showPdf && (
               <>
@@ -205,35 +167,7 @@ export default function Itinerary() {
                     <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to day-wise view
                   </button>
                 )}
-                {pdfHref ? (
-                  <>
-                    <div className="w-full rounded-xl overflow-hidden border border-border bg-muted">
-                      <object data={`${pdfHref}#view=FitH`} type="application/pdf" className="w-full h-[80vh]">
-                        <iframe
-                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(pdfHref)}&embedded=true`}
-                          className="w-full h-[80vh]"
-                          title="Itinerary PDF"
-                        />
-                      </object>
-                    </div>
-                    <a
-                      href={pdfHref}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90"
-                    >
-                      <Download className="w-4 h-4" aria-hidden="true" /> Download PDF
-                    </a>
-                  </>
-                ) : pdfFailed ? (
-                  <div className="py-8 text-center" role="alert">
-                    <p className="text-muted-foreground">The PDF couldn’t load.</p>
-                    <button type="button" onClick={() => setPdfRetryKey((key) => key + 1)} className="btn-outline btn-sm mt-4">Try again</button>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">Loading PDF…</p>
-                )}
+                <ItineraryPdf source={source} />
               </div>
             )}
 
