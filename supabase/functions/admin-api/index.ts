@@ -4,7 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { clientIp, rateLimit, resetRateLimit } from "../_shared/rateLimit.ts";
 import { issueToken, timingSafeEqual, verifyToken } from "../_shared/adminSession.ts";
-import { manualBookingSnapshot, normalizePayment } from "../_shared/bookingPayment.ts";
+import { manualBookingSnapshot, normalizePayment, money } from "../_shared/bookingPayment.ts";
 import {
   assertUploadAllowed,
   BOOKING_COLUMNS,
@@ -144,11 +144,30 @@ Deno.serve(async (req) => {
       }
 
       // ---- Bookings ----
+      case "setAttendance": {
+        const id = parse(idPayload, { id: payload?.id }).id;
+        const memberId = payload?.memberId == null ? null : parse(idPayload, { id: payload.memberId }).id;
+        if (typeof payload?.noShow !== "boolean") throw new Error("Attendance is required");
+        const { error } = await supabase.rpc("set_participant_attendance", { p_booking_id: id, p_member_id: memberId, p_no_show: payload.noShow });
+        if (error) throw error;
+        return json({ ok: true });
+      }
+      case "updateRefund": {
+        const id = parse(idPayload, { id: payload?.id }).id;
+        const approved = money(payload?.approved, "Approved refund");
+        const refunded = money(payload?.refunded, "Amount refunded");
+        if (refunded > approved) throw new Error("Amount refunded cannot exceed the approved refund");
+        // The database also checks against amount_paid atomically, including payment corrections.
+        const { error } = await supabase.from("bookings").update({ refund_approved: approved, amount_refunded: refunded }).eq("id", id).select("id").single();
+        if (error) throw new Error("Could not save refund. Ensure it does not exceed the amount received and the booking still exists.");
+        return json({ ok: true });
+      }
       case "updateBooking": {
         const { id, patch } = parse(patchPayload, payload);
         const { data: existing, error: readError } = await supabase.from("bookings").select("*").eq("id", id).single();
         if (readError) throw readError;
         const allowed = pickAllowed(patch, BOOKING_COLUMNS);
+        if ("status" in allowed && !["pending", "confirmed", "cancelled"].includes(String(allowed.status))) throw new Error("Invalid booking status");
         // Package snapshots and group size are fixed when the booking is created.
         for (const key of ["trek_id", "seats_booked", "selected_package_id", "selected_package_name", "package_unit_amount", "package_price_basis", "package_currency"]) {
           if (key in allowed && allowed[key] !== existing[key]) throw new Error("Booking package and participant count cannot be changed through a payment update");

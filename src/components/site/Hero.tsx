@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight, ShieldCheck, Users } from "lucide-react";
 import hero from "@/assets/hero.webp";
@@ -8,8 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_HERO_ALT } from "@/lib/homepage";
 
 export default function Hero() {
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const parallaxRef = useRef<HTMLDivElement>(null);
   const [customImage, setCustomImage] = useState<{ url: string; alt: string } | null>(null);
 
   useEffect(() => {
@@ -24,51 +22,19 @@ export default function Hero() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mql.matches);
-    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
-    const element = parallaxRef.current;
-    if (!element || reducedMotion) {
-      if (element) element.style.transform = "";
-      return;
-    }
-    let frame = 0;
-    const update = () => {
-      element.style.transform = `translate3d(0, ${window.scrollY * 0.28}px, 0)`;
-      frame = 0;
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, [reducedMotion]);
 
   return (
     <section id="main-content" tabIndex={-1} className="homepage-hero relative flex w-full overflow-hidden bg-charcoal outline-none">
-      {/* Ken Burns + parallax */}
-      <div
-        ref={parallaxRef}
-        className="absolute inset-0 will-change-transform"
-      >
-        <div className="h-full w-full animate-kenburns">
+      {/* Bottom aligned without animation or parallax cropping. */}
+      <div className="absolute inset-0">
+        <div className="h-full w-full">
           <img
             src={customImage?.url || hero}
             srcSet={customImage ? undefined : `${hero768} 768w, ${hero1440} 1440w, ${hero} 1920w`}
             sizes="100vw"
             alt={customImage?.alt || DEFAULT_HERO_ALT}
             onError={customImage ? () => setCustomImage(null) : undefined}
-            className="w-full h-full object-cover object-[58%_center] sm:object-center"
+            className="w-full h-full object-cover object-[58%_bottom] sm:object-bottom"
             width={1920}
             height={1080}
             decoding="async"

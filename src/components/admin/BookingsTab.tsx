@@ -1,17 +1,19 @@
 import { Fragment, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Plus, ChevronDown, ChevronRight, Eye, EyeOff, X, Search, Download } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, Eye, EyeOff, Search, Download, WalletCards } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import type { Booking, Trek } from "@/lib/admin";
 import { STATUS_CHIP, trekDates } from "@/lib/admin";
 import { filterBookings, groupBookingsByDeparture, resolveBookingDeparture } from "@/lib/bookingAdmin";
-import { exportBookingMembers } from "@/lib/bookingExport";
+import { buildBookingExportRows, bookingExportFilename, exportBookingMembers } from "@/lib/bookingExport";
 import { getBookingPayment, PAYMENT_STATUS_LABEL, validatePaymentAmounts, type PaymentStatus } from "@/lib/bookingPayments";
+import { REFUND_LABELS } from "@/lib/bookingRefunds";
 import { fmtDate, inr, maskAadhaar } from "@/lib/treks";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import RefundForm from "@/components/admin/RefundForm";
 
 type BookingMember = Database["public"]["Tables"]["booking_members"]["Row"];
 const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
@@ -91,14 +93,21 @@ export default function BookingsTab({
   const [packageFilter, setPackageFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState<"all" | PaymentStatus>("all");
   const [sourceFilter, setSourceFilter] = useState<"all" | "online" | "manual">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "cancelled">("all");
+  const [statusFilter, setStatusFilter] = useState<"active" | "all" | "confirmed" | "pending" | "cancelled">("active");
+  const [participantAgeFilter, setParticipantAgeFilter] = useState("all");
+  const [participantGenderFilter, setParticipantGenderFilter] = useState("all");
+  const [attendanceFilter, setAttendanceFilter] = useState<"all" | "no_show" | "not_marked">("all");
+  const [refundFilter, setRefundFilter] = useState("all");
   const [sortDir, setSortDir] = useState<"newest" | "oldest">("newest");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [addOpen, setAddOpen] = useState(false);
-  const [cancelling, setCancelling] = useState<Booking | null>(null);
   const [editingPayment, setEditingPayment] = useState<Booking | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
+  const [statusBooking, setStatusBooking] = useState<Booking | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
 
   const membersByBooking = useMemo(() => {
     const m = new Map<string, BookingMember[]>();
@@ -113,7 +122,14 @@ export default function BookingsTab({
   const filtered = useMemo(() => filterBookings(bookings, treks, {
     query, trek: trekFilter, departure: departureFilter, package: packageFilter,
     payment: paymentFilter, source: sourceFilter, status: statusFilter, sort: sortDir,
-  }), [bookings, query, trekFilter, departureFilter, packageFilter, paymentFilter, sourceFilter, statusFilter, sortDir, treks]);
+    participantAge: participantAgeFilter, participantGender: participantGenderFilter,
+  }, members), [bookings, members, query, trekFilter, departureFilter, packageFilter, paymentFilter, sourceFilter, statusFilter, participantAgeFilter, participantGenderFilter, sortDir, treks]);
+  const attendanceFiltered = useMemo(() => filtered.filter(booking => {
+    const group = membersByBooking.get(booking.id) ?? [];
+    if (attendanceFilter === "no_show" && !booking.primary_no_show && !group.some(member => member.no_show)) return false;
+    if (attendanceFilter === "not_marked" && (booking.primary_no_show || group.some(member => member.no_show))) return false;
+    return refundFilter === "all" || (booking.refund_status ?? "not_applicable") === refundFilter;
+  }), [filtered, membersByBooking, attendanceFilter, refundFilter]);
 
   const departureOptions = useMemo(() => [...new Set(bookings.map((booking) => resolveBookingDeparture(booking, treks)).filter(Boolean) as string[])].sort(), [bookings, treks]);
   const packageOptions = useMemo(() => {
@@ -121,34 +137,44 @@ export default function BookingsTab({
     bookings.forEach((booking) => { if (booking.selected_package_id) pairs.set(booking.selected_package_id, booking.selected_package_name || booking.selected_package_id); });
     return [...pairs.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [bookings]);
+  const ageOptions = useMemo(() => [...new Set([
+    ...bookings.map(booking => booking.primary_age), ...members.map(member => member.age),
+  ].filter((age): age is number => typeof age === "number" && Number.isFinite(age)))].sort((a, b) => a - b), [bookings, members]);
 
   const groupedRows = useMemo(() => {
-    return [...groupBookingsByDeparture(filtered, treks).entries()]
+    return [...groupBookingsByDeparture(attendanceFiltered, treks).entries()]
       .sort(([a], [b]) => a === "unknown" ? 1 : b === "unknown" ? -1 : a.localeCompare(b))
       .flatMap(([departure, rows]) => rows.map((booking, index) => ({ booking, departure, first: index === 0, count: rows.length, seats: rows.reduce((sum, row) => sum + (row.seats_booked ?? 1), 0) })));
-  }, [filtered, treks]);
+  }, [attendanceFiltered, treks]);
 
-  const cancelBooking = async () => {
-    if (!cancelling) return;
-    const b = cancelling;
-    setCancelling(null);
+  const updateStatus = async () => {
+    if (!statusBooking) return;
+    const booking = statusBooking; setStatusBusy(true);
     try {
-      await adminApi("updateBooking", { id: b.id, patch: { status: "cancelled" } });
-      toast.success("Booking cancelled");
-      reload();
-    } catch (err: unknown) {
-      toast.error(errorMessage(err, "Could not cancel booking"));
-    }
+      await adminApi("updateBooking", { id: booking.id, patch: { status: booking.status === "confirmed" ? "cancelled" : "confirmed" } });
+      toast.success(booking.status === "confirmed" ? "Booking cancelled" : "Booking confirmed"); setStatusBooking(null); reload();
+    } catch (error) { toast.error(errorMessage(error, "Could not update booking status")); }
+    finally { setStatusBusy(false); }
+  };
+  const markAttendance = async (bookingId: string, memberId: string | null, noShow: boolean) => {
+    try { await adminApi("setAttendance", { id: bookingId, memberId, noShow }); toast.success(noShow ? "Participant marked no-show" : "No-show marking removed"); reload(); }
+    catch (error) { toast.error(errorMessage(error, "Could not update attendance")); }
   };
 
-  const downloadMembers = async (selection: Booking[]) => {
-    if (!selection.length) return toast.error("No bookings match the current filters.");
+  const exportRows = useMemo(() => {
+    const allowedStatus = ["active", "all", "confirmed"].includes(statusFilter);
+    const eligible = allowedStatus && attendanceFilter !== "no_show" ? attendanceFiltered.filter(booking => booking.status === "confirmed") : [];
+    return buildBookingExportRows(eligible, members, treks, { query, age: participantAgeFilter, gender: participantGenderFilter });
+  }, [attendanceFiltered, members, treks, statusFilter, attendanceFilter, query, participantAgeFilter, participantGenderFilter]);
+
+  const downloadMembers = async () => {
+    if (trekFilter === "all" || departureFilter === "all" || departureFilter === "unknown") return toast.error("Select one trip and one departure date before downloading.");
+    if (!exportRows.memberRows.length) return;
     setDownloading(true);
     try {
-      const trips = new Set(selection.map((booking) => booking.trek_name));
-      const label = selection.length === 1 ? `booking-${selection[0].id}` : trips.size === 1 ? selection[0].trek_name : "filtered-bookings";
-      await exportBookingMembers(selection, members, treks, { label });
-      toast.success("Member list downloaded. Booking totals are on the Booking payments sheet.");
+      const selected = attendanceFiltered.filter(booking => booking.status === "confirmed");
+      await exportBookingMembers(selected, members, treks, { tripId: trekFilter, departure: departureFilter, filters: { query, age: participantAgeFilter, gender: participantGenderFilter } });
+      toast.success("Confirmed participant list downloaded."); setExportOpen(false);
     } catch (err: unknown) {
       toast.error(errorMessage(err, "Could not download member list"));
     } finally {
@@ -161,10 +187,10 @@ export default function BookingsTab({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="kicker">Bookings &amp; participants</p>
-          <h1 className="font-display font-bold text-3xl text-primary mt-1">Bookings ({filtered.length})</h1>
+          <h1 className="font-display font-bold text-3xl text-primary mt-1">Bookings ({attendanceFiltered.length})</h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => downloadMembers(filtered)} disabled={downloading || filtered.length === 0} className="btn-outline btn-sm disabled:opacity-50">
+          <button type="button" onClick={() => setExportOpen(true)} disabled={downloading} className="btn-outline btn-sm disabled:opacity-50">
             <Download className="w-4 h-4" aria-hidden="true" /> {downloading ? "Preparing download…" : "Download member list"}
           </button>
           <button onClick={() => setAddOpen(true)} className="btn-accent btn-sm">
@@ -179,7 +205,7 @@ export default function BookingsTab({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, phone or email…"
+            placeholder="Search participant name, phone or email…"
             aria-label="Search bookings"
             className="field-input py-2 pl-9"
           />
@@ -212,20 +238,33 @@ export default function BookingsTab({
             <option value="online">Online</option>
             <option value="manual">Manual</option>
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "all" | "confirmed" | "pending" | "cancelled")} aria-label="Filter by status" className="field-input py-2 flex-1">
-            <option value="all">Status: all</option>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} aria-label="Filter by status" className="field-input py-2 flex-1">
+            <option value="active">Status: all except cancelled</option>
+            <option value="all">Status: all, including cancelled</option>
             <option value="confirmed">Confirmed</option>
             <option value="pending">Pending</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
+        <select value={attendanceFilter} onChange={e => setAttendanceFilter(e.target.value as typeof attendanceFilter)} aria-label="Filter by participant attendance" className="field-input py-2">
+          <option value="all">Attendance: all</option><option value="no_show">Has no-show participants</option><option value="not_marked">No no-shows marked</option>
+        </select>
+        <select value={refundFilter} onChange={e => setRefundFilter(e.target.value)} aria-label="Filter by refund status" className="field-input py-2">
+          <option value="all">Refund: all</option><option value="not_applicable">Not applicable</option><option value="pending">Refund pending</option><option value="partial">Partially refunded</option><option value="refunded">Refunded</option>
+        </select>
+        <select value={participantAgeFilter} onChange={e => setParticipantAgeFilter(e.target.value)} aria-label="Filter participants by age" className="field-input py-2">
+          <option value="all">Age: all</option>{ageOptions.map(age => <option key={age} value={String(age)}>{age} years</option>)}<option value="unknown">Age not recorded</option>
+        </select>
+        <select value={participantGenderFilter} onChange={e => setParticipantGenderFilter(e.target.value)} aria-label="Filter participants by gender" className="field-input py-2">
+          <option value="all">Gender: all</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Prefer not to say">Prefer not to say</option><option value="unknown">Not recorded</option>
+        </select>
         <select value={sortDir} onChange={(e) => setSortDir(e.target.value as "newest" | "oldest")} aria-label="Sort direction" className="field-input py-2">
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
         </select>
       </div>
 
-      {filtered.length === 0 ? (
+      {attendanceFiltered.length === 0 ? (
         <p className="text-sm text-muted-foreground surface rounded-xl p-6">No bookings match the current filters.</p>
       ) : (
         <div className="space-y-2">
@@ -262,7 +301,9 @@ export default function BookingsTab({
                       <span className={cn("font-semibold text-foreground", isCancelled && "line-through")}>
                         {b.primary_name}
                       </span>
-                      {isCancelled && <span className={cn("pill", STATUS_CHIP.CANCELLED)}>CANCELLED</span>}
+                      <span className={cn("pill", STATUS_CHIP[b.status.toUpperCase()] ?? "bg-muted text-muted-foreground")}>{b.status.toUpperCase()}</span>
+                      {(b.primary_no_show || ms.some(member => member.no_show)) && <span className="pill bg-amber-500/15 text-amber-800">NO SHOW · {[b.primary_no_show, ...ms.map(member => member.no_show)].filter(Boolean).length}</span>}
+                      <span className="pill bg-muted text-foreground">{REFUND_LABELS[b.refund_status as keyof typeof REFUND_LABELS] ?? REFUND_LABELS.not_applicable}</span>
                       {source === "manual" && <span className="pill bg-blue-500/15 text-blue-700">MANUAL</span>}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
@@ -273,6 +314,8 @@ export default function BookingsTab({
                   <span className="pill bg-primary/10 text-primary">{b.seats_booked ?? 1} seat{(b.seats_booked ?? 1) > 1 ? "s" : ""}</span>
                   <span className={cn("pill", STATUS_CHIP[pay.toUpperCase()])}>{PAYMENT_STATUS_LABEL[pay]}</span>
                   <button type="button" onClick={() => setEditingPayment(b)} className="btn-outline btn-sm">Update payment</button>
+                  <button type="button" onClick={() => setRefundBooking(b)} className="btn-outline btn-sm" aria-label={`Update refund for ${b.primary_name}`}><WalletCards className="h-4 w-4" />Refund</button>
+                  <button type="button" onClick={() => setStatusBooking(b)} className="btn-outline btn-sm">{b.status === "confirmed" ? "Cancel booking" : "Confirm booking"}</button>
                   <button
                     type="button"
                     onClick={() => setExpanded(isOpen ? null : b.id)}
@@ -292,6 +335,8 @@ export default function BookingsTab({
                       <p><span className="text-muted-foreground">Total booking amount:</span> <span className="font-medium">{payment.total == null ? "Not recorded" : formatPaymentAmount(payment.total, b.package_currency)}</span></p>
                       <p><span className="text-muted-foreground">Amount paid so far:</span> <span className="font-medium">{payment.paid == null ? "Not recorded" : formatPaymentAmount(payment.paid, b.package_currency)}</span></p>
                       <p><span className="text-muted-foreground">Remaining balance:</span> <span className="font-medium">{payment.balance == null ? "Not recorded" : formatPaymentAmount(payment.balance, b.package_currency)}</span></p>
+                      <p><span className="text-muted-foreground">Attendance:</span> <span className="font-medium">{b.primary_no_show ? "No show" : "Not marked"}</span>{b.status === "confirmed" && <button type="button" className="ml-2 text-xs font-semibold text-accent underline" onClick={() => void markAttendance(b.id, null, !b.primary_no_show)}>{b.primary_no_show ? "Undo no-show" : "Mark no-show"}</button>}</p>
+                      <p><span className="text-muted-foreground">Refund (whole booking):</span> <span className="font-medium">{REFUND_LABELS[b.refund_status as keyof typeof REFUND_LABELS] ?? REFUND_LABELS.not_applicable}</span>{b.refund_approved != null && <span> · Remaining {formatPaymentAmount(Math.max(0, b.refund_approved - (b.amount_refunded ?? 0)), b.package_currency)}</span>}</p>
                       <p><span className="text-muted-foreground">Email:</span> <span className="font-medium">{b.primary_email ?? "—"}</span></p>
                       <p><span className="text-muted-foreground">Age / Gender:</span> <span className="font-medium">{b.primary_age ?? "—"} / {b.primary_gender ?? "—"}</span></p>
                       <p>
@@ -319,6 +364,7 @@ export default function BookingsTab({
                           {ms.map((m) => (
                             <li key={m.id} className="rounded-lg border border-border bg-background p-3 text-sm">
                               <p className="font-medium">{m.full_name}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">Attendance: {m.no_show ? "No show" : "Not marked"}{b.status === "confirmed" && <button type="button" className="ml-2 font-semibold text-accent underline" onClick={() => void markAttendance(b.id, m.id, !m.no_show)}>{m.no_show ? "Undo no-show" : "Mark no-show"}</button>}</p>
                               <dl className="mt-2 grid gap-1 text-muted-foreground sm:grid-cols-2">
                                 <div><dt className="inline">Age: </dt><dd className="inline text-foreground">{m.age ?? "Not provided"}</dd></div>
                                 <div><dt className="inline">Gender: </dt><dd className="inline text-foreground">{m.gender || "Not provided"}</dd></div>
@@ -341,18 +387,7 @@ export default function BookingsTab({
                         </ul>
                       </div>
                     )}
-                    <div className="flex flex-wrap gap-3">
-                    <button type="button" onClick={() => downloadMembers([b])} disabled={downloading} className="btn-outline btn-sm disabled:opacity-50"><Download className="w-4 h-4" aria-hidden="true" /> Download this booking’s members</button>
-                    {!isCancelled && (
-                      <button
-                        type="button"
-                        onClick={() => setCancelling(b)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" aria-hidden="true" /> Cancel booking
-                      </button>
-                    )}
-                    </div>
+                    <div className="flex flex-wrap gap-3"><button type="button" onClick={() => setRefundBooking(b)} className="btn-outline btn-sm">Update refund record</button></div>
                   </div>
                 )}
               </article>
@@ -377,19 +412,25 @@ export default function BookingsTab({
           {editingPayment && <PaymentForm key={editingPayment.id} booking={editingPayment} onDone={() => { setEditingPayment(null); reload(); }} />}
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={!!cancelling}
-        title="Cancel this booking?"
-        description={
-          cancelling
-            ? `${cancelling.primary_name}'s ${cancelling.seats_booked ?? 1} seat(s) for ${cancelling.trek_name} will be freed. This can be undone by changing the status back.`
-            : ""
-        }
-        confirmLabel="Cancel booking"
-        onConfirm={cancelBooking}
-        onClose={() => setCancelling(null)}
-      />
+      <Dialog open={!!refundBooking} onOpenChange={open => { if (!open) setRefundBooking(null); }}>
+        <DialogContent className="max-w-lg"><DialogHeader><DialogTitle>Update refund record</DialogTitle></DialogHeader>{refundBooking && <RefundForm key={refundBooking.id} booking={refundBooking} onDone={() => { setRefundBooking(null); reload(); toast.success("Refund record saved"); }} />}</DialogContent>
+      </Dialog>
+      <ConfirmDialog open={!!statusBooking} title={statusBooking?.status === "confirmed" ? "Cancel this booking?" : "Confirm this booking?"}
+        description={statusBooking ? statusBooking.status === "confirmed" ? `${statusBooking.seats_booked ?? 1} seat(s) will be released. Payments, refunds and attendance records will be preserved.` : `Confirm ${statusBooking.primary_name}'s booking for ${statusBooking.trek_name}? Available capacity will be checked.` : ""}
+        confirmLabel={statusBooking?.status === "confirmed" ? "Cancel booking" : "Confirm booking"} destructive={statusBooking?.status === "confirmed"} busy={statusBusy} onConfirm={() => void updateStatus()} onClose={() => setStatusBooking(null)} />
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Confirm member list filters</DialogTitle></DialogHeader>
+          <p className="text-sm">Trip: <strong>{treks.find(trip => trip.id === trekFilter)?.name ?? "All trips"}</strong></p>
+          <p className="text-sm">Departure: <strong>{departureFilter === "all" ? "All dates" : departureFilter === "unknown" ? "Not recorded" : fmtDate(departureFilter)}</strong></p>
+          <p className="text-sm">Booking status: {statusFilter}; attendance: {attendanceFilter}; refund: {refundFilter}; age: {participantAgeFilter}; gender: {participantGenderFilter}; package: {packageFilter}; payment: {paymentFilter}; source: {sourceFilter}{query.trim() ? `; name/phone search: ${query.trim()}` : ""}</p>
+          <p className="rounded-lg bg-muted p-3 text-sm">Only participants from confirmed bookings are included. Participants marked as no-show are excluded.</p>
+          <p role="status" className="font-medium">{exportRows.bookingCount} eligible booking(s) · {exportRows.memberRows.length} eligible participant(s)</p>
+          {trekFilter !== "all" && departureFilter !== "all" && departureFilter !== "unknown" && <p className="text-sm text-muted-foreground">Filename: {bookingExportFilename(treks.find(trip => trip.id === trekFilter)?.name ?? "Trip", departureFilter)}</p>}
+          {!exportRows.memberRows.length && <p className="text-sm text-muted-foreground">No confirmed participants match all selected filters. No file will be downloaded.</p>}
+          <div className="flex justify-end gap-2"><button className="btn-outline" onClick={() => setExportOpen(false)}>Back to filters</button><button className="btn-primary" disabled={downloading || !exportRows.memberRows.length || trekFilter === "all" || departureFilter === "all" || departureFilter === "unknown"} onClick={() => void downloadMembers()}>{downloading ? "Preparing…" : "Confirm and download"}</button></div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

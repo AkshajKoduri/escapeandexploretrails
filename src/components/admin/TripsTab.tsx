@@ -7,7 +7,6 @@ import {
   Archive,
   Copy,
   ArrowLeft,
-  Download,
   Users,
   FileText,
   X,
@@ -33,7 +32,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import TripDetailsEditor from "@/components/admin/TripDetailsEditor";
 import { normalizeTripDetails, serializeTripDetails } from "@/lib/tripDetails";
-import { exportBookingMembers } from "@/lib/bookingExport";
+
 import { getBookingPayment, PAYMENT_STATUS_LABEL } from "@/lib/bookingPayments";
 import { TripHighlightsEditor, TripPhotosEditor } from "@/components/admin/TripMediaEditor";
 import { normalizeHighlights, normalizeTripPhotos, validateTripImage } from "@/lib/tripContent";
@@ -391,10 +390,6 @@ function TripDetailView({
     { label: "Status", value: status },
   ];
 
-  const downloadExcel = async () => {
-    try { await exportBookingMembers(trekBookings, members, [trek], { label: trek.name }); toast.success("Member list downloaded"); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Could not download member list"); }
-  };
 
   return (
     <div className="space-y-6">
@@ -439,9 +434,7 @@ function TripDetailView({
             <Users className="w-5 h-5 text-accent" aria-hidden="true" />
             Bookings ({trekBookings.length})
           </h2>
-          <button onClick={downloadExcel} className="btn-outline btn-sm">
-            <Download className="w-3.5 h-3.5" aria-hidden="true" /> Export Excel
-          </button>
+          <p className="text-xs text-muted-foreground">Download filtered member lists from Bookings.</p>
         </div>
         {trekBookings.length === 0 ? (
           <p className="p-5 text-sm text-muted-foreground">No confirmed bookings for this trip yet.</p>

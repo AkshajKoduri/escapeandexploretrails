@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Booking, Trek } from "@/lib/admin";
-import { groupBookingsByDeparture, resolveBookingDeparture } from "@/lib/bookingAdmin";
+import { filterBookings, groupBookingsByDeparture, resolveBookingDeparture } from "@/lib/bookingAdmin";
 
 const trek = (dates: string[]): Trek => ({
   id: "trek-1",
@@ -25,5 +25,21 @@ describe("booking departure grouping", () => {
     const historical = { id: "old", trek_id: "trek-1", trek_date: null } as Booking;
     expect(resolveBookingDeparture(historical, [trek(["2026-10-02"])])).toBe("2026-10-02");
     expect(resolveBookingDeparture(historical, [trek(["2026-10-02", "2026-10-16"])])).toBeNull();
+  });
+});
+
+describe("booking participant filters", () => {
+  it("searches group members and applies age and gender before presenting bookings", () => {
+    const bookings = [{ id: "group", trek_id: "trek-1", trek_name: "Badami", status: "confirmed", created_at: "2026-09-01", primary_name: "Organizer", primary_age: 40, primary_gender: "Other" }] as Booking[];
+    const members = [{ booking_id: "group", full_name: "Ravi", phone: "555123", email: null, age: 24, gender: "Male" }];
+    const filters = { query: "ravi", trek: "all", departure: "all", package: "all", payment: "all" as const, source: "all" as const, status: "active" as const, sort: "newest" as const, participantAge: "24", participantGender: "Male" };
+    expect(filterBookings(bookings, [trek(["2026-10-02"])], filters, members).map(row => row.id)).toEqual(["group"]);
+    expect(filterBookings(bookings, [trek(["2026-10-02"])], { ...filters, participantGender: "Female" }, members)).toEqual([]);
+  });
+  it("hides cancelled bookings by default while showing them for an explicit cancelled filter", () => {
+    const bookings = ["confirmed", "cancelled"].map(status => ({ id: status, status, created_at: "2026-09-01" })) as Booking[];
+    const base = { query: "", trek: "all", departure: "all", package: "all", payment: "all" as const, source: "all" as const, sort: "newest" as const };
+    expect(filterBookings(bookings, [], { ...base, status: "active" }).map(row => row.status)).toEqual(["confirmed"]);
+    expect(filterBookings(bookings, [], { ...base, status: "cancelled" }).map(row => row.status)).toEqual(["cancelled"]);
   });
 });

@@ -9,22 +9,32 @@ export type BookingFilters = {
   package: string;
   payment: "all" | PaymentStatus;
   source: "all" | "online" | "manual";
-  status: "all" | "pending" | "confirmed" | "cancelled";
+  status: "active" | "all" | "pending" | "confirmed" | "cancelled";
   sort: "newest" | "oldest";
+  participantAge?: string;
+  participantGender?: string;
 };
 
 /** Used for both the visible list and downloads, so no active filter is lost. */
-export function filterBookings(bookings: Booking[], treks: Trek[], filters: BookingFilters): Booking[] {
+export function filterBookings(bookings: Booking[], treks: Trek[], filters: BookingFilters, members: Array<{ booking_id: string; full_name?: string | null; phone?: string | null; email?: string | null; age?: number | null; gender?: string | null }> = []): Booking[] {
   const query = filters.query.trim().toLowerCase();
   return bookings.filter((booking) => {
-    if (query && ![booking.primary_name, booking.primary_phone, booking.primary_email, booking.trek_name]
+    const participantRows = [
+      { name: booking.primary_name, phone: booking.primary_phone, email: booking.primary_email, age: booking.primary_age, gender: booking.primary_gender },
+      ...members.filter(member => member.booking_id === booking.id).map(member => ({ name: member.full_name, phone: member.phone, email: member.email, age: member.age, gender: member.gender })),
+    ];
+    if (query && ![booking.trek_name, booking.selected_package_name, ...participantRows.flatMap(person => [person.name, person.phone, person.email])]
       .some((value) => String(value ?? "").toLowerCase().includes(query))) return false;
+    if ((filters.participantAge && filters.participantAge !== "all") || (filters.participantGender && filters.participantGender !== "all")) {
+      if (!participantRows.some(person => (filters.participantAge === "all" || !filters.participantAge || String(person.age ?? "unknown") === filters.participantAge)
+        && (filters.participantGender === "all" || !filters.participantGender || String(person.gender ?? "unknown") === filters.participantGender))) return false;
+    }
     if (filters.trek !== "all" && booking.trek_id !== filters.trek && booking.trek_name !== filters.trek) return false;
     if (filters.departure !== "all" && (resolveBookingDeparture(booking, treks) ?? "unknown") !== filters.departure) return false;
     if (filters.package !== "all" && (booking.selected_package_id ?? "unknown") !== filters.package) return false;
     if (filters.payment !== "all" && getBookingPayment(booking).status !== filters.payment) return false;
     if (filters.source !== "all" && (booking.booking_source ?? "online") !== filters.source) return false;
-    if (filters.status !== "all" && booking.status !== filters.status) return false;
+    if (filters.status === "active" ? booking.status === "cancelled" : filters.status !== "all" && booking.status !== filters.status) return false;
     return true;
   }).sort((a, b) => {
     const difference = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
