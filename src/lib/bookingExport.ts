@@ -2,6 +2,7 @@ import type { Booking, Trek } from "@/lib/admin";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveBookingDeparture } from "@/lib/bookingAdmin";
 import { getBookingPayment, PAYMENT_STATUS_LABEL } from "@/lib/bookingPayments";
+import { participantStatus } from "@/lib/participantStatus";
 
 type BookingMember = Database["public"]["Tables"]["booking_members"]["Row"];
 export const MEMBER_HEADERS = ["S.No.", "Name", "Age", "Mobile Number", "Package Type", "Payment Status"];
@@ -10,12 +11,12 @@ export function buildBookingExportRows(bookings: Booking[], members: BookingMemb
   const query = filters.query?.trim().toLowerCase() ?? "";
   const uniqueMembers = [...new Map(members.map(member => [member.id, member])).values()];
   const uniqueBookings = [...new Map(bookings.map(booking => [booking.id, booking])).values()];
-  const eligible = uniqueBookings.filter(booking => booking.status === "confirmed").map(booking => ({
+  const eligible = uniqueBookings.map(booking => ({
     booking,
     people: [
-      { name: booking.primary_name, age: booking.primary_age, phone: booking.primary_phone, email: booking.primary_email, gender: booking.primary_gender, noShow: booking.primary_no_show },
-      ...uniqueMembers.filter(member => member.booking_id === booking.id).map(member => ({ name: member.full_name, age: member.age, phone: member.phone, email: member.email, gender: member.gender, noShow: member.no_show })),
-    ].filter(person => !person.noShow
+      { name: booking.primary_name, age: booking.primary_age, phone: booking.primary_phone, email: booking.primary_email, gender: booking.primary_gender, noShow: booking.primary_no_show, status: participantStatus(booking.primary_status, booking.status) },
+      ...uniqueMembers.filter(member => member.booking_id === booking.id).map(member => ({ name: member.full_name, age: member.age, phone: member.phone, email: member.email, gender: member.gender, noShow: member.no_show, status: participantStatus(member.status, booking.status) })),
+    ].filter(person => person.status === "confirmed" && !person.noShow
       && (!filters.age || filters.age === "all" || String(person.age ?? "unknown") === filters.age)
       && (!filters.gender || filters.gender === "all" || String(person.gender ?? "unknown") === filters.gender)
       && (!query || [person.name, person.phone, person.email].some(value => String(value ?? "").toLowerCase().includes(query))

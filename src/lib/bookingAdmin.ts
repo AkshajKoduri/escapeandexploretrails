@@ -1,6 +1,7 @@
 import type { Booking, Trek } from "@/lib/admin";
 import { trekDates } from "@/lib/admin";
 import { getBookingPayment, type PaymentStatus } from "@/lib/bookingPayments";
+import { participantSummary } from "@/lib/participantStatus";
 
 export type BookingFilters = {
   query: string;
@@ -16,7 +17,7 @@ export type BookingFilters = {
 };
 
 /** Used for both the visible list and downloads, so no active filter is lost. */
-export function filterBookings(bookings: Booking[], treks: Trek[], filters: BookingFilters, members: Array<{ booking_id: string; full_name?: string | null; phone?: string | null; email?: string | null; age?: number | null; gender?: string | null }> = []): Booking[] {
+export function filterBookings(bookings: Booking[], treks: Trek[], filters: BookingFilters, members: Array<{ booking_id: string; status?: string; full_name?: string | null; phone?: string | null; email?: string | null; age?: number | null; gender?: string | null }> = []): Booking[] {
   const query = filters.query.trim().toLowerCase();
   return bookings.filter((booking) => {
     const participantRows = [
@@ -34,7 +35,8 @@ export function filterBookings(bookings: Booking[], treks: Trek[], filters: Book
     if (filters.package !== "all" && (booking.selected_package_id ?? "unknown") !== filters.package) return false;
     if (filters.payment !== "all" && getBookingPayment(booking).status !== filters.payment) return false;
     if (filters.source !== "all" && (booking.booking_source ?? "online") !== filters.source) return false;
-    if (filters.status === "active" ? booking.status === "cancelled" : filters.status !== "all" && booking.status !== filters.status) return false;
+    const statuses = participantSummary(booking, members.filter(member => member.booking_id === booking.id)).statuses;
+    if (filters.status === "active" ? statuses.every(status => status === "cancelled") : filters.status !== "all" && !statuses.includes(filters.status)) return false;
     return true;
   }).sort((a, b) => {
     const difference = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();

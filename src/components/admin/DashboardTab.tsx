@@ -5,16 +5,18 @@ import { seatStatus, STATUS_CHIP, isPastTrip, trekDates } from "@/lib/admin";
 import { fmtDate } from "@/lib/treks";
 import { cn } from "@/lib/utils";
 import { getBookingPayment } from "@/lib/bookingPayments";
+import { participantSummary } from "@/lib/participantStatus";
 
 type Props = {
   treks: Trek[];
   stats: Map<string, SeatStats>;
   bookings: Booking[];
+  members?: Array<{ booking_id: string; status?: string }>;
   callbacks: { id: string; status: string }[];
   onNavigate: (m: "trips" | "bookings" | "callbacks") => void;
 };
 
-export default function DashboardTab({ treks, stats, bookings, callbacks, onNavigate }: Props) {
+export default function DashboardTab({ treks, stats, bookings, members = [], callbacks, onNavigate }: Props) {
   const today = new Date().toISOString().slice(0, 10);
 
   const upcoming = useMemo(
@@ -34,8 +36,8 @@ export default function DashboardTab({ treks, stats, bookings, callbacks, onNavi
     () =>
       bookings
         .filter((b) => b.status !== "cancelled" && upcomingIds.has(b.trek_id))
-        .reduce((sum, b) => sum + (Number(b.seats_booked) || 1), 0),
-    [bookings, upcomingIds],
+        .reduce((sum, b) => sum + participantSummary(b, members.filter(member => member.booking_id === b.id)).counts.confirmed, 0),
+    [bookings, members, upcomingIds],
   );
 
   const openSeats = useMemo(

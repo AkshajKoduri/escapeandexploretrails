@@ -31,6 +31,7 @@ export type Database = {
       }
       booking_members: {
         Row: {
+          status?: string
           no_show: boolean
           age: number | null
           aadhaar_number: string
@@ -44,6 +45,7 @@ export type Database = {
           phone: string | null
         }
         Insert: {
+          status?: string
           no_show?: boolean
           age?: number | null
           aadhaar_number: string
@@ -57,6 +59,7 @@ export type Database = {
           phone?: string | null
         }
         Update: {
+          status?: string
           no_show?: boolean
           age?: number | null
           aadhaar_number?: string
@@ -81,6 +84,8 @@ export type Database = {
       }
       bookings: {
         Row: {
+          primary_status: string
+          reserved_seats: number
           amount_paid: number | null
           primary_no_show: boolean
           refund_approved: number | null
@@ -114,6 +119,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          primary_status?: string
+          reserved_seats?: number
           booking_total?: number | null
           amount_paid?: number | null
           primary_no_show?: boolean
@@ -147,6 +154,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          primary_status?: string
+          reserved_seats?: number
           booking_total?: number | null
           amount_paid?: number | null
           primary_no_show?: boolean

@@ -145,6 +145,14 @@ Deno.serve(async (req) => {
       }
 
       // ---- Bookings ----
+      case "setParticipantStatus": {
+        const id = parse(idPayload, { id: payload?.id }).id;
+        const memberId = payload?.memberId == null ? null : parse(idPayload, { id: payload.memberId }).id;
+        if (!["confirmed", "cancelled"].includes(payload?.status)) throw new Error("Invalid participant status");
+        const { error } = await supabase.rpc("set_participant_booking_status", { p_booking_id: id, p_member_id: memberId, p_status: payload.status });
+        if (error) throw error;
+        return json({ ok: true });
+      }
       case "setAttendance": {
         const id = parse(idPayload, { id: payload?.id }).id;
         const memberId = payload?.memberId == null ? null : parse(idPayload, { id: payload.memberId }).id;
@@ -168,6 +176,13 @@ Deno.serve(async (req) => {
         const { data: existing, error: readError } = await supabase.from("bookings").select("*").eq("id", id).single();
         if (readError) throw readError;
         const allowed = pickAllowed(patch, BOOKING_COLUMNS);
+        if ("status" in allowed) {
+          if (Object.keys(allowed).length !== 1) throw new Error("Update participant status separately from payment records");
+          if (existing.is_group || existing.seats_booked > 1) throw new Error("Confirm or cancel each participant separately in group booking details");
+          const { error } = await supabase.rpc("set_participant_booking_status", { p_booking_id: id, p_member_id: null, p_status: allowed.status });
+          if (error) throw error;
+          return json({ ok: true });
+        }
         if ("status" in allowed && !["pending", "confirmed", "cancelled"].includes(String(allowed.status))) throw new Error("Invalid booking status");
         // Package snapshots and group size are fixed when the booking is created.
         for (const key of ["trek_id", "seats_booked", "selected_package_id", "selected_package_name", "package_unit_amount", "package_price_basis", "package_currency"]) {

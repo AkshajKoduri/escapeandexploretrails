@@ -65,6 +65,7 @@ export default function Admin() {
           treks={activeTreks}
           stats={stats}
           bookings={bookings}
+          members={members}
           callbacks={callbacks}
           onNavigate={navigateModule}
         />

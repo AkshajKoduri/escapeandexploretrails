@@ -1,4 +1,5 @@
 import { SEAT_STATUSES, normalizeDepartureStatuses } from "@/lib/departureStatus";
+import { participantStatus, participantSummary } from "@/lib/participantStatus";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
@@ -457,13 +458,13 @@ function TripDetailView({
                     <span className={cn("pill", STATUS_CHIP[getBookingPayment(b).status.toUpperCase()])}>
                       {PAYMENT_STATUS_LABEL[getBookingPayment(b).status]}
                     </span>
-                    <span className="text-xs font-semibold text-muted-foreground ml-auto">{b.seats_booked ?? 1} seat(s)</span>
+                    <span className="text-xs font-semibold text-muted-foreground ml-auto">{participantSummary(b, ms).label}</span>
                   </div>
                   {ms.length > 0 && (
                     <ul className="mt-2 pl-4 border-l-2 border-border space-y-1">
                       {ms.map((m) => (
                         <li key={m.id} className="text-xs text-muted-foreground flex items-center gap-2">
-                          <span>{m.full_name}</span>
+                          <span>{m.full_name} · {participantStatus(m.status, b.status)}</span>
                           <span className="text-muted-foreground/60">Aadhaar: {maskAadhaar(m.aadhaar_number)}</span>
                         </li>
                       ))}
