@@ -1,3 +1,4 @@
+import DepartureDates from "@/components/site/DepartureDates";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, MapPin } from "lucide-react";
@@ -131,9 +132,7 @@ export default function BookingPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="font-semibold text-primary leading-snug">{a.name}</span>
-                      {full ? (
-                        <span className="pill bg-destructive/10 text-destructive shrink-0">Full</span>
-                      ) : trekId === a.id ? (
+                      {trekId === a.id ? (
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
                           <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Selected
                         </span>
@@ -151,6 +150,7 @@ export default function BookingPage() {
                         </span>
                       )}
                     </div>
+                    <DepartureDates adventure={a} className="mt-3" />
                     {price != null && (
                       <p className="mt-2 text-sm font-bold text-gold-deep">{inr(price)} / person</p>
                     )}

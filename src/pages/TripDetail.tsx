@@ -436,7 +436,7 @@ export default function TripDetail() {
                         <p className="text-xs text-muted-foreground mt-0.5">{departureStatus(adventure, d)}{adventure.dates.length > 1 && d === adventure.dates[0] ? " · Next departure" : ""}</p>
                       </div>
                       {departureFull ? (
-                        <span className="inline-flex min-h-11 items-center text-sm font-semibold text-muted-foreground">Full</span>
+                        <span className="inline-flex min-h-11 items-center text-sm font-semibold text-muted-foreground">Booking unavailable</span>
                       ) : (
                         <a href="#book" onClick={(e) => { e.preventDefault(); setRequestedDate(d); document.getElementById("book")?.scrollIntoView({ behavior: "smooth" }); }} className="text-sm font-semibold text-accent hover:underline min-h-[44px] inline-flex items-center gap-1.5">
                           Book this date <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -569,7 +569,7 @@ function MobileBookBar({ adventure }: { adventure: Adventure }) {
           </p>
         </div>
         <a href="#book" className="btn-accent shrink-0 min-h-[44px] px-5">
-          {soldOut ? "Sold out" : "Book your spot"}
+          {soldOut ? "Booking unavailable" : "Book your spot"}
           {!soldOut && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
         </a>
       </div>

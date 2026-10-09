@@ -694,7 +694,7 @@ export default function BookingForm({
       {submitting
         ? "Sending…"
         : soldOut
-          ? "Sold out"
+          ? "Booking unavailable"
           : total != null
             ? `Send booking request — ${inr(total)}`
             : "Request booking"}
