@@ -504,9 +504,7 @@ export default function BookingForm({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-foreground">Travellers</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {date ? <SeatStatusBadge status={departureStatus(adventure, date)} /> : "Choose a departure first"}
-              </p>
+              {!date && <p className="text-xs text-muted-foreground mt-0.5">Choose a departure first</p>}
             </div>
             <div className="flex items-center gap-3">
               <button
