@@ -25,10 +25,10 @@ type Mode = "all" | "outstation" | "hyderabad";
 type SortKey = "date" | "price-asc" | "price-desc" | "name";
 
 const ACTIVITIES: { key: ActivityKey; label: string }[] = [
-  { key: "hike", label: "Hikes" },
+  { key: "hike", label: "Hiking" },
   { key: "cycling", label: "Cycling" },
-  { key: "trek", label: "Treks" },
-  { key: "bike", label: "Bike Rides" },
+  { key: "trek", label: "Monsoon Treks" },
+  { key: "bike", label: "Biking" },
 ];
 
 const DURATIONS: { key: DurationKey; label: string }[] = [

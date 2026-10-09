@@ -7,8 +7,10 @@ import logo from "@/assets/logo-128.webp";
 
 const ADVENTURE_LINKS = [
   { label: "All Adventures", href: "/adventures", note: "Browse every trail" },
-  { label: "Outstation Treks", href: "/upcoming-treks", note: "Weekends away from the city" },
-  { label: "Hyderabad Trails", href: "/hyderabad-trails", note: "Hikes & rides near home" },
+  { label: "Hiking", href: "/adventures?activity=hike", note: "Explore hiking adventures" },
+  { label: "Cycling", href: "/adventures?activity=cycling", note: "Explore cycling adventures" },
+  { label: "Biking", href: "/adventures?activity=bike", note: "Explore bike rides" },
+  { label: "Monsoon Treks", href: "/adventures?activity=trek", note: "Explore monsoon trekking adventures" },
 ];
 
 const SCROLL_THRESHOLD = 40;
