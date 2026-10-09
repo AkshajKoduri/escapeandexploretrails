@@ -172,6 +172,14 @@ export default function TripDetail() {
           <ItineraryCoverShare key={adventure.id} source={adventure} />
         </div>
         <div className="absolute inset-0">
+          {adventure.img && !imageFailed && (
+            <img
+              src={adventure.img}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 hidden h-full w-full scale-105 object-cover blur-xl md:block"
+            />
+          )}
           {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
@@ -180,7 +188,7 @@ export default function TripDetail() {
               alt={`${adventure.name} in ${location}`}
               width={adventure.imgWidth ?? undefined}
               height={adventure.imgHeight ?? undefined}
-              className="w-full h-full object-cover object-top"
+              className="relative w-full h-full object-cover object-top md:object-contain md:object-center"
               loading="eager"
               decoding="async"
               fetchPriority="high"
