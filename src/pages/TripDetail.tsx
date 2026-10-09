@@ -152,6 +152,7 @@ export default function TripDetail() {
       icon: Ruler,
     },
     hasValue(adventure.dur) && { label: "Duration", value: adventure.dur, icon: Clock },
+    ...coverFacts.map(fact => ({ ...fact, icon: Mountain })),
     { label: "Difficulty", value: adventure.diff, icon: Mountain },
     hasValue(adventure.meetingPoint) && { label: "Starting point", value: adventure.meetingPoint, icon: Flag },
     assemblyTime && { label: "Assembly", value: assemblyTime, icon: Clock },
@@ -219,12 +220,7 @@ export default function TripDetail() {
                   {inr(price)} <span className="text-sm font-normal text-charcoal-foreground/70">/ person</span>
                 </span>
               )}
-              {coverFacts.map(({ label, value }) => (
-                <span key={label} className="inline-flex items-center gap-2 text-sm font-semibold">
-                  <Mountain className="h-4 w-4 text-accent-light" aria-hidden="true" />
-                  {label}: {value}
-                </span>
-              ))}
+
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
               {!soldOut && (
@@ -258,7 +254,7 @@ export default function TripDetail() {
       {/* ============ Quick facts ============ */}
       {facts.length > 0 && (
         <section className="border-b border-border bg-card/70">
-          <div className={cn("container grid grid-cols-2 gap-px bg-border", facts.length >= 5 ? "md:grid-cols-5" : "md:grid-cols-4")}>
+          <div className={cn("container grid grid-cols-2 gap-px bg-border", facts.length > 5 ? "md:grid-cols-3 lg:grid-cols-4" : facts.length === 5 ? "md:grid-cols-5" : "md:grid-cols-4")}>
             {facts.map((f) => {
               const Icon = f.icon;
               return (
