@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/itinerary/:trekId",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|bingbot).*"
+        }
+      ],
+      "destination": "/api/itinerary-preview?trekId=:trekId"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

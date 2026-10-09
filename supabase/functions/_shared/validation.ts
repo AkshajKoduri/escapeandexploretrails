@@ -132,6 +132,8 @@ export const galleryPatchPayload = z.object({
 
 export const idPayload = z.object({ id: uuid });
 
+export const itineraryMetadataPayload = z.object({ trekId: uuid });
+
 export const patchPayload = z.object({ id: uuid, patch: z.record(z.unknown()) });
 
 export const reorderPayload = z.object({

@@ -3,7 +3,7 @@
 // role so the underlying tables need no anonymous insert grants.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { clientIp, rateLimit } from "../_shared/rateLimit.ts";
-import { galleryUrlsPayload, publicBookingPayload, publicCallbackPayload, z } from "../_shared/validation.ts";
+import { galleryUrlsPayload, itineraryMetadataPayload, publicBookingPayload, publicCallbackPayload, z } from "../_shared/validation.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
   const { action, payload = {} } = body ?? {};
 
   // Read-only actions get their own, looser bucket; writes stay tightly limited.
-  const readOnly = action === "galleryUrls" || action === "teamMembers";
+  const readOnly = action === "galleryUrls" || action === "teamMembers" || action === "itineraryMetadata";
   const limited = readOnly
     ? await rateLimit(`public-read:${ip}`, 60, 60_000)
     : await rateLimit(`public:${ip}`, 5, 60_000);
@@ -60,6 +60,17 @@ Deno.serve(async (req) => {
 
   try {
     switch (action) {
+      case "itineraryMetadata": {
+        const p = parse(itineraryMetadataPayload, payload);
+        const { data, error } = await supabase.from("upcoming_treks")
+          .select("id, name, description, destination, location, image_url, is_archived, is_draft")
+          .eq("id", p.trekId)
+          .eq("is_archived", false)
+          .eq("is_draft", false)
+          .maybeSingle();
+        if (error) throw error;
+        return json({ data: data ?? null });
+      }
       case "teamMembers": {
         const { data: rows, error } = await supabase.from("team_members")
           .select("id, full_name, role_title, bio, photo_url, badges, display_order, is_founder")
