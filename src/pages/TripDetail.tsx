@@ -88,6 +88,7 @@ export default function TripDetail() {
       ? adventure.description.slice(0, 155)
       : "Guided trek with E2 Trails from Hyderabad — real dates, prices and availability.",
     path: `/adventures/${trekId ?? ""}`,
+    image: adventure?.img,
     noindex: !adventure,
   });
 

@@ -17,8 +17,8 @@ const escapeHtml = (value: string) => value
   .replace(/"/g, "&quot;")
   .replace(/'/g, "&#39;");
 
-export function itineraryCanonicalUrl(id: string): string {
-  return `${SITE_ORIGIN}/itinerary/${encodeURIComponent(id)}`;
+export function itineraryCanonicalUrl(id: string, route = "itinerary"): string {
+  return `${SITE_ORIGIN}/${route}/${encodeURIComponent(id)}`;
 }
 
 export function itineraryPreviewImageUrl(value?: string | null): string {
@@ -52,8 +52,9 @@ export function renderItineraryPreviewHtml(
   trekId: string,
   trip?: ItineraryPreviewTrip | null,
   notFound = false,
+  route = "itinerary",
 ): string {
-  const url = itineraryCanonicalUrl(trekId);
+  const url = itineraryCanonicalUrl(trekId, route);
   const title = trip?.name?.trim() || "E2 Trails Itinerary";
   const description = itineraryPreviewDescription(trip);
   const image = itineraryPreviewImageUrl(trip?.image_url);

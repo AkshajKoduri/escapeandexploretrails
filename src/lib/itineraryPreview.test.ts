@@ -19,6 +19,11 @@ function meta(html: string, selector: string, attribute: string): string | null 
 }
 
 describe("itinerary crawler preview metadata", () => {
+  it("identifies adventure links as well as itinerary links", () => {
+    const html = renderItineraryPreviewHtml(exampleTrip.id, exampleTrip, false, "adventures");
+    expect(meta(html, 'meta[property="og:url"]', "content")).toBe(`https://e2trails.in/adventures/${exampleTrip.id}`);
+    expect(meta(html, 'meta[property="og:title"]', "content")).toBe(exampleTrip.name);
+  });
   it("renders trip-specific Open Graph, Twitter, and canonical metadata", () => {
     const html = renderItineraryPreviewHtml(exampleTrip.id, exampleTrip);
     const document = new DOMParser().parseFromString(html, "text/html");

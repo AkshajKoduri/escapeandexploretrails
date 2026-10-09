@@ -16,6 +16,7 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
   const viewer = `/itinerary/${encodeURIComponent(id)}?view=pdf`;
 
   useEffect(() => {
+    setFile(undefined);
     if (!hasPdf || !window.matchMedia("(pointer: coarse)").matches || !navigator.share) return;
     let cancelled = false;
     // Prepare ahead of the tap so native sharing retains user activation.
@@ -32,6 +33,12 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
     setBusy(true);
     setError("");
     let supportedFile: File | undefined;
+    if (!file && navigator.share && navigator.canShare) {
+      setBusy(false);
+      setMessage("Prepare the complete PDF, then tap Share PDF to choose an app.");
+      setOpen(true);
+      return;
+    }
     try { if (file && navigator.canShare?.({ files: [file] })) supportedFile = file; } catch { /* Use a link. */ }
     const result = await shareItinerary(source, supportedFile);
     setBusy(false);
@@ -50,6 +57,12 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
     catch (failure) { setError(failure instanceof Error ? failure.message : "Could not download the PDF. Please try again."); }
     finally { setBusy(false); }
   };
+  const prepare = async () => {
+    setBusy(true); setError("");
+    try { setFile(await loadItineraryFile(source)); setMessage("PDF ready. Tap Share PDF to choose an app."); }
+    catch (failure) { setError(failure instanceof Error ? failure.message : "Could not prepare the PDF."); }
+    finally { setBusy(false); }
+  };
   const copy = async () => {
     try { await navigator.clipboard.writeText(itineraryShareUrl(id)); setMessage("Itinerary link copied."); }
     catch { setMessage("Select and copy the link below."); }
@@ -63,6 +76,7 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>Share itinerary</DialogTitle><DialogDescription>{source.name}</DialogDescription></DialogHeader>
         <p role="status" className="text-sm text-muted-foreground">{message}</p>
+        <button type="button" className="btn-outline" disabled={busy} onClick={() => file ? void share() : void prepare()}>{file ? "Share PDF" : busy ? "Preparing PDF…" : "Prepare PDF to share"}</button>
         <Link to={viewer} className="btn-outline"><FileText className="h-4 w-4" aria-hidden="true" />Open PDF</Link>
         <button type="button" className="btn-outline" disabled={busy} onClick={() => void download()}><Download className="h-4 w-4" aria-hidden="true" />{busy ? "Preparing PDF…" : "Download PDF"}</button>
         <button type="button" className="btn-outline" onClick={() => void copy()}><Copy className="h-4 w-4" aria-hidden="true" />Copy link</button>

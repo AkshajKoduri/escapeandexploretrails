@@ -727,6 +727,9 @@ function TripForm({
         <input type="number" min={0} className={inp} value={f.starting_price ?? ""} onChange={(e) => set({ starting_price: e.target.value === "" ? null : Number(e.target.value) })} placeholder="15800" />
       </FF>
 
+      {!isCycling && <FF label="Altitude (optional)"><input className={inp} value={f.altitude ?? ""} onChange={(e) => set({ altitude: e.target.value })} placeholder="e.g. 1,200 m" /></FF>}
+      <FF label="Elevation gain (optional)"><input className={inp} value={f.elevation_gain ?? ""} onChange={(e) => set({ elevation_gain: e.target.value })} placeholder="e.g. 450 m" /></FF>
+
       <FF label={isOutstation ? "Overview" : "Overview *"} full><textarea rows={3} className={inp} value={f.description ?? ""} onChange={(e) => set({ description: e.target.value })} required={!isOutstation} /></FF>
       <TripHighlightsEditor value={f.highlights} onChange={(highlights) => set({ highlights })} />
       <TripPhotosEditor value={f.gallery_images} onChange={(gallery_images) => set({ gallery_images })} onBusy={setGalleryBusy} />
@@ -738,7 +741,7 @@ function TripForm({
           <div className="text-sm font-semibold text-primary">Monsoon trek details (optional)</div>
           <p className="text-xs text-muted-foreground">Click the pencil next to any label to rename it. Leave a field blank to hide it from the public trip page.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {OUTSTATION_EXTRA_FIELDS.map((field) => {
+            {OUTSTATION_EXTRA_FIELDS.filter((field) => field.key !== "altitude" && field.key !== "elevation_gain").map((field) => {
               const key = field.key as string;
               const currentLabel = (f.field_labels && f.field_labels[key]) || field.label;
               const value = (f as any)[key] ?? "";
@@ -831,7 +834,7 @@ function TripForm({
           </div>
         </div>
 
-        <FF label="Optional: upload a PDF fallback (max 10MB)" full>
+        <FF label="Upload complete itinerary PDF (max 10MB; preferred for sharing and downloads)" full>
           <input
             type="file"
             accept="application/pdf"

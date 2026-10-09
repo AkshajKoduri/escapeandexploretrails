@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
   const { action, payload = {} } = body ?? {};
 
   // Read-only actions get their own, looser bucket; writes stay tightly limited.
-  const readOnly = action === "galleryUrls" || action === "teamMembers" || action === "itineraryMetadata";
+  const readOnly = ["galleryUrls", "teamMembers", "itineraryMetadata", "itineraryPdfSource"].includes(action);
   const limited = readOnly
     ? await rateLimit(`public-read:${ip}`, 60, 60_000)
     : await rateLimit(`public:${ip}`, 5, 60_000);
@@ -60,6 +60,20 @@ Deno.serve(async (req) => {
 
   try {
     switch (action) {
+      case "itineraryPdfSource": {
+        const p = parse(itineraryMetadataPayload, payload);
+        const { data: trip, error } = await supabase.from("upcoming_treks")
+          .select("id, name, itinerary_file_path, itinerary_url")
+          .eq("id", p.trekId).eq("is_archived", false).eq("is_draft", false).maybeSingle();
+        if (error) throw error;
+        if (!trip) return json({ error: "Itinerary not available" }, 404);
+        if (trip.itinerary_file_path) {
+          const { data, error: signError } = await supabase.storage.from("itineraries").createSignedUrl(trip.itinerary_file_path, 300);
+          if (signError) throw signError;
+          return json({ data: { name: trip.name, url: data.signedUrl, uploaded: true } });
+        }
+        return json({ data: { name: trip.name, url: trip.itinerary_url, uploaded: false } });
+      }
       case "itineraryMetadata": {
         const p = parse(itineraryMetadataPayload, payload);
         const { data, error } = await supabase.from("upcoming_treks")

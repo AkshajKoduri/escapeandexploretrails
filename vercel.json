@@ -2,20 +2,18 @@
   "rewrites": [
     {
       "source": "/itinerary/:trekId",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|bingbot).*"
-        }
-      ],
       "destination": "/api/itinerary-preview?trekId=:trekId"
+    },
+    {
+      "source": "/adventures/:trekId",
+      "destination": "/api/itinerary-preview?trekId=:trekId&route=adventures"
     },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
+  "functions": { "api/itinerary-preview.ts": { "includeFiles": "dist/index.html" } },
   "headers": [
     {
       "source": "/(.*)",
@@ -28,6 +26,13 @@
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://rpxbufmqncctrrdobzkr.supabase.co wss://rpxbufmqncctrrdobzkr.supabase.co https://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
         }
+      ]
+    },
+    {
+      "source": "/api/itinerary-pdf",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Content-Security-Policy", "value": "default-src 'none'; frame-ancestors 'self'" }
       ]
     },
     {

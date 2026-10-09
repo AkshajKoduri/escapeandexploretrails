@@ -10,6 +10,7 @@ type SeoOptions = {
   path: string;
   /** Utility routes (booking, 404, missing content) should stay out of search indexes. */
   noindex?: boolean;
+  image?: string | null;
 };
 
 function upsertMeta(attr: "name" | "property", key: string, content: string) {
@@ -28,7 +29,7 @@ function upsertMeta(attr: "name" | "property", key: string, content: string) {
  * Runs client-side, so JS-executing crawlers (Googlebot) see the per-page values.
  * All URLs resolve to the production domain so canonicals never point at preview hosts.
  */
-export function useSeo({ title, description, path, noindex = false }: SeoOptions) {
+export function useSeo({ title, description, path, noindex = false, image }: SeoOptions) {
   useEffect(() => {
     const url = `${SITE_URL}${path}`;
     document.title = title;
@@ -38,14 +39,14 @@ export function useSeo({ title, description, path, noindex = false }: SeoOptions
     upsertMeta("property", "og:description", description);
     upsertMeta("property", "og:url", url);
     upsertMeta("property", "og:type", "website");
-    upsertMeta("property", "og:image", OG_IMAGE);
+    upsertMeta("property", "og:image", image || OG_IMAGE);
     upsertMeta("property", "og:image:width", "1200");
     upsertMeta("property", "og:image:height", "630");
     upsertMeta("property", "og:image:alt", "E2 Trails guided adventures from Hyderabad");
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", title);
     upsertMeta("name", "twitter:description", description);
-    upsertMeta("name", "twitter:image", OG_IMAGE);
+    upsertMeta("name", "twitter:image", image || OG_IMAGE);
     upsertMeta("name", "twitter:image:alt", "E2 Trails guided adventures from Hyderabad");
 
     const robotsSelector = 'meta[name="robots"]';
@@ -68,5 +69,5 @@ export function useSeo({ title, description, path, noindex = false }: SeoOptions
       document.head.appendChild(canon);
     }
     canon.setAttribute("href", url);
-  }, [title, description, path, noindex]);
+  }, [title, description, path, noindex, image]);
 }

@@ -1,10 +1,22 @@
 import {
   renderItineraryPreviewHtml,
 } from "../src/lib/itineraryPreview.js";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function html(body: string, status = 200): Response {
+async function html(body: string, status = 200): Promise<Response> {
+  try {
+    const shell = await readFile(join(process.cwd(), "dist/index.html"), "utf8");
+    const metadata = body.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? "";
+    body = shell.replace(/<title>[\s\S]*?<\/title>/g, "")
+      .replace(/<meta\b[^>]*(?:name|property)="(?:description|robots|og:[^"]+|twitter:[^"]+)"[^>]*>/g, "")
+      .replace(/<link\b[^>]*rel="canonical"[^>]*>/g, "")
+      .replace("</head>", `${metadata}</head>`);
+  } catch {
+    // Unit tests have no built shell. Deployed functions include dist/index.html.
+  }
   return new Response(body, {
     status,
     headers: {
@@ -22,7 +34,9 @@ export default {
       return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
     }
 
-    const trekId = new URL(request.url).searchParams.get("trekId") ?? "";
+    const params = new URL(request.url).searchParams;
+    const trekId = params.get("trekId") ?? "";
+    const route = params.get("route") === "adventures" ? "adventures" : "itinerary";
     if (!UUID.test(trekId)) return html(renderItineraryPreviewHtml("unknown", null, true), 404);
 
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -64,7 +78,7 @@ export default {
         && row.is_draft === false
         && typeof row.name === "string"
         && row.name.trim();
-      if (!published) return html(renderItineraryPreviewHtml(trekId, null, true), 404);
+      if (!published) return html(renderItineraryPreviewHtml(trekId, null, true, route), 404);
 
       return html(renderItineraryPreviewHtml(trekId, {
         id: trekId,
@@ -73,7 +87,7 @@ export default {
         destination: typeof row.destination === "string" ? row.destination : null,
         location: typeof row.location === "string" ? row.location : null,
         image_url: typeof row.image_url === "string" ? row.image_url : null,
-      }));
+      }, false, route));
     } catch (error) {
       console.error("Unable to build itinerary social preview", error);
       // During a temporary metadata outage, return generic brand metadata

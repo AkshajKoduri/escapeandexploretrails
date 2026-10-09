@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import ItineraryCoverShare from "./ItineraryCoverShare";
@@ -23,34 +23,41 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const show = () => render(<MemoryRouter><ItineraryCoverShare source={source} /></MemoryRouter>);
 describe("cover itinerary action", () => {
+  it("does not silently share a link while the full PDF is still preparing", async () => {
+    mocks.load.mockReturnValue(new Promise(() => {}));
+    show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(mocks.share).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Prepare PDF to share" })).toBeInTheDocument();
+  });
   it("opens the PDF viewer on desktop", () => {
     mobile = false; show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
     expect(mocks.navigate).toHaveBeenCalledWith("/itinerary/trip?view=pdf");
   });
   it("shares the prepared PDF on touch devices", async () => {
-    show(); await waitFor(() => expect(mocks.load).toHaveBeenCalled());
+    await act(async () => { show(); });
     fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
     await waitFor(() => expect(mocks.share).toHaveBeenCalledWith(source, expect.any(File)));
   });
   it("shares a link if file sharing is unsupported", async () => {
     Object.defineProperty(navigator, "canShare", { configurable: true, value: () => false });
-    show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
+    await act(async () => { show(); }); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
     await waitFor(() => expect(mocks.share).toHaveBeenCalledWith(source, undefined));
   });
   it("offers PDF and copy alternatives when sharing fails", async () => {
-    mocks.share.mockResolvedValue("unsupported"); show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
+    mocks.share.mockResolvedValue("unsupported"); await act(async () => { show(); }); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open PDF" })).toHaveAttribute("href", "/itinerary/trip?view=pdf");
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
   });
   it("shows a clear fallback when the native share action fails", async () => {
-    mocks.share.mockResolvedValue("failed"); show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
+    mocks.share.mockResolvedValue("failed"); await act(async () => { show(); }); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText(/couldn’t share the itinerary/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
   });
   it("does not show success or a fallback on cancellation", async () => {
-    mocks.share.mockResolvedValue("cancelled"); show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
+    mocks.share.mockResolvedValue("cancelled"); await act(async () => { show(); }); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Share itinerary" })).not.toBeDisabled());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

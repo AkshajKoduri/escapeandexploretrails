@@ -11,12 +11,12 @@ describe("itinerary PDF and sharing fallbacks", () => {
     expect(decodeURIComponent(whatsappItineraryShare(source, "https://e2trails.in"))).toContain("https://e2trails.in/itinerary/trip");
     expect(hasItineraryPdf({ id: "trip", name: "Trip" })).toBe(false);
   });
-  it("requests fresh signed access for every PDF resolution", async () => {
+  it("uses the stable PDF endpoint so server requests obtain fresh storage access", async () => {
     invoke.mockResolvedValueOnce({ data: { url: "https://files.test/one.pdf?token=one" }, error: null });
     invoke.mockResolvedValueOnce({ data: { url: "https://files.test/one.pdf?token=two" }, error: null });
-    expect(await resolveItineraryUrl(source)).toContain("token=one");
-    expect(await resolveItineraryUrl(source)).toContain("token=two");
-    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(await resolveItineraryUrl(source)).toBe("/api/itinerary-pdf?trekId=trip&view=inline");
+    expect(await resolveItineraryUrl(source)).not.toContain("token=");
+    expect(invoke).not.toHaveBeenCalled();
   });
   it("downloads PDF bytes with a meaningful name and rejects provider HTML", async () => {
     invoke.mockResolvedValue({ data: { url: "https://files.test/one.pdf" }, error: null });
@@ -40,8 +40,8 @@ describe("itinerary PDF and sharing fallbacks", () => {
     vi.stubGlobal("fetch", fetch);
     const pdf = await loadItineraryFile(source);
     expect(pdf.type).toBe("application/pdf");
-    expect(invoke).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls.map(([url]) => url)).toEqual(["https://files.test/expired.pdf", "https://files.test/fresh.pdf"]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/itinerary-pdf?trekId=trip", "/api/itinerary-pdf?trekId=trip"]);
   });
   it("handles unsupported file sharing and cancellation without claiming success", async () => {
     vi.stubGlobal("navigator", {});
@@ -57,6 +57,6 @@ describe("itinerary PDF and sharing fallbacks", () => {
   });
   it("reports unavailable PDFs instead of using a broken URL", async () => {
     invoke.mockResolvedValue({ data: null, error: new Error("Not found") });
-    await expect(resolveItineraryUrl(source)).rejects.toThrow(/unavailable/);
+    await expect(resolveItineraryUrl({ id: "trip", name: "Trip" })).rejects.toThrow(/No itinerary/);
   });
 });
