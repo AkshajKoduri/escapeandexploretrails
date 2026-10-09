@@ -214,6 +214,7 @@ Deno.serve(async (req) => {
         if ("trip_details" in row) row.trip_details = parse(tripDetailsPayload, row.trip_details);
         if ("highlights" in row) row.highlights = parse(highlightsPayload, row.highlights);
         if ("gallery_images" in row) row.gallery_images = parse(tripGalleryPayload, row.gallery_images);
+        if ("show_on_homepage" in row) row.show_on_homepage = parse(z.boolean(), row.show_on_homepage);
         if ("departure_statuses" in row) row.departure_statuses = parse(departureStatusesPayload, row.departure_statuses);
         if (!row.name || !row.event_type) return json({ error: "Trip name and event type are required" }, 400);
         const { data, error } = await supabase
@@ -230,6 +231,7 @@ Deno.serve(async (req) => {
         if ("trip_details" in safe) safe.trip_details = parse(tripDetailsPayload, safe.trip_details);
         if ("highlights" in safe) safe.highlights = parse(highlightsPayload, safe.highlights);
         if ("gallery_images" in safe) safe.gallery_images = parse(tripGalleryPayload, safe.gallery_images);
+        if ("show_on_homepage" in safe) safe.show_on_homepage = parse(z.boolean(), safe.show_on_homepage);
         if ("departure_statuses" in safe) safe.departure_statuses = parse(departureStatusesPayload, safe.departure_statuses);
         const { error } = await supabase.from("upcoming_treks").update(safe).eq("id", id);
         if (error) throw error;

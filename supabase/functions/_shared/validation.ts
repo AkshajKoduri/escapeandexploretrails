@@ -34,7 +34,7 @@ export const TREK_COLUMNS = [
   "altitude", "region", "elevation_gain", "mountain_range", "base_village", "duration_text",
   "stay_location", "field_labels", "additional_dates", "starting_price", "starting_price_label",
   "top_end_price", "top_end_price_label", "itinerary_days", "trek_category", "seats_taken",
-  "trip_details", "highlights", "gallery_images", "departure_statuses",
+  "trip_details", "highlights", "gallery_images", "departure_statuses", "show_on_homepage",
 ] as const;
 
 const detailId = z.string().trim().min(1).max(120);

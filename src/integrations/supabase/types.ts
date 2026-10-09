@@ -409,6 +409,7 @@ export type Database = {
         Row: {
           highlights: string[]
           gallery_images: Json
+          show_on_homepage: boolean
           departure_statuses: Json
           additional_dates: string[]
           album_url: string | null
@@ -456,6 +457,7 @@ export type Database = {
         Insert: {
           highlights?: string[]
           gallery_images?: Json
+          show_on_homepage?: boolean
           departure_statuses?: Json
           additional_dates?: string[]
           album_url?: string | null
@@ -503,6 +505,7 @@ export type Database = {
         Update: {
           highlights?: string[]
           gallery_images?: Json
+          show_on_homepage?: boolean
           departure_statuses?: Json
           additional_dates?: string[]
           album_url?: string | null

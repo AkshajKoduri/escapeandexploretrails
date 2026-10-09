@@ -7,6 +7,7 @@ export type Trek = {
   location: string | null;
   trek_date: string | null;
   additional_dates: string[];
+  show_on_homepage?: boolean;
   departure_statuses?: Record<string, import("./departureStatus").SeatStatus>;
   trek_time: string | null;
   difficulty: "Easy" | "Moderate" | "Hard";
@@ -57,6 +58,7 @@ export const emptyTrek: Partial<Trek> = {
   destination: "",
   trek_date: "",
   additional_dates: [],
+  show_on_homepage: false,
   departure_statuses: {},
   trek_time: "",
   difficulty: "Easy",

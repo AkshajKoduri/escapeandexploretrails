@@ -73,7 +73,7 @@ export default function AdventureCard({
           </p>
           <h3 className={`font-display font-bold leading-snug ${wide ? "text-lg md:text-2xl" : compact ? "text-lg" : "text-xl"}`}>{adventure.name}</h3>
 
-          <DepartureDates adventure={adventure} />
+          <DepartureDates adventure={adventure} showStatus={false} />
 
           <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-charcoal-foreground/75 ${wide ? "md:hidden" : ""}`}>
             {hasValue(adventure.dur) && (

@@ -99,6 +99,7 @@ export default function TripsTab({
         location: t.location,
         trek_date: t.trek_date,
         additional_dates: t.additional_dates,
+        show_on_homepage: t.show_on_homepage ?? false,
         departure_statuses: t.departure_statuses ?? {},
         trek_time: t.trek_time,
         difficulty: t.difficulty,
@@ -570,6 +571,7 @@ function TripForm({
         location: f.location?.trim() || null,
         trek_date: f.trek_date || null,
         additional_dates: cleanDates,
+        show_on_homepage: f.show_on_homepage === true,
         departure_statuses: Object.fromEntries(Object.entries(normalizeDepartureStatuses(f.departure_statuses)).filter(([date]) => [f.trek_date, ...cleanDates].includes(date))),
         trek_time: f.trek_time?.trim() || null,
         difficulty: f.difficulty,
@@ -642,6 +644,13 @@ function TripForm({
       </FF>
 
       <FF label="Trip name *" full><input className={inp} value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} required /></FF>
+      <div className="md:col-span-2">
+        <label className="flex min-h-11 items-center gap-3 text-sm font-semibold">
+          <input type="checkbox" checked={f.show_on_homepage === true} onChange={event => set({ show_on_homepage: event.target.checked })} />
+          Show on homepage
+        </label>
+        <p className="text-xs text-muted-foreground">Displays this card among the homepage adventures when published with an upcoming date. Other adventures remain available in the adventure catalogue.</p>
+      </div>
 
       {isOutstation ? (
         <>

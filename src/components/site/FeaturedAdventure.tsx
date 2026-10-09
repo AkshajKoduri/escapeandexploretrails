@@ -48,6 +48,8 @@ export default function FeaturedAdventure() {
     };
   }, [retryKey]);
 
+  const visible = adventures.filter(adventure => adventure.showOnHomepage !== false);
+
   const updateScrollState = () => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
@@ -62,7 +64,7 @@ export default function FeaturedAdventure() {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", updateScrollState);
     };
-  }, [adventures.length]);
+  }, [visible.length]);
 
   const scroll = (direction: -1 | 1) => {
     const scroller = scrollerRef.current;
@@ -74,7 +76,6 @@ export default function FeaturedAdventure() {
     });
   };
 
-  const visible = adventures.slice(0, 4);
 
   return (
     <section id="featured" className="border-b border-border bg-background pt-6 pb-14 md:pt-8 md:pb-20 lg:pb-24">
@@ -114,7 +115,7 @@ export default function FeaturedAdventure() {
           <div className="mt-10 border-y border-border py-10 text-center">
             <Compass className="mx-auto h-9 w-9 text-muted-foreground/50" strokeWidth={1.5} aria-hidden="true" />
             <p className="mx-auto mt-4 max-w-md text-muted-foreground">
-              New departure dates are being prepared. Browse the adventure collection while you wait.
+              Browse the full adventure collection for upcoming trips and departure dates.
             </p>
             <Link to="/adventures" className="btn-outline mt-5">Browse adventures</Link>
           </div>

@@ -29,6 +29,7 @@ export type AdventureExtra = { key: string; label: string; value: string };
 export type Adventure = {
   id: string;
   name: string;
+  showOnHomepage?: boolean;
   destination: string | null;
   location: string | null;
   img: string;
@@ -273,6 +274,7 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, departureMap: Map<s
   return {
     id: t.id,
     name: t.name,
+    showOnHomepage: t.show_on_homepage ?? true,
     destination: t.destination ?? null,
     location: t.location ?? null,
     img: t.image_url || bundledImage?.src || "",
