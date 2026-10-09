@@ -33,7 +33,7 @@ export default function AdventureCard({
       aria-label={`View ${adventure.name}${nextDate ? `, ${fmtDate(nextDate)}` : ""}`}
     >
       <article className={`relative overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col ${wide ? "md:grid md:min-h-[360px] md:grid-cols-[3fr_2fr] lg:grid-cols-[2fr_1fr]" : "md:h-full"}`}>
-        <div className={`relative overflow-hidden bg-muted ${wide ? "h-40 md:h-full md:aspect-auto" : compact ? "h-44 md:h-auto md:aspect-[4/3]" : "aspect-[4/5]"}`}>
+        <div className={`relative grid content-start overflow-hidden bg-muted ${wide ? "min-h-40 md:h-full md:aspect-auto" : compact ? "min-h-44 md:aspect-[4/3]" : "aspect-[4/5]"}`}>
           {adventure.img && !imageFailed ? (
             <img
               src={adventure.img}
@@ -46,10 +46,10 @@ export default function AdventureCard({
               width={adventure.imgWidth ?? undefined}
               height={adventure.imgHeight ?? undefined}
               onError={() => setImageFailed(true)}
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
             />
           ) : (
-            <div className="w-full h-full grid place-items-center bg-primary text-primary-foreground/45" aria-hidden="true">
+            <div className="absolute inset-0 w-full h-full grid place-items-center bg-primary text-primary-foreground/45" aria-hidden="true">
               <div className="text-center">
                 <Mountain className="mx-auto h-12 w-12" strokeWidth={1} />
                 <span className="meta-label mt-3 block text-primary-foreground/55">E2 Trails</span>
@@ -57,11 +57,14 @@ export default function AdventureCard({
             </div>
           )}
 
-          {/* Difficulty */}
-          <span className={`absolute top-4 right-4 pill backdrop-blur-sm ${diff.chip} ${wide ? "md:hidden" : ""}`}>
+          {/* Keep dates in flow so large departure lists can grow the photo area. */}
+          <div className="relative z-10 flex items-start gap-2 p-4">
+          <DepartureDates adventure={adventure} showStatus={false} className="flex-1" />
+          <span className={`pill shrink-0 backdrop-blur-sm ${diff.chip} ${wide ? "md:hidden" : ""}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${diff.dot}`} aria-hidden="true" />
             {diff.label}
           </span>
+          </div>
 
 
         </div>
@@ -73,7 +76,6 @@ export default function AdventureCard({
           </p>
           <h3 className={`font-display font-bold leading-snug ${wide ? "text-lg md:text-2xl" : compact ? "text-lg" : "text-xl"}`}>{adventure.name}</h3>
 
-          <DepartureDates adventure={adventure} showStatus={false} />
 
           <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-charcoal-foreground/75 ${wide ? "md:hidden" : ""}`}>
             {hasValue(adventure.dur) && (
