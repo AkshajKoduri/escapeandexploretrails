@@ -38,6 +38,10 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
     if (result === "unsupported") {
       setMessage("Sharing is unavailable. You can copy the link, open or download the PDF.");
       setOpen(true);
+    } else if (result === "failed") {
+      setError("Your device couldn’t share the itinerary. You can copy the stable link, open the PDF or download it instead.");
+      setMessage("Choose another way to share or download the PDF.");
+      setOpen(true);
     }
   };
   const download = async () => {

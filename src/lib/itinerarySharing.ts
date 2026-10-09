@@ -33,15 +33,31 @@ export async function resolveItineraryUrl(source: ItinerarySource): Promise<stri
 }
 
 export async function loadItineraryFile(source: ItinerarySource): Promise<File> {
-  const url = await resolveItineraryUrl(source);
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("The itinerary could not be downloaded. Open the PDF to download it from its provider.");
-  const data = await response.arrayBuffer();
-  const bytes = new Uint8Array(data);
-  if (String.fromCharCode(...bytes.slice(0, 5)) !== "%PDF-") {
-    throw new Error("This provider opens the itinerary on its own page. Open the PDF and use the provider’s download option.");
+  const attempts = source.itineraryFilePath ? 2 : 1;
+  let lastErrorMessage = "";
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      // Mint a URL for each private-storage attempt so an expired URL is replaced.
+      const url = await resolveItineraryUrl(source);
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error("The itinerary PDF could not be fetched.");
+      const data = await response.arrayBuffer();
+      const expectedLength = Number(response.headers?.get("content-length"));
+      if (expectedLength > 0 && data.byteLength !== expectedLength) {
+        throw new Error("The itinerary download was incomplete. Please try again.");
+      }
+      const bytes = new Uint8Array(data);
+      if (String.fromCharCode(...bytes.slice(0, 5)) !== "%PDF-") {
+        throw new Error("The downloaded file is not a PDF. Open the itinerary page to access the full document.");
+      }
+      return new File([data], itineraryFilename(source.name), { type: "application/pdf" });
+    } catch (failure) {
+      lastErrorMessage = failure && typeof failure === "object" && "message" in failure
+        ? String(failure.message)
+        : "The itinerary PDF could not be downloaded.";
+    }
   }
-  return new File([data], itineraryFilename(source.name), { type: "application/pdf" });
+  throw new Error(lastErrorMessage || "The itinerary PDF could not be downloaded. Please try again or open the itinerary page.");
 }
 
 export function downloadItineraryFile(file: File): void {
@@ -55,7 +71,7 @@ export function downloadItineraryFile(file: File): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-export async function shareItinerary(source: ItinerarySource, file?: File): Promise<"shared" | "cancelled" | "unsupported"> {
+export async function shareItinerary(source: ItinerarySource, file?: File): Promise<"shared" | "cancelled" | "unsupported" | "failed"> {
   if (!navigator.share) return "unsupported";
   try {
     if (file && (!navigator.canShare || !navigator.canShare({ files: [file] }))) return "unsupported";
@@ -63,6 +79,6 @@ export async function shareItinerary(source: ItinerarySource, file?: File): Prom
     return "shared";
   } catch (error) {
     if (error && typeof error === "object" && "name" in error && error.name === "AbortError") return "cancelled";
-    return "unsupported";
+    return "failed";
   }
 }

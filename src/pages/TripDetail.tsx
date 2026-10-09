@@ -40,6 +40,7 @@ import { formatAdventureDescription } from "@/lib/adventureDescription";
 import { normalizeAssemblyTime } from "@/lib/tripContent";
 import ItineraryCoverShare from "@/components/site/ItineraryCoverShare";
 import TripPhotoGallery from "@/components/site/TripPhotoGallery";
+import { getTripCoverFacts } from "@/lib/tripCoverFacts";
 
 export default function TripDetail() {
   useReveal();
@@ -138,6 +139,7 @@ export default function TripDetail() {
   const descriptionSections = formatAdventureDescription(adventure.description, adventure.name);
   const distanceHasContext = /[a-z]/i.test(adventure.dist);
   const assemblyTime = normalizeAssemblyTime(adventure.trekTime);
+  const coverFacts = getTripCoverFacts(adventure.extras, adventure.eventType);
 
   const facts = [
     hasValue(adventure.dist) && {
@@ -226,6 +228,12 @@ export default function TripDetail() {
                   {inr(price)} <span className="text-sm font-normal text-charcoal-foreground/70">/ person</span>
                 </span>
               )}
+              {coverFacts.map(({ label, value }) => (
+                <span key={label} className="inline-flex items-center gap-2 text-sm font-semibold">
+                  <Mountain className="h-4 w-4 text-accent-light" aria-hidden="true" />
+                  {label}: {value}
+                </span>
+              ))}
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
               {!soldOut && (

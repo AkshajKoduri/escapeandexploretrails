@@ -4,7 +4,7 @@ import { Plus, ChevronDown, ChevronRight, Eye, EyeOff, Search, Download, WalletC
 import { adminApi } from "@/lib/adminApi";
 import type { Booking, Trek } from "@/lib/admin";
 import { STATUS_CHIP, trekDates } from "@/lib/admin";
-import { filterBookings, groupBookingsByDeparture, resolveBookingDeparture } from "@/lib/bookingAdmin";
+import { filterBookings, groupBookingsByDeparture, resolveBookingDeparture, sortBookingGroups } from "@/lib/bookingAdmin";
 import { buildBookingExportRows, bookingExportFilename, exportBookingMembers } from "@/lib/bookingExport";
 import { getBookingPayment, PAYMENT_STATUS_LABEL, validatePaymentAmounts, type PaymentStatus } from "@/lib/bookingPayments";
 import { REFUND_LABELS } from "@/lib/bookingRefunds";
@@ -107,6 +107,7 @@ export default function BookingsTab({
   const [exportOpen, setExportOpen] = useState(false);
   const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
   const [statusBooking, setStatusBooking] = useState<Booking | null>(null);
+  const [statusAction, setStatusAction] = useState<"confirm" | "cancel">("confirm");
   const [statusBusy, setStatusBusy] = useState(false);
 
   const membersByBooking = useMemo(() => {
@@ -142,17 +143,16 @@ export default function BookingsTab({
   ].filter((age): age is number => typeof age === "number" && Number.isFinite(age)))].sort((a, b) => a - b), [bookings, members]);
 
   const groupedRows = useMemo(() => {
-    return [...groupBookingsByDeparture(attendanceFiltered, treks).entries()]
-      .sort(([a], [b]) => a === "unknown" ? 1 : b === "unknown" ? -1 : a.localeCompare(b))
+    return sortBookingGroups(groupBookingsByDeparture(attendanceFiltered, treks), sortDir)
       .flatMap(([departure, rows]) => rows.map((booking, index) => ({ booking, departure, first: index === 0, count: rows.length, seats: rows.reduce((sum, row) => sum + (row.seats_booked ?? 1), 0) })));
-  }, [attendanceFiltered, treks]);
+  }, [attendanceFiltered, treks, sortDir]);
 
   const updateStatus = async () => {
     if (!statusBooking) return;
     const booking = statusBooking; setStatusBusy(true);
     try {
-      await adminApi("updateBooking", { id: booking.id, patch: { status: booking.status === "confirmed" ? "cancelled" : "confirmed" } });
-      toast.success(booking.status === "confirmed" ? "Booking cancelled" : "Booking confirmed"); setStatusBooking(null); reload();
+      await adminApi("updateBooking", { id: booking.id, patch: { status: statusAction === "cancel" ? "cancelled" : "confirmed" } });
+      toast.success(statusAction === "cancel" ? "Booking cancelled" : "Booking confirmed"); setStatusBooking(null); reload();
     } catch (error) { toast.error(errorMessage(error, "Could not update booking status")); }
     finally { setStatusBusy(false); }
   };
@@ -292,7 +292,7 @@ export default function BookingsTab({
                     type="button"
                     onClick={() => setExpanded(isOpen ? null : b.id)}
                     aria-expanded={isOpen}
-                    className="flex-1 min-w-0 text-left hover:opacity-80 transition"
+                    className="min-w-0 basis-full text-left hover:opacity-80 transition md:basis-auto md:flex-1"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
                       {isGroup && (
@@ -306,8 +306,10 @@ export default function BookingsTab({
                       <span className="pill bg-muted text-foreground">{REFUND_LABELS[b.refund_status as keyof typeof REFUND_LABELS] ?? REFUND_LABELS.not_applicable}</span>
                       {source === "manual" && <span className="pill bg-blue-500/15 text-blue-700">MANUAL</span>}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {b.trek_name} · {departure === "unknown" ? "Departure date not recorded" : fmtDate(departure)}
+                    <div className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1 text-xs text-muted-foreground">
+                      <span className="min-w-0 break-words">{b.trek_name}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className={departure === "unknown" ? "break-words" : "whitespace-nowrap"}>{departure === "unknown" ? "Departure date not recorded" : fmtDate(departure)}</span>
                     </div>
                   </button>
                   <span className="text-xs text-muted-foreground hidden md:block">{b.primary_phone}</span>
@@ -315,7 +317,14 @@ export default function BookingsTab({
                   <span className={cn("pill", STATUS_CHIP[pay.toUpperCase()])}>{PAYMENT_STATUS_LABEL[pay]}</span>
                   <button type="button" onClick={() => setEditingPayment(b)} className="btn-outline btn-sm">Update payment</button>
                   <button type="button" onClick={() => setRefundBooking(b)} className="btn-outline btn-sm" aria-label={`Update refund for ${b.primary_name}`}><WalletCards className="h-4 w-4" />Refund</button>
-                  <button type="button" onClick={() => setStatusBooking(b)} className="btn-outline btn-sm">{b.status === "confirmed" ? "Cancel booking" : "Confirm booking"}</button>
+                  {b.status === "pending" ? (
+                    <>
+                      <button type="button" onClick={() => { setStatusAction("confirm"); setStatusBooking(b); }} className="btn-outline btn-sm">Confirm booking</button>
+                      <button type="button" onClick={() => { setStatusAction("cancel"); setStatusBooking(b); }} className="btn-outline btn-sm">Cancel booking</button>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => { setStatusAction(b.status === "confirmed" ? "cancel" : "confirm"); setStatusBooking(b); }} className="btn-outline btn-sm">{b.status === "confirmed" ? "Cancel booking" : "Confirm booking"}</button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setExpanded(isOpen ? null : b.id)}
@@ -415,9 +424,11 @@ export default function BookingsTab({
       <Dialog open={!!refundBooking} onOpenChange={open => { if (!open) setRefundBooking(null); }}>
         <DialogContent className="max-w-lg"><DialogHeader><DialogTitle>Update refund record</DialogTitle></DialogHeader>{refundBooking && <RefundForm key={refundBooking.id} booking={refundBooking} onDone={() => { setRefundBooking(null); reload(); toast.success("Refund record saved"); }} />}</DialogContent>
       </Dialog>
-      <ConfirmDialog open={!!statusBooking} title={statusBooking?.status === "confirmed" ? "Cancel this booking?" : "Confirm this booking?"}
-        description={statusBooking ? statusBooking.status === "confirmed" ? `${statusBooking.seats_booked ?? 1} seat(s) will be released. Payments, refunds and attendance records will be preserved.` : `Confirm ${statusBooking.primary_name}'s booking for ${statusBooking.trek_name}? Available capacity will be checked.` : ""}
-        confirmLabel={statusBooking?.status === "confirmed" ? "Cancel booking" : "Confirm booking"} destructive={statusBooking?.status === "confirmed"} busy={statusBusy} onConfirm={() => void updateStatus()} onClose={() => setStatusBooking(null)} />
+      <ConfirmDialog open={!!statusBooking} title={statusAction === "cancel" ? "Cancel this booking?" : "Confirm this booking?"}
+        description={statusBooking ? statusAction === "cancel"
+          ? statusBooking.status === "confirmed" ? `${statusBooking.seats_booked ?? 1} seat(s) will be released. Payments, refunds and attendance records will be preserved.` : `Cancel ${statusBooking.primary_name}'s booking request for ${statusBooking.trek_name}?`
+          : `Confirm ${statusBooking.primary_name}'s booking for ${statusBooking.trek_name}? Available capacity will be checked.` : ""}
+        confirmLabel={statusAction === "cancel" ? "Cancel booking" : "Confirm booking"} destructive={statusAction === "cancel"} busy={statusBusy} onConfirm={() => void updateStatus()} onClose={() => setStatusBooking(null)} />
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader><DialogTitle>Confirm member list filters</DialogTitle></DialogHeader>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Booking, Trek } from "@/lib/admin";
-import { filterBookings, groupBookingsByDeparture, resolveBookingDeparture } from "@/lib/bookingAdmin";
+import { filterBookings, groupBookingsByDeparture, resolveBookingDeparture, sortBookingGroups } from "@/lib/bookingAdmin";
 
 const trek = (dates: string[]): Trek => ({
   id: "trek-1",
@@ -19,6 +19,21 @@ describe("booking departure grouping", () => {
     const groups = groupBookingsByDeparture(bookings, [trek(["2026-10-02", "2026-10-16"])]);
     expect([...groups.keys()]).toEqual(["2026-10-02", "2026-10-16"]);
     expect(groups.get("2026-10-02")?.map((booking) => booking.id)).toEqual(["a"]);
+  });
+
+  it("orders departures by their newest booking and keeps each departure newest first", () => {
+    const bookings = [
+      { id: "older-date-new", trek_date: "2026-10-02", created_at: "2026-10-10T10:00:00Z" },
+      { id: "newer-date-old", trek_date: "2026-10-16", created_at: "2026-10-02T10:00:00Z" },
+      { id: "older-date-old", trek_date: "2026-10-02", created_at: "2026-10-01T10:00:00Z" },
+      { id: "newer-date-new", trek_date: "2026-10-16", created_at: "2026-10-11T10:00:00Z" },
+    ] as Booking[];
+    const ordered = sortBookingGroups(groupBookingsByDeparture(bookings, []), "newest");
+    expect(ordered.map(([departure]) => departure)).toEqual(["2026-10-16", "2026-10-02"]);
+    expect(ordered.map(([, rows]) => rows.map((booking) => booking.id))).toEqual([
+      ["newer-date-new", "newer-date-old"], ["older-date-new", "older-date-old"],
+    ]);
+    expect(sortBookingGroups(groupBookingsByDeparture(bookings, []), "oldest").map(([departure]) => departure)).toEqual(["2026-10-02", "2026-10-16"]);
   });
 
   it("uses a single-date fallback but never infers a multi-date historical booking", () => {

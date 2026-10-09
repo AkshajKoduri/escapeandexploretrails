@@ -32,6 +32,7 @@ export default function ItineraryActions({ source, onCover = false, showView = t
   const nativeShare = async (pdf?: File) => {
     const result = await shareItinerary(source, pdf);
     if (result === "unsupported") setMessage("Sharing isn’t available for this content on your device. Copy the link or download the PDF instead.");
+    if (result === "failed") setError("Your device couldn’t share the itinerary. Copy the stable link or download the PDF instead.");
   };
 
   const copy = async () => {

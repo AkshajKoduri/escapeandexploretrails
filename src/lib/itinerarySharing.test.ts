@@ -20,13 +20,28 @@ describe("itinerary PDF and sharing fallbacks", () => {
   });
   it("downloads PDF bytes with a meaningful name and rejects provider HTML", async () => {
     invoke.mockResolvedValue({ data: { url: "https://files.test/one.pdf" }, error: null });
-    const fetch = vi.fn().mockResolvedValueOnce({ ok: true, arrayBuffer: async () => new TextEncoder().encode("%PDF-1.7\ncontent").buffer })
-      .mockResolvedValueOnce({ ok: true, arrayBuffer: async () => new TextEncoder().encode("<html>Provider page</html>").buffer });
+    const completePdf = "%PDF-1.7\n1 0 obj\n<< /Type /Pages /Count 2 >>\n2 0 obj\n<< /Type /Page >>\n3 0 obj\n<< /Type /Page >>\n%%EOF";
+    const pdfResponse = () => ({ ok: true, headers: new Headers(), arrayBuffer: async () => new TextEncoder().encode(completePdf).buffer });
+    const htmlResponse = () => ({ ok: true, headers: new Headers(), arrayBuffer: async () => new TextEncoder().encode("<html>Provider page</html>").buffer });
+    const fetch = vi.fn().mockResolvedValueOnce(pdfResponse())
+      .mockResolvedValueOnce(htmlResponse()).mockResolvedValueOnce(htmlResponse());
     vi.stubGlobal("fetch", fetch);
     const pdf = await loadItineraryFile(source);
     expect(pdf.type).toBe("application/pdf");
     expect(pdf.name).toBe("Hills-waterfalls-itinerary.pdf");
-    await expect(loadItineraryFile(source)).rejects.toThrow(/provider/);
+    expect(pdf.size).toBe(new TextEncoder().encode(completePdf).byteLength);
+    await expect(loadItineraryFile(source)).rejects.toThrow(/not a PDF/);
+  });
+  it("requests a fresh signed URL and retries when an earlier URL has expired", async () => {
+    invoke.mockResolvedValueOnce({ data: { url: "https://files.test/expired.pdf" }, error: null })
+      .mockResolvedValueOnce({ data: { url: "https://files.test/fresh.pdf" }, error: null });
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, headers: new Headers(), arrayBuffer: async () => new TextEncoder().encode("%PDF-1.7\nfull document").buffer });
+    vi.stubGlobal("fetch", fetch);
+    const pdf = await loadItineraryFile(source);
+    expect(pdf.type).toBe("application/pdf");
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(["https://files.test/expired.pdf", "https://files.test/fresh.pdf"]);
   });
   it("handles unsupported file sharing and cancellation without claiming success", async () => {
     vi.stubGlobal("navigator", {});
@@ -37,6 +52,8 @@ describe("itinerary PDF and sharing fallbacks", () => {
     expect(share).not.toHaveBeenCalled();
     share.mockRejectedValue(new DOMException("Cancelled", "AbortError"));
     expect(await shareItinerary(source)).toBe("cancelled");
+    share.mockRejectedValue(new Error("Share target failed"));
+    expect(await shareItinerary(source)).toBe("failed");
   });
   it("reports unavailable PDFs instead of using a broken URL", async () => {
     invoke.mockResolvedValue({ data: null, error: new Error("Not found") });

@@ -43,6 +43,12 @@ describe("cover itinerary action", () => {
     expect(screen.getByRole("link", { name: "Open PDF" })).toHaveAttribute("href", "/itinerary/trip?view=pdf");
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
   });
+  it("shows a clear fallback when the native share action fails", async () => {
+    mocks.share.mockResolvedValue("failed"); show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText(/couldn’t share the itinerary/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
+  });
   it("does not show success or a fallback on cancellation", async () => {
     mocks.share.mockResolvedValue("cancelled"); show(); fireEvent.click(screen.getByRole("button", { name: "Share itinerary" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Share itinerary" })).not.toBeDisabled());

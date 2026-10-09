@@ -57,3 +57,22 @@ export function groupBookingsByDeparture(bookings: Booking[], treks: Trek[]): Ma
   });
   return groups;
 }
+
+export function sortBookingGroups(
+  groups: Map<string, Booking[]>,
+  direction: "newest" | "oldest",
+): Array<[string, Booking[]]> {
+  const sign = direction === "newest" ? -1 : 1;
+  const timestamp = (booking: Booking) => {
+    const value = Date.parse(booking.created_at);
+    return Number.isFinite(value) ? value : 0;
+  };
+  return [...groups.entries()]
+    .map(([departure, rows]) => [departure, [...rows].sort((a, b) => sign * (timestamp(a) - timestamp(b)))] as [string, Booking[]])
+    .sort(([departureA, rowsA], [departureB, rowsB]) => {
+      const newestA = timestamp(rowsA[0]);
+      const newestB = timestamp(rowsB[0]);
+      const difference = sign * (newestA - newestB);
+      return difference || departureA.localeCompare(departureB);
+    });
+}
