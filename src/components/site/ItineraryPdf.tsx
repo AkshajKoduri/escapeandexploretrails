@@ -21,7 +21,7 @@ export default function ItineraryPdf({ source }: { source: ItinerarySource }) {
     <a href={url} target="_blank" rel="noopener noreferrer" className="btn-outline"><ExternalLink className="h-4 w-4" aria-hidden="true" />Open PDF in a new tab</a>
     <p className="text-sm text-muted-foreground">If the preview is unavailable, open the PDF in a new tab. External providers may show their own viewer and download controls.</p>
     <div className="overflow-hidden rounded-xl border border-border bg-muted">
-      <iframe src={url} title={`${source.name} complete itinerary PDF`} className="h-[70dvh] min-h-[300px] w-full border-0" />
+      {url.startsWith("/api/") ? <iframe src={url} title={`${source.name} complete itinerary PDF`} className="h-[70dvh] min-h-[300px] w-full border-0" /> : <p className="p-6 text-sm">Open the provider link above to view the complete document.</p>}
     </div>
     <button type="button" className="text-sm font-semibold underline" onClick={() => setRetry((value) => value + 1)}>Refresh PDF access</button>
   </div>;

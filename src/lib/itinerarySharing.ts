@@ -21,6 +21,8 @@ export function whatsappItineraryShare(source: ItinerarySource, origin?: string)
 // The server validates publication and obtains fresh storage access per request.
 export async function resolveItineraryUrl(source: ItinerarySource): Promise<string> {
   if (!hasItineraryPdf(source)) throw new Error("No itinerary PDF is available for this trip.");
+  const external = safeHttpUrl(source.itineraryUrl);
+  if (!source.itineraryFilePath && external && new URL(external).hostname !== "drive.google.com") return external;
   return `/api/itinerary-pdf?trekId=${encodeURIComponent(source.id)}&view=inline`;
 }
 
@@ -30,7 +32,8 @@ export async function loadItineraryFile(source: ItinerarySource): Promise<File> 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       // Mint a URL for each private-storage attempt so an expired URL is replaced.
-      const url = `/api/itinerary-pdf?trekId=${encodeURIComponent(source.id)}`;
+      const resolved = await resolveItineraryUrl(source);
+      const url = resolved.startsWith("/api/") ? resolved.replace("&view=inline", "") : resolved;
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) {
         const message = response.headers?.get("content-type")?.startsWith("text/plain") ? await response.text() : "The itinerary PDF could not be fetched.";
