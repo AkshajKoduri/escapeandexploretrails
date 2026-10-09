@@ -7,7 +7,7 @@ export function hasItineraryPdf(source: ItinerarySource): boolean {
 }
 
 export function itineraryShareUrl(id: string, origin = window.location.origin): string {
-  return new URL(`/itinerary/${encodeURIComponent(id)}`, origin).href;
+  return new URL(`/adventures/${encodeURIComponent(id)}`, origin).href;
 }
 
 export function itineraryFilename(name: string): string {

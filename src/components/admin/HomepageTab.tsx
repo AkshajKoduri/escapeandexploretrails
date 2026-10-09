@@ -9,6 +9,7 @@ import fallbackHero from "@/assets/hero-1440.webp";
 
 export default function HomepageTab() {
   const [saved, setSaved] = useState<HomepageSettings | null>(null);
+  const [showIcons, setShowIcons] = useState(true);
   const [alt, setAlt] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export default function HomepageTab() {
       .then(({ data }) => {
         if (cancelled) return;
         setSaved(data);
+        setShowIcons(data?.show_trip_icons !== false);
         setAlt(data?.hero_alt_text ?? "");
       })
       .catch((err: unknown) => { if (!cancelled) setError(err instanceof Error ? err.message : "Could not load homepage settings"); })
@@ -61,7 +63,7 @@ export default function HomepageTab() {
         path = uploadedPath;
       }
       setProgress("Saving settings…");
-      const patch = { hero_image_path: path, hero_alt_text: path ? alt.trim() : "" };
+      const patch = { hero_image_path: path, hero_alt_text: path ? alt.trim() : "", show_trip_icons: showIcons };
       await adminApi("updateHomepageSettings", { patch });
       // Keep the previous file until the record safely points to its replacement.
       const previousPath = saved?.hero_image_path;
@@ -73,7 +75,7 @@ export default function HomepageTab() {
       if (previousPath && previousPath !== path) {
         await adminRemove("trek-images", previousPath).catch(() => undefined);
       }
-      toast.success("Homepage welcome image saved");
+      toast.success("Homepage settings saved");
     } catch (err: unknown) {
       // A failed metadata save never removes the previous, working image.
       if (uploadedPath) await adminRemove("trek-images", uploadedPath).catch(() => undefined);
@@ -115,9 +117,10 @@ export default function HomepageTab() {
             <label htmlFor="homepage-hero-alt" className="field-label">Image description (alt text)</label>
             <input id="homepage-hero-alt" className="field-input" value={custom ? alt : DEFAULT_HERO_ALT} disabled={busy || !custom} maxLength={500} onChange={(event) => setAlt(event.target.value)} placeholder="Describe the landscape in this photo" />
           </div>
+          <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={showIcons} disabled={busy} onChange={event => setShowIcons(event.target.checked)} />Show trip icons on homepage (Explore your way)</label>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap items-center gap-3">
-            <button type="submit" disabled={busy} className="btn-primary disabled:opacity-60">{busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}{busy ? progress : "Save welcome image"}</button>
+            <button type="submit" disabled={busy} className="btn-primary disabled:opacity-60">{busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}{busy ? progress : "Save homepage settings"}</button>
             {custom && <button type="button" disabled={busy} className="btn-outline" onClick={() => { setRemove(true); setFile(null); }}>Use original image</button>}
             {remove && <button type="button" disabled={busy} className="btn-outline" onClick={() => setRemove(false)}>Undo removal</button>}
           </div>

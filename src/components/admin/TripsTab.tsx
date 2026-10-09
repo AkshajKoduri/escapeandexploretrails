@@ -1,3 +1,4 @@
+import { SEAT_STATUSES, normalizeDepartureStatuses } from "@/lib/departureStatus";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
@@ -98,6 +99,7 @@ export default function TripsTab({
         location: t.location,
         trek_date: t.trek_date,
         additional_dates: t.additional_dates,
+        departure_statuses: t.departure_statuses ?? {},
         trek_time: t.trek_time,
         difficulty: t.difficulty,
         duration: t.duration,
@@ -568,6 +570,7 @@ function TripForm({
         location: f.location?.trim() || null,
         trek_date: f.trek_date || null,
         additional_dates: cleanDates,
+        departure_statuses: Object.fromEntries(Object.entries(normalizeDepartureStatuses(f.departure_statuses)).filter(([date]) => [f.trek_date, ...cleanDates].includes(date))),
         trek_time: f.trek_time?.trim() || null,
         difficulty: f.difficulty,
         duration: f.duration?.trim() || null,
@@ -692,6 +695,19 @@ function TripForm({
           </button>
         </div>
       </FF>
+
+      <fieldset className="md:col-span-2 space-y-3 rounded-lg border border-border p-3">
+        <legend className="px-1 text-sm font-semibold">Public seat status per departure</legend>
+        <p className="text-xs text-muted-foreground">Dates without a saved status show Available. These labels do not change capacity or booking restrictions.</p>
+        {[...new Set([f.trek_date, ...(f.additional_dates ?? [])].filter(Boolean) as string[])].sort().map(date => (
+          <label key={date} className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="shrink-0 text-sm">{fmtDate(date)}</span>
+            <select className={inp} value={normalizeDepartureStatuses(f.departure_statuses)[date] ?? "Available"} onChange={event => set({ departure_statuses: { ...normalizeDepartureStatuses(f.departure_statuses), [date]: event.target.value as typeof SEAT_STATUSES[number] } })}>
+              {SEAT_STATUSES.map(status => <option key={status}>{status}</option>)}
+            </select>
+          </label>
+        ))}
+      </fieldset>
 
       <FF label={isOutstation ? "Assembly Time" : "Assembly Time *"}><input className={inp} value={f.trek_time ?? ""} onChange={(e) => set({ trek_time: e.target.value })} placeholder="6:00 AM" required={!isOutstation} /></FF>
       <FF label={isOutstation ? "Meeting point" : "Meeting point *"} full><input className={inp} value={f.meeting_point ?? ""} onChange={(e) => set({ meeting_point: e.target.value })} placeholder="Hitech City Metro, 5:00 AM" required={!isOutstation} /></FF>

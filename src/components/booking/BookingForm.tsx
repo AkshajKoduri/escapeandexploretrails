@@ -1,3 +1,4 @@
+import { departureStatus } from "@/lib/departureStatus";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -438,12 +439,12 @@ export default function BookingForm({
       <section>
         <SectionHeading className="field-label text-base mb-3">Choose your date</SectionHeading>
         <p className="text-sm text-muted-foreground mb-3">
-          {date && soldOut
-            ? "This adventure is currently full."
+          {date
+            ? departureStatus(adventure, date)
             : adventure.dates.length === 0
               ? "No upcoming dates yet — check back soon."
               : adventure.dates.length === 1
-                ? `${departureRemaining} seat${departureRemaining === 1 ? "" : "s"} available for this departure.`
+                ? departureStatus(adventure, adventure.dates[0])
                 : "Select a departure to see its availability."}
         </p>
         {adventure.dates.length > 0 ? (
@@ -463,7 +464,7 @@ export default function BookingForm({
                 onClick={() => { setDate(d); setPeople((current) => Math.min(current, Math.max(adventure.departureAvailability[d] ?? adventure.seatsRemaining, 1))); }}
                 className={cn("filter-pill", date === d ? "filter-pill-active" : "filter-pill-idle")}
               >
-                {fmtDateShort(d)} · {adventure.departureAvailability[d] ?? adventure.seatsRemaining} left
+                {fmtDateShort(d)} · {departureStatus(adventure, d)}
               </button>
             ))}
           </div>
@@ -503,9 +504,7 @@ export default function BookingForm({
             <div>
               <p className="text-sm font-semibold text-foreground">Travellers</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {soldOut
-                  ? "Full — no seats left."
-                  : date ? `${departureRemaining} seat${departureRemaining === 1 ? "" : "s"} available on this departure` : "Choose a departure first"}
+                {date ? departureStatus(adventure, date) : "Choose a departure first"}
               </p>
             </div>
             <div className="flex items-center gap-3">

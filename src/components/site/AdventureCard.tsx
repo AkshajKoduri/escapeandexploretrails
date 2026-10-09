@@ -1,3 +1,4 @@
+import DepartureDates from "@/components/site/DepartureDates";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock, MapPin, Mountain } from "lucide-react";
@@ -31,7 +32,7 @@ export default function AdventureCard({
       className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:h-full"
       aria-label={`View ${adventure.name}${nextDate ? `, ${fmtDate(nextDate)}` : ""}`}
     >
-      <article className={`relative overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col ${wide ? "md:grid md:h-[360px] md:min-h-0 md:grid-cols-[3fr_2fr] lg:grid-cols-[2fr_1fr]" : "md:h-full"}`}>
+      <article className={`relative overflow-hidden rounded-xl bg-charcoal shadow-card card-hover flex flex-col ${wide ? "md:grid md:min-h-[360px] md:grid-cols-[3fr_2fr] lg:grid-cols-[2fr_1fr]" : "md:h-full"}`}>
         <div className={`relative overflow-hidden bg-muted ${wide ? "h-40 md:h-full md:aspect-auto" : compact ? "h-44 md:h-auto md:aspect-[4/3]" : "aspect-[4/5]"}`}>
           {adventure.img && !imageFailed ? (
             <img
@@ -56,29 +57,13 @@ export default function AdventureCard({
             </div>
           )}
 
-          {/* Date badge */}
-          {nextDate && (
-            <div className={`absolute top-4 left-4 flex flex-col items-center rounded-md bg-charcoal-foreground/95 px-3 py-1.5 text-center shadow-card ${wide ? "md:hidden" : ""}`}>
-              <span className="font-display font-bold text-lg leading-none text-charcoal">
-                {new Date(nextDate).getDate()}
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-charcoal/70">
-                {new Date(nextDate).toLocaleDateString("en-IN", { month: "short" })}
-              </span>
-            </div>
-          )}
-
           {/* Difficulty */}
           <span className={`absolute top-4 right-4 pill backdrop-blur-sm ${diff.chip} ${wide ? "md:hidden" : ""}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${diff.dot}`} aria-hidden="true" />
             {diff.label}
           </span>
 
-          {adventure.isFull && (
-            <span className="absolute top-4 left-1/2 -translate-x-1/2 pill bg-destructive text-destructive-foreground">
-              Sold Out
-            </span>
-          )}
+
         </div>
 
         <div className={`flex flex-col text-charcoal-foreground bg-charcoal ${wide ? "gap-1.5 px-4 py-3 md:justify-center md:gap-3 md:px-6 md:py-5 lg:px-7" : compact ? "gap-2 px-4 py-3.5 md:flex-1" : "gap-3 p-5 md:flex-1"}`}>
@@ -88,11 +73,7 @@ export default function AdventureCard({
           </p>
           <h3 className={`font-display font-bold leading-snug ${wide ? "text-lg md:text-2xl" : compact ? "text-lg" : "text-xl"}`}>{adventure.name}</h3>
 
-          {wide && nextDate && (
-            <time dateTime={nextDate} className="hidden font-display text-base font-semibold text-gold md:block">
-              {fmtDate(nextDate)}
-            </time>
-          )}
+          <DepartureDates adventure={adventure} />
 
           <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-charcoal-foreground/75 ${wide ? "md:hidden" : ""}`}>
             {hasValue(adventure.dur) && (
@@ -126,11 +107,7 @@ export default function AdventureCard({
                   <span className={`h-1.5 w-1.5 rounded-full ${diff.dot}`} aria-hidden="true" />
                   {diff.label}
                 </span>
-                {adventure.isFull ? (
-                  <span className="font-semibold text-charcoal-foreground">Sold out</span>
-                ) : adventure.seatsRemaining > 0 ? (
-                  <span>{adventure.seatsRemaining} seats available</span>
-                ) : null}
+
               </div>
             </div>
           )}
@@ -142,19 +119,13 @@ export default function AdventureCard({
                   <span className="block text-lg font-bold text-gold leading-none">{inr(price)}</span>
                   <span className="text-[11px] text-charcoal-foreground/60">
                     / person
-                    {wide && !adventure.isFull && adventure.seatsRemaining > 0 && (
-                      <span className="md:hidden"> · {adventure.seatsRemaining} available</span>
-                    )}
+
                   </span>
                 </>
               ) : (
                 <>
                   <span className="text-sm text-charcoal-foreground/60">Price on request</span>
-                  {wide && !adventure.isFull && adventure.seatsRemaining > 0 && (
-                    <span className="block text-[11px] text-charcoal-foreground/60 md:hidden">
-                      {adventure.seatsRemaining} available
-                    </span>
-                  )}
+
                 </>
               )}
             </div>
@@ -165,13 +136,7 @@ export default function AdventureCard({
           </div>
         </div>
 
-        {!wide && !adventure.isFull && adventure.seatsRemaining > 0 && adventure.seatsRemaining <= 8 && (
-          <div className={`${compact ? "px-4" : "px-5"} py-2 border-t border-charcoal-foreground/10 bg-charcoal`}>
-            <p className="text-[11px] font-semibold text-gold">
-              {adventure.seatsRemaining} spot{adventure.seatsRemaining > 1 ? "s" : ""} left
-            </p>
-          </div>
-        )}
+
       </article>
     </Link>
   );

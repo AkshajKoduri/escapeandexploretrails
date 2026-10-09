@@ -20,6 +20,7 @@ import {
   tripDetailsPayload,
   highlightsPayload,
   tripGalleryPayload,
+  departureStatusesPayload,
   homepagePayload,
   signImagePathsPayload,
   galleryPatchPayload,
@@ -213,6 +214,7 @@ Deno.serve(async (req) => {
         if ("trip_details" in row) row.trip_details = parse(tripDetailsPayload, row.trip_details);
         if ("highlights" in row) row.highlights = parse(highlightsPayload, row.highlights);
         if ("gallery_images" in row) row.gallery_images = parse(tripGalleryPayload, row.gallery_images);
+        if ("departure_statuses" in row) row.departure_statuses = parse(departureStatusesPayload, row.departure_statuses);
         if (!row.name || !row.event_type) return json({ error: "Trip name and event type are required" }, 400);
         const { data, error } = await supabase
           .from("upcoming_treks")
@@ -228,6 +230,7 @@ Deno.serve(async (req) => {
         if ("trip_details" in safe) safe.trip_details = parse(tripDetailsPayload, safe.trip_details);
         if ("highlights" in safe) safe.highlights = parse(highlightsPayload, safe.highlights);
         if ("gallery_images" in safe) safe.gallery_images = parse(tripGalleryPayload, safe.gallery_images);
+        if ("departure_statuses" in safe) safe.departure_statuses = parse(departureStatusesPayload, safe.departure_statuses);
         const { error } = await supabase.from("upcoming_treks").update(safe).eq("id", id);
         if (error) throw error;
         return json({ ok: true });
@@ -271,7 +274,7 @@ Deno.serve(async (req) => {
 
       // ---- Gallery ----
       case "getHomepageSettings": {
-        const { data, error } = await supabase.from("site_settings").select("id, hero_image_path, hero_alt_text").eq("id", "homepage").maybeSingle();
+        const { data, error } = await supabase.from("site_settings").select("id, hero_image_path, hero_alt_text, show_trip_icons").eq("id", "homepage").maybeSingle();
         if (error) throw error;
         return json({ data });
       }

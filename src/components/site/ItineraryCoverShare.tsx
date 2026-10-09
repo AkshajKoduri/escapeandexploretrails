@@ -46,7 +46,7 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
       setMessage("Sharing is unavailable. You can copy the link, open or download the PDF.");
       setOpen(true);
     } else if (result === "failed") {
-      setError("Your device couldn’t share the itinerary. You can copy the stable link, open the PDF or download it instead.");
+      setError("Your device couldn’t share the itinerary. You can copy the trip details link, open the PDF or download it instead.");
       setMessage("Choose another way to share or download the PDF.");
       setOpen(true);
     }
@@ -64,7 +64,7 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
     finally { setBusy(false); }
   };
   const copy = async () => {
-    try { await navigator.clipboard.writeText(itineraryShareUrl(id)); setMessage("Itinerary link copied."); }
+    try { await navigator.clipboard.writeText(itineraryShareUrl(id)); setMessage("Trip details link copied."); }
     catch { setMessage("Select and copy the link below."); }
   };
 
@@ -79,8 +79,9 @@ export default function ItineraryCoverShare({ source }: { source: ItinerarySourc
         <button type="button" className="btn-outline" disabled={busy} onClick={() => file ? void share() : void prepare()}>{file ? "Share PDF" : busy ? "Preparing PDF…" : "Prepare PDF to share"}</button>
         <Link to={viewer} className="btn-outline"><FileText className="h-4 w-4" aria-hidden="true" />Open PDF</Link>
         <button type="button" className="btn-outline" disabled={busy} onClick={() => void download()}><Download className="h-4 w-4" aria-hidden="true" />{busy ? "Preparing PDF…" : "Download PDF"}</button>
+        <button type="button" className="btn-outline" disabled={busy} onClick={() => void shareItinerary(source).then(result => { if (result === "unsupported") setMessage("Native link sharing is unavailable. Copy the trip details link below."); if (result === "failed") setError("Could not share the trip details link. Copy it below instead."); })}>Share trip details link</button>
         <button type="button" className="btn-outline" onClick={() => void copy()}><Copy className="h-4 w-4" aria-hidden="true" />Copy link</button>
-        <label className="text-sm">Itinerary link<input className="field-input mt-2" readOnly value={itineraryShareUrl(id)} onFocus={event => event.target.select()} /></label>
+        <label className="text-sm">Trip details link<input className="field-input mt-2" readOnly value={itineraryShareUrl(id)} onFocus={event => event.target.select()} /></label>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </DialogContent>
     </Dialog>

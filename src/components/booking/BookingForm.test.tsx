@@ -83,6 +83,18 @@ beforeEach(() => {
 });
 
 describe("BookingForm", () => {
+  it("displays the selected Admin status while enforcing independent capacity", () => {
+    const adventure = makeAdventure({ departureStatuses: { "2026-09-05": "Filling Fast", "2026-09-26": "Waiting List" }, departureAvailability: { "2026-09-05": 1, "2026-09-26": 2 } });
+    render(<BookingForm adventure={adventure} initialDate="2026-09-05" />);
+    expect(screen.getByRole("button", { name: /5 Sept.*Filling Fast/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "More people" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /26 Sept.*Waiting List/ }));
+    expect(screen.getByRole("button", { name: "More people" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "More people" }));
+    expect(screen.getByRole("button", { name: "More people" })).toBeDisabled();
+    expect(document.body.textContent).not.toMatch(/\d+ seats? available|\d+ left/);
+  });
+
   it("preselects the date passed via initialDate", () => {
     render(<BookingForm adventure={makeAdventure()} initialDate="2026-09-26" />);
     const secondDate = screen.getByRole("button", { name: /26 Sept/ });

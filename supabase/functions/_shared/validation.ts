@@ -34,7 +34,7 @@ export const TREK_COLUMNS = [
   "altitude", "region", "elevation_gain", "mountain_range", "base_village", "duration_text",
   "stay_location", "field_labels", "additional_dates", "starting_price", "starting_price_label",
   "top_end_price", "top_end_price_label", "itinerary_days", "trek_category", "seats_taken",
-  "trip_details", "highlights", "gallery_images",
+  "trip_details", "highlights", "gallery_images", "departure_statuses",
 ] as const;
 
 const detailId = z.string().trim().min(1).max(120);
@@ -112,7 +112,10 @@ export const tripGalleryPayload = z.array(z.object({
   path: safeStoragePath.nullable(),
   alt: z.string().trim().max(500),
 }).strict()).max(50);
+export const departureStatusesPayload = z.record(z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.enum(["Available", "Filling Fast", "Last Few", "Full", "Waiting List"]));
+
 export const homepagePayload = z.object({
+  show_trip_icons: z.boolean().optional(),
   hero_image_path: safeStoragePath.refine((path) => path.startsWith("homepage/"), "Invalid homepage image").nullable(),
   hero_alt_text: z.string().trim().max(500),
 }).strict();

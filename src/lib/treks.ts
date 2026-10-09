@@ -1,3 +1,4 @@
+import { normalizeDepartureStatuses, publicDepartureDates, type SeatStatus } from "@/lib/departureStatus";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { normalizeTripDetails, type TripDetails } from "@/lib/tripDetails";
@@ -63,6 +64,7 @@ export type Adventure = {
   seatsTaken: number;
   isFull: boolean;
   departureAvailability: Record<string, number>;
+  departureStatuses?: Record<string, SeatStatus>;
   eventType: EventType;
   trekCategory: string | null;
   albumUrl: string | null;
@@ -254,7 +256,7 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, departureMap: Map<s
   const maxSeats = s?.max_seats ?? t.max_seats ?? 0;
   const remaining = s?.seats_remaining ?? maxSeats - seatsTaken;
 
-  const allDates = [t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[];
+  const allDates = publicDepartureDates([t.trek_date, ...(t.additional_dates ?? [])].filter(Boolean) as string[]);
   const dates = allDates.filter((d) => d >= today);
   const sorted = [...dates].sort();
   const departureAvailability = Object.fromEntries(
@@ -304,6 +306,7 @@ function mapRow(t: TrekRow, statsMap: Map<string, SeatStat>, departureMap: Map<s
     seatsTaken: seatsTaken,
     isFull: bestDepartureRemaining <= 0,
     departureAvailability,
+    departureStatuses: normalizeDepartureStatuses(t.departure_statuses),
     eventType: (t.event_type as EventType) ?? "Hike",
     trekCategory: t.trek_category ?? null,
     albumUrl: t.album_url ?? null,
@@ -463,7 +466,7 @@ export async function submitBooking(
     let message =
       BOOKING_ERROR_MESSAGES[code] ?? "We couldn't complete your booking. Please try again.";
     if (code === "sold_out" && typeof result?.remaining === "number") {
-      message = `Only ${Math.max(result.remaining, 0)} seat(s) left for this adventure.`;
+      message = "Your group exceeds the remaining capacity for this departure. Choose fewer travellers or another date.";
     }
     return { ok: false, message, code };
   }

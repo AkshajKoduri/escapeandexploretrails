@@ -1,3 +1,5 @@
+import DepartureDates from "@/components/site/DepartureDates";
+import { departureStatus } from "@/lib/departureStatus";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -200,7 +202,7 @@ export default function TripDetail() {
                 <span className={cn("w-1.5 h-1.5 rounded-full", diff.dot)} aria-hidden="true" />
                 {diff.label}
               </span>
-              {soldOut && <span className="pill bg-destructive text-destructive-foreground">Sold out</span>}
+
             </div>
             <h1 className="font-display font-bold text-4xl md:text-6xl text-charcoal-foreground leading-[1.05] text-balance text-shadow-strong">
               {adventure.name}
@@ -210,20 +212,7 @@ export default function TripDetail() {
               {location}
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 text-charcoal-foreground/85">
-              {adventure.dates[0] && (
-                <span className="inline-flex items-center gap-2 text-sm font-semibold">
-                  <CalendarDays className="w-4 h-4 text-accent-light" aria-hidden="true" />
-                  {adventure.dates.length > 1
-                    ? `From ${fmtDate(adventure.dates[0])}`
-                    : fmtDate(adventure.dates[0])}
-                </span>
-              )}
-              {!soldOut && adventure.seatsRemaining > 0 && (
-                <span className="inline-flex items-center gap-2 text-sm font-semibold">
-                  <Users className="w-4 h-4 text-accent-light" aria-hidden="true" />
-                  {adventure.seatsRemaining} seat{adventure.seatsRemaining > 1 ? "s" : ""} available
-                </span>
-              )}
+              <DepartureDates adventure={adventure} />
               {price != null && (
                 <span className="font-display font-bold text-2xl text-gold">
                   {inr(price)} <span className="text-sm font-normal text-charcoal-foreground/70">/ person</span>
@@ -444,7 +433,7 @@ export default function TripDetail() {
                     <li key={d} className="flex flex-wrap items-center justify-between gap-3 py-4">
                       <div>
                         <p className="font-display font-semibold text-lg text-foreground">{fmtDate(d)}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{departureFull ? "Full" : `${remaining} seat${remaining === 1 ? "" : "s"} available`}{adventure.dates.length > 1 && d === adventure.dates[0] ? " · Next departure" : ""}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{departureStatus(adventure, d)}{adventure.dates.length > 1 && d === adventure.dates[0] ? " · Next departure" : ""}</p>
                       </div>
                       {departureFull ? (
                         <span className="inline-flex min-h-11 items-center text-sm font-semibold text-muted-foreground">Full</span>

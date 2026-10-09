@@ -409,6 +409,7 @@ export type Database = {
         Row: {
           highlights: string[]
           gallery_images: Json
+          departure_statuses: Json
           additional_dates: string[]
           album_url: string | null
           altitude: string | null
@@ -455,6 +456,7 @@ export type Database = {
         Insert: {
           highlights?: string[]
           gallery_images?: Json
+          departure_statuses?: Json
           additional_dates?: string[]
           album_url?: string | null
           altitude?: string | null
@@ -501,6 +503,7 @@ export type Database = {
         Update: {
           highlights?: string[]
           gallery_images?: Json
+          departure_statuses?: Json
           additional_dates?: string[]
           album_url?: string | null
           altitude?: string | null
@@ -547,9 +550,9 @@ export type Database = {
         Relationships: []
       }
       site_settings: {
-        Row: { id: string; hero_image_path: string | null; hero_alt_text: string }
-        Insert: { id: string; hero_image_path?: string | null; hero_alt_text?: string }
-        Update: { id?: string; hero_image_path?: string | null; hero_alt_text?: string }
+        Row: { show_trip_icons: boolean; id: string; hero_image_path: string | null; hero_alt_text: string }
+        Insert: { show_trip_icons?: boolean; id: string; hero_image_path?: string | null; hero_alt_text?: string }
+        Update: { show_trip_icons?: boolean; id?: string; hero_image_path?: string | null; hero_alt_text?: string }
         Relationships: []
       }
       user_roles: {

@@ -10,8 +10,8 @@ describe("itinerary PDF and sharing fallbacks", () => {
     expect(await resolveItineraryUrl({ id: "trip", name: "Trip", itineraryUrl: "https://files.example/trip.pdf" })).toBe("https://files.example/trip.pdf");
   });
   it("shares the stable page rather than expiring storage URLs", () => {
-    expect(itineraryShareUrl("trip", "https://e2trails.in")).toBe("https://e2trails.in/itinerary/trip");
-    expect(decodeURIComponent(whatsappItineraryShare(source, "https://e2trails.in"))).toContain("https://e2trails.in/itinerary/trip");
+    expect(itineraryShareUrl("trip", "https://e2trails.in")).toBe("https://e2trails.in/adventures/trip");
+    expect(decodeURIComponent(whatsappItineraryShare(source, "https://e2trails.in"))).toContain("https://e2trails.in/adventures/trip");
     expect(hasItineraryPdf({ id: "trip", name: "Trip" })).toBe(false);
   });
   it("uses the stable PDF endpoint so server requests obtain fresh storage access", async () => {

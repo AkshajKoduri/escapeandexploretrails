@@ -36,8 +36,8 @@ export default function ItineraryActions({ source, onCover = false, showView = t
   };
 
   const copy = async () => {
-    try { await navigator.clipboard.writeText(stableUrl); toast.success("Itinerary link copied"); }
-    catch { setMessage("Select and copy the itinerary link below."); }
+    try { await navigator.clipboard.writeText(stableUrl); toast.success("Trip details link copied"); }
+    catch { setMessage("Select and copy the trip details link below."); }
   };
 
   return (
@@ -51,14 +51,14 @@ export default function ItineraryActions({ source, onCover = false, showView = t
             <DialogHeader><DialogTitle>Share itinerary</DialogTitle><DialogDescription>Send {source.name} to your travel companions.</DialogDescription></DialogHeader>
             <div className="flex flex-col gap-3">
               <a className="btn-primary" href={whatsappItineraryShare(source)} target="_blank" rel="noopener noreferrer"><MessageCircle className="h-4 w-4" aria-hidden="true" />Share link on WhatsApp</a>
-              <button type="button" className="btn-outline" onClick={() => void nativeShare()}><Share2 className="h-4 w-4" aria-hidden="true" />Choose an app / Instagram</button>
-              <p className="text-sm text-muted-foreground">Choose Instagram if your device offers it. Otherwise, copy the itinerary link and paste it into an Instagram message. Available apps and supported files vary by device.</p>
+              <button type="button" className="btn-outline" onClick={() => void nativeShare()}><Share2 className="h-4 w-4" aria-hidden="true" />Share trip details link</button>
+              <p className="text-sm text-muted-foreground">Link sharing opens the original trip details page. Share the complete PDF below when your device supports it; available apps vary by device.</p>
               {hasPdf && <>
                 <button type="button" className="btn-outline" disabled={busy} onClick={() => file ? void nativeShare(file) : void prepare(false)}>{file ? "Share PDF" : busy ? "Preparing PDF…" : "Prepare PDF to share"}</button>
                 <button type="button" className="btn-outline" disabled={busy} onClick={() => void prepare(true)}><Download className="h-4 w-4" aria-hidden="true" />Download PDF</button>
               </>}
               <button type="button" className="btn-outline" onClick={() => void copy()}><Copy className="h-4 w-4" aria-hidden="true" />Copy link</button>
-              <label className="text-sm font-semibold">Itinerary link<input readOnly value={stableUrl} onFocus={(event) => event.target.select()} className="field-input mt-2 text-sm" /></label>
+              <label className="text-sm font-semibold">Trip details link<input readOnly value={stableUrl} onFocus={(event) => event.target.select()} className="field-input mt-2 text-sm" /></label>
               {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
               {error && <p role="alert" className="text-sm text-destructive">{error} <Link className="underline" to={`/itinerary/${source.id}?view=pdf`}>Open itinerary</Link></p>}
             </div>

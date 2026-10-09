@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { ArrowRight, Bike, Footprints, Mountain, Route } from "lucide-react";
 
@@ -29,6 +31,15 @@ const paths = [
 ];
 
 export default function DiscoverSection() {
+  const [showIcons, setShowIcons] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.from("site_settings").select("show_trip_icons").eq("id", "homepage").maybeSingle();
+      if (!cancelled && !error) setShowIcons(data?.show_trip_icons !== false);
+    })().catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
   return (
     <section id="find-your-adventure" className="border-b border-border bg-card/60 py-14 md:py-20">
       <div className="container">
@@ -57,7 +68,7 @@ export default function DiscoverSection() {
                   index % 2 === 0 ? "border-r" : ""
                 } ${index < 2 ? "border-b md:border-b-0" : ""} ${index > 0 ? "md:border-l" : ""} md:border-r-0`}
               >
-                <Icon className="h-6 w-6 text-accent" strokeWidth={1.75} aria-hidden="true" />
+                {showIcons && <Icon className="h-6 w-6 text-accent" strokeWidth={1.75} aria-hidden="true" />}
                 <h3 className="mt-5 font-display text-lg font-bold text-primary sm:text-xl">{path.label}</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{path.note}</p>
                 <span className="mt-4 inline-flex min-h-11 items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">

@@ -33,3 +33,5 @@ lerna-debug.log*
 .claude/
 .claudeignore
 skills-lock.json
+
+supabase/.temp/
