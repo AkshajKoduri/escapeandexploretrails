@@ -1,3 +1,4 @@
+import SeatStatusBadge from "@/components/site/SeatStatusBadge";
 import { departureStatus } from "@/lib/departureStatus";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -440,11 +441,11 @@ export default function BookingForm({
         <SectionHeading className="field-label text-base mb-3">Choose your date</SectionHeading>
         <p className="text-sm text-muted-foreground mb-3">
           {date
-            ? departureStatus(adventure, date)
+            ? <SeatStatusBadge status={departureStatus(adventure, date)} />
             : adventure.dates.length === 0
               ? "No upcoming dates yet — check back soon."
               : adventure.dates.length === 1
-                ? departureStatus(adventure, adventure.dates[0])
+                ? <SeatStatusBadge status={departureStatus(adventure, adventure.dates[0])} />
                 : "Select a departure to see its availability."}
         </p>
         {adventure.dates.length > 0 ? (
@@ -504,7 +505,7 @@ export default function BookingForm({
             <div>
               <p className="text-sm font-semibold text-foreground">Travellers</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {date ? departureStatus(adventure, date) : "Choose a departure first"}
+                {date ? <SeatStatusBadge status={departureStatus(adventure, date)} /> : "Choose a departure first"}
               </p>
             </div>
             <div className="flex items-center gap-3">

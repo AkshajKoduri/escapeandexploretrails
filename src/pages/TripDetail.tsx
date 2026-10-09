@@ -1,3 +1,4 @@
+import SeatStatusBadge from "@/components/site/SeatStatusBadge";
 import DepartureDates from "@/components/site/DepartureDates";
 import { departureStatus } from "@/lib/departureStatus";
 import { useEffect, useState } from "react";
@@ -433,7 +434,7 @@ export default function TripDetail() {
                     <li key={d} className="flex flex-wrap items-center justify-between gap-3 py-4">
                       <div>
                         <p className="font-display font-semibold text-lg text-foreground">{fmtDate(d)}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{departureStatus(adventure, d)}{adventure.dates.length > 1 && d === adventure.dates[0] ? " · Next departure" : ""}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5"><SeatStatusBadge status={departureStatus(adventure, d)} />{adventure.dates.length > 1 && d === adventure.dates[0] ? " · Next departure" : ""}</p>
                       </div>
                       {departureFull ? (
                         <span className="inline-flex min-h-11 items-center text-sm font-semibold text-muted-foreground">Booking unavailable</span>
