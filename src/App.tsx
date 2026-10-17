@@ -17,6 +17,7 @@ const Itinerary = lazy(() => import("./pages/Itinerary.tsx"));
 const TrailLog = lazy(() => import("./pages/TrailLog.tsx"));
 const UpcomingTreks = lazy(() => import("./pages/UpcomingTreks.tsx"));
 const HyderabadTrails = lazy(() => import("./pages/HyderabadTrails.tsx"));
+const TreksFromHyderabad = lazy(() => import("./pages/TreksFromHyderabad.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
 const Sonner = lazy(() =>
   import("@/components/ui/sonner").then((module) => ({ default: module.Toaster })),
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/trail-log" element={<TrailLog />} />
             <Route path="/upcoming-treks" element={<UpcomingTreks />} />
             <Route path="/hyderabad-trails" element={<HyderabadTrails />} />
+            <Route path="/treks-from-hyderabad" element={<TreksFromHyderabad />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

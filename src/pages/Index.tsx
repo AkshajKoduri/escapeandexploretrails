@@ -10,9 +10,9 @@ const HomeBelowFold = lazy(() => import("@/components/site/HomeBelowFold"));
 const Index = () => {
   useReveal();
   useSeo({
-    title: "E2 Trails — Guided Treks & Adventures from Hyderabad",
+    title: "Treks & Adventure Trips from Hyderabad | E2 Trails",
     description:
-      "Join E2 Trails for safe, organized weekend treks, night camps & summit hikes across India. Built for every adventurer.",
+      "Discover guided treks, local hikes, cycling experiences and weekend adventure trips from Hyderabad with E2 Trails.",
     path: "/",
   });
 

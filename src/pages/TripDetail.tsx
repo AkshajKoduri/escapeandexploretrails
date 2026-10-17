@@ -44,6 +44,7 @@ import { normalizeAssemblyTime } from "@/lib/tripContent";
 import ItineraryCoverShare from "@/components/site/ItineraryCoverShare";
 import TripPhotoGallery from "@/components/site/TripPhotoGallery";
 import { getTripCoverFacts } from "@/lib/tripCoverFacts";
+import { getPriorityTripSeo } from "@/lib/priorityTripSeo";
 
 export default function TripDetail() {
   useReveal();
@@ -57,6 +58,7 @@ export default function TripDetail() {
   // Set when a visitor clicks "Book this date" — the booking panel below
   // reacts by preselecting exactly that date.
   const [requestedDate, setRequestedDate] = useState<string | null>(null);
+  const prioritySeo = adventure ? getPriorityTripSeo(adventure.name) : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -86,10 +88,10 @@ export default function TripDetail() {
 
   // Dynamic metadata from the real trek record; unknown treks stay out of indexes.
   useSeo({
-    title: adventure ? `${adventure.name} — E2 Trails` : "Adventure — E2 Trails",
-    description: adventure?.description
+    title: prioritySeo?.title ?? (adventure ? `${adventure.name} — E2 Trails` : "Adventure — E2 Trails"),
+    description: prioritySeo?.description ?? (adventure?.description
       ? adventure.description.slice(0, 155)
-      : "Guided trek with E2 Trails from Hyderabad — real dates, prices and availability.",
+      : "Guided trek with E2 Trails from Hyderabad — real dates, prices and availability."),
     path: `/adventures/${trekId ?? ""}`,
     image: adventure?.img,
     noindex: !adventure,
@@ -295,6 +297,11 @@ export default function TripDetail() {
               Not sure? Ask us first.
             </a>
           </p>
+          {prioritySeo && (
+            <Link to="/treks-from-hyderabad" className="mt-3 inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-accent hover:underline">
+              Explore more treks from Hyderabad <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          )}
         </div>
       </section>
 
@@ -372,6 +379,25 @@ export default function TripDetail() {
             )}
 
             <TripDetailsSection details={adventure.tripDetails} />
+
+            {prioritySeo && (
+              <section aria-labelledby="trip-faq-heading">
+                <p className="kicker">Before you go</p>
+                <h2 id="trip-faq-heading" className="mt-3 font-display text-2xl font-bold text-primary md:text-3xl">Frequently asked questions</h2>
+                <Accordion type="single" collapsible className="mt-5 overflow-hidden rounded-xl border border-border bg-card divide-y divide-border">
+                  {prioritySeo.faqs.map((faq, index) => (
+                    <AccordionItem key={faq.question} value={`faq-${index}`} className="border-b-0 px-5 sm:px-6">
+                      <AccordionTrigger className="min-h-[44px] py-4 text-left font-display font-bold text-primary hover:no-underline">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-5 text-sm leading-relaxed text-muted-foreground">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </section>
+            )}
 
             {(hasValue(adventure.meetingPoint) || assemblyTime) && (
               <section>

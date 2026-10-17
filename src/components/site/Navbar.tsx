@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import logo from "@/assets/logo-128.webp";
 
 const ADVENTURE_LINKS = [
+  { label: "Treks from Hyderabad", href: "/treks-from-hyderabad", note: "Plan a weekend escape" },
   { label: "All Adventures", href: "/adventures", note: "Browse every trail" },
   { label: "Hiking", href: "/adventures?activity=hike", note: "Explore hiking adventures" },
   { label: "Cycling", href: "/adventures?activity=cycling", note: "Explore cycling adventures" },
@@ -30,7 +31,7 @@ export default function Navbar() {
   const mobileMenuWasOpenRef = useRef(false);
   const { pathname } = useLocation();
   const isHome = pathname === "/";
-  const adventureActive = pathname.startsWith("/adventures") || pathname === "/upcoming-treks" || pathname === "/hyderabad-trails";
+  const adventureActive = pathname.startsWith("/adventures") || pathname === "/upcoming-treks" || pathname === "/hyderabad-trails" || pathname === "/treks-from-hyderabad";
   const journalActive = pathname === "/trail-log";
   const linkIsActive = (href: string) => href === "/adventures" ? pathname.startsWith("/adventures") : pathname === href;
 
